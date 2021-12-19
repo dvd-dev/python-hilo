@@ -375,7 +375,7 @@ class API:
         base = API_AUTOMATION_ENDPOINT
         if gd:
             base = API_GD_SERVICE_ENDPOINT
-        return join(base, "Locations", str(location_id), str(endpoint))
+        return base + "/Locations/" + str(location_id) + '/' + str(endpoint)
 
     async def _async_handle_on_backoff(self, _: dict[str, Any]) -> None:
         """Handle a backoff retry
