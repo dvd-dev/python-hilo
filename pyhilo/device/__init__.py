@@ -87,7 +87,7 @@ class HiloDevice:
         return None
 
     def _get_attribute(self, attribute: DeviceAttribute) -> Union[DeviceReading, None]:
-        reading = next((r for r in self.readings if r == attribute), None)
+        reading = next((r for r in self.readings if r.device_attribute == attribute), None)
         return reading
 
     @property
