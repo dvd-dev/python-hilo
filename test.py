@@ -21,6 +21,14 @@ async def async_main() -> None:
     h = Hilo(api)
     await h.async_init()
 
+    while True:
+        for d in h.devices:
+            print(d.name) #example to list devices and attributes
+            print(d.get_attribute('Power'))
+            print(d.get_attribute('CurrentTemperature'))
+            print(d.get_attribute('OnOff'))
+        await asyncio.sleep(2)
+
 
 loop = asyncio.get_event_loop()
 loop.create_task(async_main())
