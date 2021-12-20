@@ -5,7 +5,7 @@ from typing import Any, Optional, Type, TypedDict, TypeVar, Union
 
 import ruyaml as yaml
 
-from const import LOG
+from pyhilo.const import LOG
 
 
 class TokenDict(TypedDict):
