@@ -1,10 +1,11 @@
 from datetime import datetime
 from os.path import isfile
+import os
 from typing import Any, Optional, Type, TypedDict, TypeVar, Union
 
 import ruyaml as yaml
 
-from pyhilo.const import LOG
+from const import LOG
 
 
 class TokenDict(TypedDict):
@@ -78,6 +79,8 @@ def get_state(state_yaml: str) -> StateDict:
     :rtype: ``StateDict``
     """
     if not isfile(state_yaml):
+        return __get_defaults__(StateDict)  # type: ignore
+    if os.stat(state_yaml).st_size == 0:
         return __get_defaults__(StateDict)  # type: ignore
     with open(state_yaml) as yaml_file:
         LOG.debug("Loading state from yaml")
