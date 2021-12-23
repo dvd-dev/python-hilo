@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, Union, cast
 
 from pyhilo.const import (
     HILO_DEVICE_ATTRIBUTES,
@@ -33,31 +33,45 @@ class HiloDevice:
         self.location_id = 0
         self.type = "Unknown"
         self.name = "Unknown"
+        self.model: Union[str, None] = None
         self.supported_attributes: list[DeviceAttribute] = []
         self.settable_attributes: list[DeviceAttribute] = []
         self.readings: list[DeviceReading] = []
         self.update(**kwargs)
 
     def update(self, **kwargs: dict[str, Union[str, int]]) -> None:
-        for att, val in kwargs.items():
-            att = camel_to_snake(att)
+        for orig_att, val in kwargs.items():
+            att = camel_to_snake(orig_att)
             if att not in HILO_DEVICE_ATTRIBUTES:
                 LOG.warning(f"Unknown device attribute {att}: {val}")
                 continue
             elif att in HILO_LIST_ATTRIBUTES:
+                # This is where we generated the supported_attributes and settable_attributes
+                # list using the DeviceAttribute object.
                 new_val: list[DeviceAttribute] = [
                     DeviceAttribute(k, HILO_READING_TYPES.get(k, ""))
                     for k in map(str.strip, val.split(","))  # type: ignore
                     if k and k != "None"
                 ]
+                if len(new_val) == 0:
+                    # Some sensors like the OneLink FirstAlert don't have any attributes
+                    # but they have a "Disconnected" attribute even though it doesn't show
+                    # up in supported_attributes.
+                    new_val.append(DeviceAttribute("Disconnected", "null"))
             elif att == "provider":
                 att = "manufacturer"
                 new_val = HILO_PROVIDERS.get(int(val), f"Unknown ({val})")  # type: ignore
-            elif att == "model_number":
-                att = "model"
             else:
+                if att == "serial":
+                    att = "identifier"
+                elif att == "model_number":
+                    att = "model"
                 new_val = val  # type: ignore
             setattr(self, att, new_val)
+        if self.type == "Thermostat" and not self.model:
+            self.model = "EQ000016"
+        if self.model in ["43082", "43078", "46199"]:
+            self.manufacturer = "Jasco Enbrighten"
         self._tag = f"[{self.type} {self.name} ({self.id})]"
         self.last_update = datetime.now()
 
@@ -87,17 +101,35 @@ class HiloDevice:
         return None
 
     def _get_attribute(self, attribute: DeviceAttribute) -> Union[DeviceReading, None]:
-        reading = next((r for r in self.readings if r == attribute), None)
+        reading = next(
+            (r for r in self.readings if r.device_attribute == attribute), None
+        )
         return reading
+
+    def has_attribute(self, attr: str) -> bool:
+        return next((True for k in self.supported_attributes if k.attr == attr), False)
+
+    def get_value(
+        self, attribute: str, default: Union[str, int, float, None] = None
+    ) -> Any:
+        attr = self.get_attribute(attribute)
+        return attr.value if attr else default
 
     @property
     def hilo_attributes(self) -> list[str]:
-        return [k.hilo_attribute for k in self.supported_attributes]
+        return [
+            k.hilo_attribute
+            for k in self.supported_attributes
+            if k.hilo_attribute != "Humidity"
+        ]
 
     @property
     def is_on(self) -> bool:
-        attr = self.get_attribute("is_on")
-        return attr.value if attr else False  # type: ignore
+        return cast(bool, self.get_value("is_on"))
+
+    @property
+    def available(self) -> bool:
+        return not self.get_value("disconnected") or False
 
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, HiloDevice):
@@ -136,7 +168,7 @@ class DeviceReading:
     def __init__(self, **kwargs: dict[str, Any]):
         kwargs["timeStamp"] = from_utc_timestamp(kwargs.pop("timeStampUTC", ""))  # type: ignore
         self.id = 0
-        self.value: Union[int, bool] = 0
+        self.value: Union[int, bool, str] = 0
         self.device_id = 0
         self.device_attribute: DeviceAttribute
         self.__dict__.update({camel_to_snake(k): v for k, v in kwargs.items()})

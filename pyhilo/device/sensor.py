@@ -14,5 +14,4 @@ class Sensor(HiloDevice):
 
     @property
     def state(self) -> str:
-        attr = self.get_attribute("disconnected")
-        return "on" if attr and attr.value else "off"
+        return "on" if self.get_value("disconnected") else "off"

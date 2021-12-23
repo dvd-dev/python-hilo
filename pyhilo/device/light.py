@@ -1,6 +1,6 @@
 """Climate object """
 
-from typing import Any, Union
+from typing import Union
 
 from pyhilo import API
 from pyhilo.const import LOG
@@ -14,25 +14,8 @@ class Light(HiloDevice):
 
     @property
     def brightness(self) -> float:
-        attr = self.get_attribute("intensity")
-        return attr.value if attr else 0
+        return self.get_value("intensity") * 255 or 0
 
     @property
     def state(self) -> str:
-        attr = self.get_attribute("is_on")
-        return attr.value if attr else "unavailable"  # type: ignore
-
-    @property
-    def supported_color_modes(self) -> set:
-        """Flag supported modes."""
-        supports = set("onoff")
-        if "intensity" in self.hilo_attributes:
-            supports.add("brightness")
-        return supports
-
-    async def async_turn_on(self, **kwargs: dict[str, Any]) -> None:
-        brightness = kwargs.get("brightness")
-        LOG.info(f"{self._tag} Turning on, brightness {brightness}")
-        await self.set_attribute("is_on", True)
-        if brightness:
-            await self.set_attribute("brightness", brightness)  # type: ignore
+        return "on" if self.get_value("is_on") else "off"

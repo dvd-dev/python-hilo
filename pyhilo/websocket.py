@@ -22,8 +22,10 @@ from pyhilo.exceptions import (
     CannotConnectError,
     ConnectionClosedError,
     ConnectionFailedError,
+    InvalidCredentialsError,
     InvalidMessageError,
     NotConnectedError,
+    WebsocketClosed,
 )
 from pyhilo.util import schedule_callback
 
@@ -33,11 +35,14 @@ if TYPE_CHECKING:
 DEFAULT_WATCHDOG_TIMEOUT = timedelta(minutes=5)
 
 
-class HiloMsgType(IntEnum):
-    TEXT = 0x1
-    EMPTY = 0x3
+class SignalRMsgType(IntEnum):
+    INVOKE = 0x1
+    STREAM = 0x2
+    COMPLETE = 0x3
+    STREAM_INVOCATION = 0x4
+    CANCEL_INVOCATION = 0x5
     PING = 0x6
-    ERROR = 0x7
+    CLOSE = 0x7
     UNKNOWN = 0xFF
 
     @classmethod
@@ -56,22 +61,30 @@ class WebsocketEvent:
     event_type_id: int
     target: str
     arguments: list[list]
+    invocation: int | None
+    error: str | None
     timestamp: datetime = field(default=datetime.now())
     event_type: str | None = field(init=False)
 
     def __post_init__(self) -> None:
-        if HiloMsgType.has_value(self.event_type_id):
+        if SignalRMsgType.has_value(self.event_type_id):
             object.__setattr__(
-                self, "event_type", HiloMsgType.value(self.event_type_id).name
+                self, "event_type", SignalRMsgType.value(self.event_type_id).name
             )
-        if self.event_type_id == HiloMsgType.ERROR:
-            LOG.error(f"Received error event from HiloWS: {self.arguments}")
+        if self.event_type_id == SignalRMsgType.CLOSE:
+            LOG.error(
+                f"Received close event from SignalR: Error: {self.event_type} Target: {self.target} Args: {self.arguments} Error: {self.error}"
+            )
 
 
 def websocket_event_from_payload(payload: dict[str, Any]) -> WebsocketEvent:
     """Create a Message object from a websocket event payload."""
     return WebsocketEvent(
-        payload["type"], payload.get("target", ""), payload.get("arguments", "")
+        payload["type"],
+        payload.get("target", ""),
+        payload.get("arguments", ""),
+        payload.get("invocationId"),
+        payload.get("error"),
     )
 
 
@@ -127,6 +140,9 @@ class WebsocketClient:
         self._event_callbacks: list[Callable[..., None]] = []
         self._loop = asyncio.get_running_loop()
         self._watchdog = Watchdog(self.async_reconnect)
+        self._ready_event: asyncio.Event = asyncio.Event()
+        self._ready: bool = False
+        self._queued_tasks: list[asyncio.TimerHandle] = []
 
         # These will get filled in after initial authentication:
         self._client: ClientWebSocketResponse | None = None
@@ -154,11 +170,11 @@ class WebsocketClient:
         assert self._client
         msg = await self._client.receive(300)
         if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSED, WSMsgType.CLOSING):
-            LOG.error("Connection was closed")
+            LOG.error(f"Received event to close connection: {msg.type}")
             raise ConnectionClosedError("Connection was closed.")
 
         if msg.type == WSMsgType.ERROR:
-            LOG.error("Connection failed")
+            LOG.error(f"Received error event, Connection failed: {msg.type}")
             raise ConnectionFailedError
 
         if msg.type != WSMsgType.TEXT:
@@ -184,7 +200,7 @@ class WebsocketClient:
 
         assert self._client
 
-        if payload.get("type") == HiloMsgType.PING and len(payload) == 1:
+        if payload.get("type") == SignalRMsgType.PING and len(payload) == 1:
             LOG.debug("Websocket pong!")
         else:
             LOG.debug(f"Sending data to websocket server: {json.dumps(payload)}")
@@ -194,12 +210,14 @@ class WebsocketClient:
 
     def _parse_message(self, msg: dict[str, Any]) -> None:
         """Parse an incoming message."""
-        if msg.get("type") == HiloMsgType.PING:
+        if msg.get("type") == SignalRMsgType.PING:
             LOG.debug("Websocket ping?")
             schedule_callback(self._async_pong)
             return
-        # LOG.debug(f"Received message {msg}")
-        if not len(msg):
+        if isinstance(msg, dict) and not len(msg):
+            self._ready = True
+            self._ready_event.set()
+            LOG.debug("Websocket is ready for data")
             return
         event = websocket_event_from_payload(msg)
         for callback in self._event_callbacks:
@@ -262,22 +280,25 @@ class WebsocketClient:
             )
         except (ClientError, ServerDisconnectedError, WSServerHandshakeError) as err:
             LOG.error(f"Unable to connect to WS server {err}")
+            if hasattr(err, "status") and err.status in (401, 403, 404, 409):  # type: ignore
+                raise InvalidCredentialsError("Invalid credentials") from err
         except Exception as err:
             LOG.error(f"Unable to connect to WS server {err}")
             raise CannotConnectError(err) from err
 
         LOG.info("Connected to websocket server")
-        await self._async_send_status()
-        schedule_callback(self.async_listen)
-
         self._watchdog.trigger()
-
         for callback in self._connect_callbacks:
             LOG.debug(f"Scheduling callback {callback}")
             schedule_callback(callback)
 
+    async def _clean_queue(self) -> None:
+        for task in self._queued_tasks:
+            task.cancel()
+
     async def async_disconnect(self) -> None:
         """Disconnect from the websocket server."""
+        self._clean_queue()
         if not self.connected:
             return
 
@@ -296,16 +317,18 @@ class WebsocketClient:
                 message = await self._async_receive_json()
                 self._parse_message(message)
         except ConnectionClosedError as err:
-            LOG.error("Websocket closed while listening: {err}")
+            LOG.error(f"Websocket closed while listening: {err}")
             LOG.exception(err)
             pass
         finally:
             LOG.debug("Listen completed; cleaning up")
-
             self._watchdog.cancel()
+            self._clean_queue()
 
             for callback in self._disconnect_callbacks:
                 schedule_callback(callback)
+
+            raise WebsocketClosed
 
     async def async_reconnect(self) -> None:
         """Reconnect (and re-listen, if appropriate) to the websocket."""
@@ -314,16 +337,24 @@ class WebsocketClient:
         await asyncio.sleep(1)
         await self.async_connect()
 
-    async def _async_send_status(self) -> None:
+    async def send_status(self) -> None:
         LOG.debug("Sending status")
+        self._ready = False
         await self._async_send_json({"protocol": "json", "version": 1})
 
     async def _async_pong(self) -> None:
-        await self._async_send_json({"type": HiloMsgType.PING})
+        await self._async_send_json({"type": SignalRMsgType.PING})
 
     async def async_invoke(
         self, arg: list, target: str, inv_id: int, inv_type: WSMsgType = WSMsgType.TEXT
     ) -> None:
+        if not self._ready:
+            LOG.debug(f"Delaying invoke {target} {inv_id} {arg}")
+            try:
+                await asyncio.wait_for(self._ready_event.wait(), timeout=10)
+            except asyncio.TimeoutError:
+                return
+            self._ready_event.clear()
         await self._async_send_json(
             {
                 "arguments": arg,

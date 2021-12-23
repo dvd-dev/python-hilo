@@ -1,6 +1,6 @@
 """Climate object """
 
-from typing import Union
+from typing import Union, cast
 
 from pyhilo import API
 from pyhilo.const import LOG
@@ -14,30 +14,24 @@ class Climate(HiloDevice):
 
     @property
     def current_temperature(self) -> float:
-        attr = self.get_attribute("current_temperature")
-        return attr.value if attr else 0
+        return cast(float, self.get_value("current_temperature", 0))
 
     @property
     def target_temperature(self) -> float:
-        attr = self.get_attribute("target_temperature")
-        return attr.value if attr else 0
+        return cast(float, self.get_value("target_temperature", 0))
 
     @property
     def max_temp(self) -> float:
-        attr = self.get_attribute("max_temp_setpoint")
-        return attr.value if attr else 0
+        return cast(float, self.get_value("max_temp_setpoint", 0))
 
     @property
     def min_temp(self) -> float:
-        attr = self.get_attribute("min_temp_setpoint")
-        return attr.value if attr else 0
+        return cast(float, self.get_value("min_temp_setpoint", 0))
 
     @property
     def hvac_mode(self) -> str:
-        attr = self.get_attribute("heating")
-        if attr and attr.value > 0:
-            return "heat"
-        return "off"
+        attr = self.get_value("heating", 0)
+        return "heat" if attr > 0 else "off"
 
     async def async_set_temperature(self, **kwargs: dict[str, int]) -> None:
         temperature = kwargs.get("temperature", 0)

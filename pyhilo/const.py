@@ -8,6 +8,7 @@ TIMEOUT: Final = 10
 TOKEN_EXPIRATION_PADDING: Final = 300
 VERIFY: Final = True
 DEVICE_REFRESH_TIME: Final = 1800
+HILO_APP_VERSION: Final = "3.0.212"
 
 CONTENT_TYPE_FORM: Final = "application/x-www-form-urlencoded"
 ANDROID_PKG_NAME: Final = "com.hiloenergie.hilo"
@@ -48,8 +49,14 @@ DEFAULT_USER_AGENT: Final = (
 )
 
 
-# Firebase stuff
+# NOTE(dvd): Not sure how to get new ones so I'm using the ones from my emulator
+ANDROID_DEVICE_ID: Final = 3530136576518667218
+ANDROID_DEVICE_SECURITY_TOKEN: Final = 7776414007788361535
+ANDROID_CERT: Final = "59F0B6042655AD8AE46120E42417F80641D14CEF"
+GOOGLE_API_KEY: Final = "AIzaSyAHZ8_vQRoZZshDkQ0gsPVxSJ_RWQynMWQ"
+ANDROID_SENDER: Final = 18450192328
 
+# Firebase stuff
 FB_INSTALL_HOSTNAME: Final = "firebaseinstallations.googleapis.com"
 FB_INSTALL_ENDPOINT: Final = "/v1/projects/hilo-eeca5/installations"
 FB_CLIENT: Final = (
@@ -62,8 +69,8 @@ FB_INSTALL_HEADERS: Final = {
     "X-Android-Package": ANDROID_PKG_NAME,
     "x-firebase-client": FB_CLIENT,
     "x-firebase-client-log-type": "3",
-    "X-Android-Cert": "59F0B6042655AD8AE46120E42417F80641D14CEF",
-    "x-goog-api-key": "AIzaSyAHZ8_vQRoZZshDkQ0gsPVxSJ_RWQynMWQ",
+    "X-Android-Cert": ANDROID_CERT,
+    "x-goog-api-key": GOOGLE_API_KEY,
     "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; Android SDK built for x86 Build/RSR1.210210.001.A1)",
 }
 FB_ID_LEN: Final = 22
@@ -74,9 +81,6 @@ ANDROID_CLIENT_HOSTNAME: Final = "android.clients.google.com"
 ANDROID_CLIENT_ENDPOINT: Final = "/c2dm/register3"
 ANDROID_GCM_VERSION: Final = "201817022"
 ANDROID_DEVICE_ID_LEN: Final = 19
-# NOTE(dvd): Not sure how to get new ones so I'm using the ones from my emulator
-ANDROID_DEVICE_ID: Final = 3530136576518667218
-ANDROID_DEVICE_SECURITY_TOKEN: Final = 7776414007788361535
 
 ANDROID_CLIENT_HEADERS: Final = {
     "Authorization": f"AidLogin {ANDROID_DEVICE_ID}:{ANDROID_DEVICE_SECURITY_TOKEN}",
@@ -85,7 +89,6 @@ ANDROID_CLIENT_HEADERS: Final = {
     "User-Agent": "Android-GCM/1.5 (generic_x86 RSR1.210210.001.A1)",
     "content-type": CONTENT_TYPE_FORM,
 }
-ANDROID_SENDER: Final = 18450192328
 FB_APP_ID: Final = f"1:{ANDROID_SENDER}:android:4f13f4d0bc62544c63d2fd"
 ANDROID_CLIENT_POST: Final = {
     # 'X-appid': # This is the FID
@@ -102,13 +105,13 @@ ANDROID_CLIENT_POST: Final = {
     "X-firebase-app-name-hash": "R1dAH9Ui7M-ynoznwBdw01tLxhI",
     "X-Firebase-Client": FB_CLIENT,
     "X-Firebase-Client-Log-Type": 1,
-    "X-app_ver_name": "2.1.4",
+    "X-app_ver_name": HILO_APP_VERSION,
     "app": ANDROID_PKG_NAME,
     "app_ver": 5357,
     "info": "Y8qNKupTk7IVoLPgN7e-uDAzqVicyRc",
     "gcm_ver": ANDROID_GCM_VERSION,
     "plat": 0,
-    "cert": "59f0b6042655ad8ae46120e42417f80641d14cef",
+    "cert": ANDROID_CERT.lower(),
     "target_ver": 30,
 }
 HILO_DEVICE_ATTRIBUTES: Final = [
@@ -137,6 +140,7 @@ HILO_DEVICE_ATTRIBUTES: Final = [
     "zig_bee_channel",
     "firmware_version",
     "online_status",
+    "sw_version",
 ]
 HILO_LIST_ATTRIBUTES: Final = [
     "settable_attributes",

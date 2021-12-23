@@ -2,6 +2,12 @@
 from __future__ import annotations
 
 
+class WebsocketClosed(Exception):
+    """Raising a clean disconnect to Home Assistant"""
+
+    pass
+
+
 class HiloError(Exception):
     """A base error."""
 

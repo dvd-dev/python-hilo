@@ -5,7 +5,6 @@ from datetime import datetime, timedelta
 import json
 from os.path import join
 import random
-import re
 import string
 import sys
 from typing import TYPE_CHECKING, Any, Callable, Union, cast
@@ -50,9 +49,10 @@ from pyhilo.const import (
 )
 from pyhilo.device import DeviceAttribute, HiloDevice, get_device_attributes
 from pyhilo.exceptions import InvalidCredentialsError, RequestError
-from pyhilo.util import from_utc_timestamp, schedule_callback
+from pyhilo.util import schedule_callback
 from pyhilo.util.state import (
     RegistrationDict,
+    StateDict,
     TokenDict,
     WebsocketDict,
     WebsocketTransportsDict,
@@ -89,6 +89,7 @@ class API:
         self.device_attributes = get_device_attributes()
         self.session: ClientSession = session
         self.websocket: WebsocketClient
+        self._username: str
         self._refresh_token_callbacks: list[Callable[..., Any]] = []
 
     @property
@@ -108,7 +109,31 @@ class API:
         }
 
     @classmethod
-    async def async_auth(
+    async def async_auth_refresh_token(
+        cls,
+        *,
+        session: ClientSession,
+        provided_refresh_token: Union[str, None] = None,
+        request_retries: int = REQUEST_RETRY,
+        state_yaml: str = DEFAULT_STATE_FILE,
+    ) -> API:
+        api = cls(session=session, request_retries=request_retries)
+        api._state_yaml = state_yaml
+        state = get_state(state_yaml)
+        if provided_refresh_token:
+            api._refresh_token = provided_refresh_token
+        else:
+            token_state = state.get("token", {})
+            api._refresh_token = token_state.get("refresh")
+        if not api._refresh_token:
+            raise InvalidCredentialsError
+
+        await api._async_refresh_access_token()
+        await api._async_post_init(state)
+        return api
+
+    @classmethod
+    async def async_auth_password(
         cls,
         username: str,
         password: str,
@@ -131,16 +156,14 @@ class API:
         :rtype: :meth:`pyhilo.api.API`
         """
         api = cls(session=session, request_retries=request_retries)
+        api._username = username
         api._state_yaml = state_yaml
-        await api._get_fid()
-        await api._get_device_token()
         state = get_state(state_yaml)
-        android_state = state.get("android", {})
         token_state = state.get("token", {})
-        reg_state = state.get("registration", {})
         token_expiration = (
             token_state.get("expires_at", datetime.now()) or datetime.now()
         )
+        refresh_token = token_state.get("refresh")
         if datetime.now() < token_expiration:
             api._access_token = token_state.get("access")
             api._refresh_token = token_state.get("refresh")
@@ -148,22 +171,16 @@ class API:
             LOG.info(
                 f"Saved state token seems valid and expires on {api._access_token_expire_dt}"
             )
+        elif refresh_token:
+            api._refresh_token = refresh_token
+            await api._async_refresh_access_token()
         else:
             password = parse.quote(password, safe="!@#$%^&*()")
             auth_body = api.auth_body(
                 AUTH_TYPE_PASSWORD, username=username, password=password
             )
             await api.async_auth_post(auth_body)
-
-        if reg_id := reg_state.get("reg_id"):
-            await api.delete_registration(reg_id)
-        api._reg_id = await api.post_registration()
-        reg_dict: RegistrationDict = {"reg_id": api._reg_id}
-        set_state(api._state_yaml, "registration", reg_dict)
-        (api.ws_url, api.ws_token) = await api.post_devicehub_negociate()
-        await api.get_websocket_params()
-        await api._async_post_init()
-        await api.put_registration(api._reg_id, android_state.get("token", ""))
+        await api._async_post_init(state)
         return api
 
     def dev_atts(self, attribute: str) -> Union[DeviceAttribute, None]:
@@ -464,9 +481,21 @@ class API:
 
         return remove
 
-    async def _async_post_init(self) -> None:
+    async def _async_post_init(self, state: StateDict) -> None:
         """Perform some post-init actions."""
         LOG.debug("Websocket postinit")
+        reg_state = state.get("registration", {})
+        android_state = state.get("android", {})
+        await self._get_fid()
+        await self._get_device_token()
+        if reg_id := reg_state.get("reg_id"):
+            await self.delete_registration(reg_id)
+        self._reg_id = await self.post_registration()
+        reg_dict: RegistrationDict = {"reg_id": self._reg_id}
+        set_state(self._state_yaml, "registration", reg_dict)
+        (self.ws_url, self.ws_token) = await self.post_devicehub_negociate()
+        await self.get_websocket_params()
+        await self.put_registration(self._reg_id, android_state.get("token", ""))
         self.websocket = WebsocketClient(self)
 
     async def delete_registration(self, reg_id: str) -> None:
@@ -619,8 +648,7 @@ class API:
         """Get list of all devices"""
         url = self._get_url("Devices", location_id)
         devices: list[dict[str, Any]] = await self.async_request("get", url)
-        # This used to work before Hilo added the websocket thing.
-        # devices.append(await self.get_gateway())
+        devices.append(await self.get_gateway(location_id))
         return devices
 
     async def _set_device_attribute(
@@ -632,44 +660,13 @@ class API:
         url = self._get_url(f"Devices/{device.id}/Attributes", device.location_id)
         await self.async_request("put", url, json={key.hilo_attribute: value})
 
-    async def get_events(self, location_id: int) -> tuple[str, list[datetime]]:
+    async def get_events(self, location_id: int) -> dict[str, Any]:
         url = f"{self._get_url('Events', location_id, True)}?active=true"
-        req = await self.async_request(url)
-        now = datetime.now()
-        current_event = "off"
-        next_events = []
-        for r in req:
-            phases_list = r.get("phases", {})
-            if not len(phases_list) or not r.get("isParticipating"):
-                LOG.debug(
-                    "Skipping event as it has no events or we're not participating"
-                )
-                continue
-            phases: dict[str, datetime] = {}
-            for key, value in phases_list.items():
-                if not key.endswith("DateUTC"):
-                    continue
-                phase_match = re.match(r"(.*)DateUTC", key)
-                if not phase_match:
-                    continue
-                phase = phase_match.group(0)
-                phases[phase] = from_utc_timestamp(value)
-            if phases["pre_heat_start"] > now:
-                next_events.append(phases["pre_heat_start"])
-            elif phases["pre_heat_start"] <= now < phases["pre_heat_end"]:
-                current_event = "pre_heat"
-            elif phases["reduction_start"] <= now < phases["reduction_end"]:
-                current_event = "reduction"
-            elif phases["recovery_start"] <= now < phases["recovery_end"]:
-                current_event = "recovery"
-            elif r.get("progress", "NotInProgress") == "inProgress":
-                # if something's fishy with the phases but the isProgress is enabled
-                # let's just flip the switch on.
-                current_event = "on"
-        return (current_event, next_events)
+        return cast(dict[str, Any], await self.async_request("get", url))
 
-    async def get_gateway(self) -> dict[str, Any]:
-        req = await self.async_request("get", "/Gateways/Info")
+    async def get_gateway(self, location_id: int) -> dict[str, Any]:
+        url = self._get_url("Gateways/Info", location_id)
+        req = await self.async_request("get", url)
         # [
         #   {
         #     "onlineStatus": "Online",
@@ -691,13 +688,17 @@ class API:
         ]
 
         gw = {
-            "name": "hilo_gateway",
+            "name": "Hilo Gateway",
             "Disconnected": {"value": not req[0].get("onlineStatus") == "Online"},
             "type": "Gateway",
             "category": "Gateway",
             "supportedAttributes": ", ".join(saved_attrs),
             "settableAttributes": "",
             "id": 1,
+            "identifier": req[0].get("dsn"),
+            "provider": 1,
+            "model_number": "EQ000017",
+            "sw_version": req[0].get("firmwareVersion"),
         }
         for attr in saved_attrs:
             gw[attr] = {"value": req[0].get(attr)}
