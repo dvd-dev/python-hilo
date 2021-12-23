@@ -21,15 +21,10 @@ $ source .env
 $ ./test.py
 ```
 
+Home assistant integration is available [here](https://github.com/dvd-dev/hilo)
+
 ## TODO
-- Creating device classes for each types and map similarly to HA
- - Light switches and dimmers
- - Gateway
- - Power Sensors
- - Hilo Challenge events
 - Type everything: almost done, got a few "type: ignore" to fix
-- Home Assistant component integration
-- Publish this package
 
 ## Later?
 - Full docstrings and doc generation
