@@ -75,6 +75,9 @@ class HiloDevice:
     ) -> None:
         if attribute in self.settable_attributes:
             await self._api._set_device_attribute(self, attribute, value)
+            for r in self.readings:
+                if r.device_attribute == attribute:
+                    r.value = value
         else:
             LOG.warning(f"{self._tag} Invalid attribute {attribute} for device")
 
