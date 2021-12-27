@@ -156,6 +156,7 @@ HILO_DEVICE_TYPES: Final = {
     "SmokeDetector": "Sensor",
     "Gateway": "Sensor",
     "IndoorWeatherStation": "Sensor",
+    "OutdoorWeatherStation": "Sensor",
 }
 
 HILO_UNIT_CONVERSION: Final = {"Celcius": "°C", "Watt": "W", "Percentage": "%"}
