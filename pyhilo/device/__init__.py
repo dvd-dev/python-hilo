@@ -174,9 +174,11 @@ class DeviceReading:
         self.__dict__.update({camel_to_snake(k): v for k, v in kwargs.items()})
         self.unit_of_measurement = (
             self.device_attribute.value_type
-            if self.device_attribute.value_type != "boolean"
+            if self.device_attribute and self.device_attribute.value_type != "boolean"
             else ""
         )
+        if not self.device_attribute:
+            LOG.warning(f"Received invalid reading for {self.device_id}: {kwargs}")
 
     def __repr__(self) -> str:
         return f"<Reading {self.device_attribute.attr} {self.value}{self.unit_of_measurement}>"
