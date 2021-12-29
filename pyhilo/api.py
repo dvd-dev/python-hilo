@@ -51,7 +51,6 @@ from pyhilo.exceptions import InvalidCredentialsError, RequestError
 from pyhilo.util import schedule_callback
 from pyhilo.util.state import (
     RegistrationDict,
-    StateDict,
     TokenDict,
     WebsocketDict,
     WebsocketTransportsDict,
@@ -118,17 +117,17 @@ class API:
     ) -> API:
         api = cls(session=session, request_retries=request_retries)
         api._state_yaml = state_yaml
-        state = get_state(state_yaml)
+        api.state = get_state(state_yaml)
         if provided_refresh_token:
             api._refresh_token = provided_refresh_token
         else:
-            token_state = state.get("token", {})
+            token_state = api.state.get("token", {})
             api._refresh_token = token_state.get("refresh")
         if not api._refresh_token:
             raise InvalidCredentialsError
 
         await api._async_refresh_access_token()
-        await api._async_post_init(state)
+        await api._async_post_init()
         return api
 
     @classmethod
@@ -157,8 +156,8 @@ class API:
         api = cls(session=session, request_retries=request_retries)
         api._username = username
         api._state_yaml = state_yaml
-        state = get_state(state_yaml)
-        token_state = state.get("token", {})
+        api.state = get_state(state_yaml)
+        token_state = api.state.get("token", {})
         token_expiration = (
             token_state.get("expires_at", datetime.now()) or datetime.now()
         )
@@ -179,7 +178,7 @@ class API:
                 AUTH_TYPE_PASSWORD, username=username, password=password
             )
             await api.async_auth_post(auth_body)
-        await api._async_post_init(state)
+        await api._async_post_init()
         return api
 
     def dev_atts(self, attribute: str) -> Union[DeviceAttribute, None]:
@@ -204,8 +203,8 @@ class API:
         :return: Whether or not we have cached firebase state
         :rtype: bool
         """
-        state = get_state(self._state_yaml)
-        fb_state = state.get("firebase", {})
+        self.state = get_state(self._state_yaml)
+        fb_state = self.state.get("firebase", {})
         if fb_fid := fb_state.get("fid"):
             self._fb_fid = fb_fid
             self._fb_name = fb_state.get("name", None)
@@ -223,8 +222,8 @@ class API:
         :return: Whether or not we have cached android state
         :rtype: bool
         """
-        state = get_state(self._state_yaml)
-        android_state = state.get("android", {})
+        self.state = get_state(self._state_yaml)
+        android_state = self.state.get("android", {})
         if token := android_state.get("token"):
             self._device_token = token
             return True
@@ -480,13 +479,17 @@ class API:
 
         return remove
 
-    async def _async_post_init(self, state: StateDict) -> None:
+    async def _async_post_init(self) -> None:
         """Perform some post-init actions."""
         LOG.debug("Websocket postinit")
-        reg_state = state.get("registration", {})
-        android_state = state.get("android", {})
         await self._get_fid()
         await self._get_device_token()
+        await self.refresh_ws_token()
+        self.websocket = WebsocketClient(self)
+
+    async def refresh_ws_token(self) -> None:
+        reg_state = self.state.get("registration", {})
+        android_state = self.state.get("android", {})
         if reg_id := reg_state.get("reg_id"):
             await self.delete_registration(reg_id)
         self._reg_id = await self.post_registration()
@@ -495,7 +498,6 @@ class API:
         (self.ws_url, self.ws_token) = await self.post_devicehub_negociate()
         await self.get_websocket_params()
         await self.put_registration(self._reg_id, android_state.get("token", ""))
-        self.websocket = WebsocketClient(self)
 
     async def delete_registration(self, reg_id: str) -> None:
         LOG.debug(f"Deleting registration {reg_id}")

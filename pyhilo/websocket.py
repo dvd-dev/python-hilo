@@ -25,7 +25,6 @@ from pyhilo.exceptions import (
     InvalidCredentialsError,
     InvalidMessageError,
     NotConnectedError,
-    WebsocketClosed,
 )
 from pyhilo.util import schedule_callback
 
@@ -327,8 +326,6 @@ class WebsocketClient:
 
             for callback in self._disconnect_callbacks:
                 schedule_callback(callback)
-
-            raise WebsocketClosed
 
     async def async_reconnect(self) -> None:
         """Reconnect (and re-listen, if appropriate) to the websocket."""
