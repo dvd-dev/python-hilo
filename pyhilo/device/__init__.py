@@ -40,6 +40,7 @@ class HiloDevice:
         self.update(**kwargs)
 
     def update(self, **kwargs: dict[str, Union[str, int]]) -> None:
+        # TODO(dvd): This has to be re-written, this is not dynamic at all.
         for orig_att, val in kwargs.items():
             att = camel_to_snake(orig_att)
             if att not in HILO_DEVICE_ATTRIBUTES:

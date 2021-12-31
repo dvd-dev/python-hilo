@@ -159,7 +159,15 @@ HILO_DEVICE_TYPES: Final = {
     "OutdoorWeatherStation": "Sensor",
 }
 
-HILO_UNIT_CONVERSION: Final = {"Celcius": "°C", "Watt": "W", "Percentage": "%"}
+HILO_UNIT_CONVERSION: Final = {
+    "Celcius": "°C",
+    "Watt": "W",
+    "Percentage": "%",
+    "DB": "dB",
+    "PPM": "ppm",
+    "Mbar": "mbar",
+    "Integer": "dB",
+}
 HILO_READING_TYPES: Final = {
     "CurrentTemperature": "Celcius",
     "Disconnected": "null",
@@ -172,9 +180,15 @@ HILO_READING_TYPES: Final = {
     "OnOff": "OnOff",
     "Power": "Watt",
     "TargetTemperature": "Celcius",
+    "Noise": "DB",
+    "Pressure": "Mbar",
+    "Co2": "PPM",
+    "WifiStatus": "Integer",
+    "BatteryPercent": "Percentage",
 }
 
 HILO_PROVIDERS: Final = {
     1: "Hilo",
+    2: "Netatmo",
     3: "OneLink",
 }
