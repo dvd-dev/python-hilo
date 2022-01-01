@@ -90,6 +90,7 @@ class API:
         self.websocket: WebsocketClient
         self._username: str
         self._refresh_token_callbacks: list[Callable[..., Any]] = []
+        self.log_traces: bool = False
 
     @property
     def headers(self) -> dict[str, Any]:
@@ -115,8 +116,10 @@ class API:
         provided_refresh_token: Union[str, None] = None,
         request_retries: int = REQUEST_RETRY,
         state_yaml: str = DEFAULT_STATE_FILE,
+        log_traces: bool = False,
     ) -> API:
         api = cls(session=session, request_retries=request_retries)
+        api.log_traces = log_traces
         api._state_yaml = state_yaml
         api.state = get_state(state_yaml)
         if provided_refresh_token:
@@ -140,6 +143,7 @@ class API:
         session: ClientSession,
         request_retries: int = REQUEST_RETRY,
         state_yaml: str = DEFAULT_STATE_FILE,
+        log_traces: bool = False,
     ) -> API:
         """Get an authenticated API object from a username and password.
         :param username: the username
@@ -155,6 +159,7 @@ class API:
         :rtype: :meth:`pyhilo.api.API`
         """
         api = cls(session=session, request_retries=request_retries)
+        api.log_traces = log_traces
         api._username = username
         api._state_yaml = state_yaml
         api.state = get_state(state_yaml)
@@ -362,8 +367,9 @@ class API:
         kwargs["headers"]["Host"] = host
         data: dict[str, Any] = {}
         url = parse.urljoin(f"https://{host}", endpoint)
-        LOG.debug(f"Async request: {method} {url}")
-        # LOG.debug(f"Headers: {kwargs['headers']}")
+        if self.log_traces:
+            LOG.debug(f"RAW Headers: {kwargs['headers']}")
+            LOG.debug(f"RAW Async request: {method} {url}")
         async with self.session.request(method, url, **kwargs) as resp:
             if "application/json" in resp.headers.get("content-type", ""):
                 try:
@@ -374,9 +380,8 @@ class API:
                     data = {"error": message}
             else:
                 data = {"message": await resp.text()}
-            LOG.debug(f"Returned data: {data}")
-
-            # LOG.debug("Data received from /%s: %s", endpoint, data)
+            if self.log_traces:
+                LOG.debug("RAW Data received from /%s: %s", endpoint, data)
             resp.raise_for_status()
         return data
 
@@ -552,7 +557,7 @@ class API:
 
     async def get_websocket_params(self) -> None:
         uri = parse.urlparse(self.ws_url)
-        LOG.debug(f"Getting websocket params from {self.ws_url} using {self.ws_token}")
+        LOG.debug("Getting websocket params")
         resp: dict[str, Any] = await self.async_request(
             "post",
             f"{uri.path}negotiate?{uri.query}",

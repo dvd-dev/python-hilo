@@ -102,7 +102,7 @@ class Watchdog:
 
     def _on_expire(self) -> None:
         """Log and act when the watchdog expires."""
-        LOG.info("Websocket watchdog expired")
+        LOG.warning("Websocket: Watchdog expired")
         schedule_callback(self._action)
 
     def cancel(self) -> None:
@@ -113,11 +113,6 @@ class Watchdog:
 
     def trigger(self) -> None:
         """Trigger the watchdog."""
-        LOG.debug(
-            "Websocket watchdog triggered – sleeping for %s seconds",
-            self._timeout_seconds,
-        )
-
         if self._timer_task:
             self._timer_task.cancel()
 
@@ -169,15 +164,15 @@ class WebsocketClient:
         assert self._client
         msg = await self._client.receive(300)
         if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSED, WSMsgType.CLOSING):
-            LOG.error(f"Received event to close connection: {msg.type}")
+            LOG.error(f"Websocket: Received event to close connection: {msg.type}")
             raise ConnectionClosedError("Connection was closed.")
 
         if msg.type == WSMsgType.ERROR:
-            LOG.error(f"Received error event, Connection failed: {msg.type}")
+            LOG.error(f"Websocket: Received error event, Connection failed: {msg.type}")
             raise ConnectionFailedError
 
         if msg.type != WSMsgType.TEXT:
-            LOG.error(f"Invalid message: {msg}")
+            LOG.error(f"Websocket: Received invalid message: {msg}")
             raise InvalidMessageError(f"Received non-text message: {msg.type}")
 
         try:
@@ -185,7 +180,6 @@ class WebsocketClient:
         except ValueError as err:
             raise InvalidMessageError("Received invalid JSON") from err
 
-        # LOG.debug(f"Received data from websocket server: {data}")
         self._watchdog.trigger()
 
         return cast(Dict[str, Any], data)
@@ -199,24 +193,23 @@ class WebsocketClient:
 
         assert self._client
 
-        if payload.get("type") == SignalRMsgType.PING and len(payload) == 1:
-            LOG.debug("Websocket pong!")
-        else:
-            LOG.debug(f"Sending data to websocket server: {json.dumps(payload)}")
+        if self._api.log_traces:
+            LOG.debug(f"RAW Sending data to websocket server: {json.dumps(payload)}")
         # Hilo added a control character (chr(30)) at the end of each payload they send.
         # They also expect this char to be there at the end of every payload we send them.
         await self._client.send_str(json.dumps(payload) + chr(30))
 
     def _parse_message(self, msg: dict[str, Any]) -> None:
         """Parse an incoming message."""
+        if self._api.log_traces:
+            LOG.debug(f"RAW Received message from websocket: {msg}")
         if msg.get("type") == SignalRMsgType.PING:
-            LOG.debug("Websocket ping?")
             schedule_callback(self._async_pong)
             return
         if isinstance(msg, dict) and not len(msg):
             self._ready = True
             self._ready_event.set()
-            LOG.debug("Websocket is ready for data")
+            LOG.info("Websocket: Ready for data")
             return
         event = websocket_event_from_payload(msg)
         for callback in self._event_callbacks:
@@ -250,10 +243,12 @@ class WebsocketClient:
     async def async_connect(self) -> None:
         """Connect to the websocket server."""
         if self.connected:
-            LOG.debug("async_connect() called but already connected")
+            LOG.debug("Websocket: async_connect() called but already connected")
             return
 
-        LOG.info(f"Connecting to websocket server: {self._api.full_ws_url}")
+        LOG.info("Websocket: Connecting to server")
+        if self._api.log_traces:
+            LOG.debug(f"RAW Websocket URL: {self._api.full_ws_url}")
         headers = {
             "Sec-WebSocket-Extensions": "permessage-deflate; client_max_window_bits",
             "Pragma": "no-cache",
@@ -262,6 +257,7 @@ class WebsocketClient:
             "Origin": "http://localhost",
             "Accept-Language": "en-US,en;q=0.9",
         }
+        # NOTE(dvd): for troubleshooting purpose we can pass a mitmproxy as env variable
         proxy_env: dict[str, Any] = {}
         if proxy := environ.get("WS_PROXY"):
             proxy_env["proxy"] = proxy
@@ -288,7 +284,6 @@ class WebsocketClient:
         LOG.info("Connected to websocket server")
         self._watchdog.trigger()
         for callback in self._connect_callbacks:
-            LOG.debug(f"Scheduling callback {callback}")
             schedule_callback(callback)
 
     async def _clean_queue(self) -> None:
@@ -310,17 +305,17 @@ class WebsocketClient:
     async def async_listen(self) -> None:
         """Start listening to the websocket server."""
         assert self._client
-        LOG.debug("Listen started.")
+        LOG.info("Websocket: Listen started.")
         try:
             while not self._client.closed:
                 message = await self._async_receive_json()
                 self._parse_message(message)
         except ConnectionClosedError as err:
-            LOG.error(f"Websocket closed while listening: {err}")
+            LOG.error(f"Websocket: Closed while listening: {err}")
             LOG.exception(err)
             pass
         finally:
-            LOG.debug("Listen completed; cleaning up")
+            LOG.info("Websocket: Listen completed; cleaning up")
             self._watchdog.cancel()
             self._clean_queue()
 
@@ -329,7 +324,7 @@ class WebsocketClient:
 
     async def async_reconnect(self) -> None:
         """Reconnect (and re-listen, if appropriate) to the websocket."""
-        LOG.warning("Reconnecting")
+        LOG.warning("Websocket: Reconnecting")
         await self.async_disconnect()
         await asyncio.sleep(1)
         await self.async_connect()
@@ -346,7 +341,9 @@ class WebsocketClient:
         self, arg: list, target: str, inv_id: int, inv_type: WSMsgType = WSMsgType.TEXT
     ) -> None:
         if not self._ready:
-            LOG.debug(f"Delaying invoke {target} {inv_id} {arg}")
+            LOG.warning(
+                f"Delaying invoke {target} {inv_id} {arg}: Websocket not ready."
+            )
             try:
                 await asyncio.wait_for(self._ready_event.wait(), timeout=10)
             except asyncio.TimeoutError:
