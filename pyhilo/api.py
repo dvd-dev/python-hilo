@@ -42,6 +42,7 @@ from pyhilo.const import (
     FB_INSTALL_HEADERS,
     FB_INSTALL_HOSTNAME,
     FB_SDK_VERSION,
+    HILO_READING_TYPES,
     LOG,
     REQUEST_RETRY,
     SUBSCRIPTION_KEY,
@@ -181,7 +182,9 @@ class API:
         await api._async_post_init()
         return api
 
-    def dev_atts(self, attribute: str) -> Union[DeviceAttribute, None]:
+    def dev_atts(
+        self, attribute: str, value_type: Union[str, None] = None
+    ) -> Union[DeviceAttribute, None]:
         """Returns the DeviceAttribute object by attribute, camel case or not.
 
         :return: An object representing a device attribute.
@@ -193,7 +196,9 @@ class API:
                 for x in self.device_attributes
                 if x.hilo_attribute == attribute or x.attr == attribute
             ),
-            None,
+            DeviceAttribute(attribute, HILO_READING_TYPES.get(value_type, ""))
+            if value_type
+            else None,
         )
 
     def _get_fid_state(self) -> bool:

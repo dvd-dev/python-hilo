@@ -38,15 +38,15 @@ class Devices:
     def parse_values_received(self, values: list[dict[str, Any]]) -> list[HiloDevice]:
         readings = []
         for val in values:
-            val["device_attribute"] = self._api.dev_atts(val.pop("attribute"))
-            val.pop("valueType")
+            val["device_attribute"] = self._api.dev_atts(
+                val.pop("attribute"), val.pop("valueType")
+            )
             readings.append(DeviceReading(**val))
         return self._map_readings_to_devices(readings)
 
     def _map_readings_to_devices(
         self, readings: list[DeviceReading]
     ) -> list[HiloDevice]:
-        LOG.debug(f"Received readings {readings}")
         updated_devices = []
         for reading in readings:
             if device := self.find_device(reading.device_id):
@@ -69,7 +69,11 @@ class Devices:
     async def update(self) -> None:
         for device in await self._api.get_devices(self.location_id):
             device["location_id"] = self.location_id
-            device_type = HILO_DEVICE_TYPES[device["type"]]
+            try:
+                device_type = HILO_DEVICE_TYPES[device["type"]]
+            except KeyError:
+                LOG.warning(f"Unknown device type {device['type']}, adding as Sensor")
+                device_type = "Sensor"
             klass = globals()[device_type]
             dev = self.find_device(device.get("id", 0)) or klass(self._api, **device)
             dev.update(**device)
