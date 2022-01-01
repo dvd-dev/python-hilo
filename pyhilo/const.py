@@ -157,6 +157,7 @@ HILO_DEVICE_TYPES: Final = {
     "Gateway": "Sensor",
     "IndoorWeatherStation": "Sensor",
     "OutdoorWeatherStation": "Sensor",
+    "ChargingPoint": "Sensor",
 }
 
 HILO_UNIT_CONVERSION: Final = {
