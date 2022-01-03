@@ -50,4 +50,5 @@ def event_parsing(event: dict[str, Any]) -> dict[str, Any]:
     parsed_event["participating"] = event.get("isParticipating", False)
     parsed_event["configurable"] = event.get("isConfigurable", False)
     parsed_event["period"] = event.get("period", "")
+    parsed_event["event_id"] = event["id"]
     return parsed_event
