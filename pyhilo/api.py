@@ -385,7 +385,9 @@ class API:
             resp.raise_for_status()
         return data
 
-    def _get_url(self, endpoint: str, location_id: int, gd: bool = False) -> str:
+    def _get_url(
+        self, endpoint: str, location_id: int, gd: bool = False, drms: bool = False
+    ) -> str:
         """Generate a path to the requested endpoint.
 
         :param endpoint: Path to the endpoint
@@ -394,12 +396,16 @@ class API:
         :type location_id: int
         :param gd: Whether or not we should use the GD Service endpoint, defaults to False
         :type gd: bool, optional
+        :param drms: Whether or not we should prepend the path with DRMS path, defaults to False
+        :type drms: bool, optional
         :return: Path to the requested endpoint
         :rtype: str
         """
         base = API_AUTOMATION_ENDPOINT
         if gd:
             base = API_GD_SERVICE_ENDPOINT
+        if drms:
+            base += "/DRMS"
         return base + "/Locations/" + str(location_id) + "/" + str(endpoint)
 
     async def _async_handle_on_backoff(self, _: dict[str, Any]) -> None:
@@ -675,22 +681,31 @@ class API:
         url = f"{self._get_url('Events', location_id, True)}?active=true"
         return cast(dict[str, Any], await self.async_request("get", url))
 
+    async def get_seasons(self, location_id: int) -> dict[str, Any]:
+        """This will return the rewards and current season total
+        https://apim.hiloenergie.com/Automation/v1/api/DRMS/Locations/XXXX/Seasons
+        [
+          {
+            "season": 2021,
+            "totalReward": 69420.13,
+            "events": [
+              {
+                "id": 107,
+                "startDateUtc": "2021-11-25T20:00:00Z",
+                "period": "PM",
+                "reward": 8.77,
+                "status": "Success"
+              },
+            ]
+          }
+        ]
+        """
+        url = self._get_url("Seasons", location_id, drms=True)
+        return cast(dict[str, Any], await self.async_request("get", url))
+
     async def get_gateway(self, location_id: int) -> dict[str, Any]:
         url = self._get_url("Gateways/Info", location_id)
         req = await self.async_request("get", url)
-        # [
-        #   {
-        #     "onlineStatus": "Online",
-        #     "lastStatusTimeUtc": "2021-11-08T01:43:15Z",
-        #     "zigBeePairingActivated": false,
-        #     "dsn": "xxx",
-        #     "installationCode": "xxx",
-        #     "sepMac": "xxx",
-        #     "firmwareVersion": "2.1.2",
-        #     "localIp": null,
-        #     "zigBeeChannel": 19
-        #   }
-        # ]
         saved_attrs = [
             "zigBeePairingActivated",
             "zigBeeChannel",
