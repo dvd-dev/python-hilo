@@ -677,8 +677,73 @@ class API:
         url = self._get_url(f"Devices/{device.id}/Attributes", device.location_id)
         await self.async_request("put", url, json={key.hilo_attribute: value})
 
-    async def get_events(self, location_id: int) -> dict[str, Any]:
-        url = f"{self._get_url('Events', location_id, True)}?active=true"
+    async def get_events(self, location_id: int, event_id: int = 0) -> dict[str, Any]:
+        """This will return either all the future challenges or details about a specific
+        challenge.
+        {
+          "currentPhase": null,
+          "parameters": {
+            "mode": "ambitious",
+            "devices": [
+              {
+                "id": xxx,
+                "deviceUid": "xxx",
+                "name": "Thermostat XXX",
+                "roomName": "Master bedroom",
+                "optOut": false,
+                "preheat": true
+              },
+          "consumption": {
+            "currentWh": 4548.9404,
+            "baselineWh": 14772.33,
+            "estimatedReward": null,
+            "baselineIntervals": [
+              {
+                "startTimeUtc": "2021-12-20T11:00:00Z",
+                "baselineWh": 3180.1558
+              },
+              {
+                "startTimeUtc": "2021-12-20T12:00:00Z",
+                "baselineWh": 3589.4753
+              },
+              {
+                "startTimeUtc": "2021-12-20T13:00:00Z",
+                "baselineWh": 4168.0957
+              },
+              {
+                "startTimeUtc": "2021-12-20T14:00:00Z",
+                "baselineWh": 3834.6038
+              }
+            ]
+          },
+          "isPreSeason": false,
+          "report": {
+            "status": "Success",
+            "reward": 5.63,
+            "isMissingBaseline": false,
+            "isMissingConsumption": false
+          },
+          "progress": "completed",
+          "isParticipating": true,
+          "isConfigurable": false,
+          "id": xxx,
+          "period": "am",
+          "phases": {
+            "preheatStartDateUTC": "2021-12-20T09:00:00Z",
+            "preheatEndDateUTC": "2021-12-20T11:00:00Z",
+            "reductionStartDateUTC": "2021-12-20T11:00:00Z",
+            "reductionEndDateUTC": "2021-12-20T15:00:00Z",
+            "recoveryStartDateUTC": "2021-12-20T15:00:00Z",
+            "recoveryEndDateUTC": "2021-12-20T15:50:00Z"
+          }
+        }
+        """
+
+        url = self._get_url("Events", location_id, True)
+        if not event_id:
+            url += "?active=true"
+        else:
+            url += f"/{event_id}"
         return cast(dict[str, Any], await self.async_request("get", url))
 
     async def get_seasons(self, location_id: int) -> dict[str, Any]:
