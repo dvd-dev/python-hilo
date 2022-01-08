@@ -84,7 +84,12 @@ class Event:
     @property
     def state(self) -> str:
         now = datetime.now(self.preheat_start.tzinfo)
-        if self.preheat_start > now:
+        if (
+            "appreciation_start" in self.phases_list
+            and self.appreciation_start <= now < self.appreciation_end
+        ):
+            return "appreciation"
+        elif self.preheat_start > now:
             return "scheduled"
         elif self.preheat_start <= now < self.preheat_end:
             return "pre_heat"
