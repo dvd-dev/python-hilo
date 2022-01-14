@@ -3,7 +3,6 @@ from datetime import datetime, timedelta
 import re
 from typing import Any, cast
 
-from pyhilo.const import LOG
 from pyhilo.util import camel_to_snake, from_utc_timestamp
 
 
@@ -48,7 +47,6 @@ class Event:
             "used_kWh",
             "used_percentage",
         ]
-        LOG.debug(f"Adding event for {self.phases_list[0]}")
 
     def as_dict(self) -> dict[str, Any]:
         rep = {k: getattr(self, k) for k in self.dict_items}
@@ -74,7 +72,6 @@ class Event:
         """Wrapper to return X hours before pre_heat.
         Will also set appreciation_start and appreciation end phases.
         """
-        LOG.debug(f"Adding appreciation phases: {hours}")
         self.appreciation_start = self.preheat_start - timedelta(hours=hours)
         self.appreciation_end = self.preheat_start
         if "appreciation_start" not in self.phases_list:
