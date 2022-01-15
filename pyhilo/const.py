@@ -32,6 +32,7 @@ API_AUTOMATION_ENDPOINT: Final = f"/Automation/{API_END}"
 API_GD_SERVICE_ENDPOINT: Final = f"/GDService/{API_END}"
 API_NOTIFICATION_ENDPOINT: Final = "/Notifications"
 API_REGISTRATION_ENDPOINT: Final = f"{API_NOTIFICATION_ENDPOINT}/Registrations"
+
 API_REGISTRATION_HEADERS: Final = {
     "AppId": ANDROID_PKG_NAME,
     "Provider": "fcm",
@@ -50,6 +51,8 @@ DEFAULT_USER_AGENT: Final = (
 
 
 # NOTE(dvd): Not sure how to get new ones so I'm using the ones from my emulator
+# We can't unfortunately randomize this device id, I believe it's generated when
+# an android device registers to the play store, but I'm no android dev.
 ANDROID_DEVICE_ID: Final = 3530136576518667218
 ANDROID_DEVICE_SECURITY_TOKEN: Final = 7776414007788361535
 ANDROID_CERT: Final = "59F0B6042655AD8AE46120E42417F80641D14CEF"
@@ -59,11 +62,13 @@ ANDROID_SENDER: Final = 18450192328
 # Firebase stuff
 FB_INSTALL_HOSTNAME: Final = "firebaseinstallations.googleapis.com"
 FB_INSTALL_ENDPOINT: Final = "/v1/projects/hilo-eeca5/installations"
+
 FB_CLIENT: Final = (
     "android-target-sdk/30 android-min-sdk/24 android-installer/ fire-core/19.5.0 fire-iid/21.0.1 "
     "fire-android/30 device-model/generic_x86 device-brand/Android android-platform/ fire-fcm/20.1.7_1p "
     "device-name/sdk_phone_x86 fire-installations/16.3.5"
 )
+
 FB_INSTALL_HEADERS: Final = {
     "Cache-Control": "no-cache",
     "X-Android-Package": ANDROID_PKG_NAME,
@@ -73,9 +78,11 @@ FB_INSTALL_HEADERS: Final = {
     "x-goog-api-key": GOOGLE_API_KEY,
     "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 11; Android SDK built for x86 Build/RSR1.210210.001.A1)",
 }
+
 FB_ID_LEN: Final = 22
 FB_AUTH_VERSION: Final = "FIS_v2"
 FB_SDK_VERSION: Final = "a:16.3.5"
+FB_APP_ID: Final = f"1:{ANDROID_SENDER}:android:4f13f4d0bc62544c63d2fd"
 
 ANDROID_CLIENT_HOSTNAME: Final = "android.clients.google.com"
 ANDROID_CLIENT_ENDPOINT: Final = "/c2dm/register3"
@@ -89,7 +96,8 @@ ANDROID_CLIENT_HEADERS: Final = {
     "User-Agent": "Android-GCM/1.5 (generic_x86 RSR1.210210.001.A1)",
     "content-type": CONTENT_TYPE_FORM,
 }
-FB_APP_ID: Final = f"1:{ANDROID_SENDER}:android:4f13f4d0bc62544c63d2fd"
+
+
 ANDROID_CLIENT_POST: Final = {
     # 'X-appid': # This is the FID
     # 'X-Goog-Firebase-Installations-Auth': # This is the token from the FID
@@ -114,11 +122,13 @@ ANDROID_CLIENT_POST: Final = {
     "cert": ANDROID_CERT.lower(),
     "target_ver": 30,
 }
+
 HILO_DEVICE_ATTRIBUTES: Final = [
     "asset_id",
     "category",
     "disconnected",
     "external_group",
+    "firmware_version",
     "gateway_external_id",
     "gateway_id",
     "group_id",
@@ -129,19 +139,19 @@ HILO_DEVICE_ATTRIBUTES: Final = [
     "location_id",
     "model_number",
     "name",
+    "online_status",
     "parameters",
     "provider",
     "provider_data",
     "settable_attributes",
     "supported_attributes",
     "supported_parameters",
-    "type",
-    "zig_bee_pairing_activated",
-    "zig_bee_channel",
-    "firmware_version",
-    "online_status",
     "sw_version",
+    "type",
+    "zig_bee_channel",
+    "zig_bee_pairing_activated",
 ]
+
 HILO_LIST_ATTRIBUTES: Final = [
     "settable_attributes",
     "supported_attributes",
@@ -149,27 +159,31 @@ HILO_LIST_ATTRIBUTES: Final = [
 ]
 
 HILO_DEVICE_TYPES: Final = {
-    "Thermostat": "Climate",
+    "ChargingPoint": "Sensor",
+    "Gateway": "Sensor",
+    "IndoorWeatherStation": "Sensor",
     "LightDimmer": "Light",
     "LightSwitch": "Light",
     "Meter": "Sensor",
-    "SmokeDetector": "Sensor",
-    "Gateway": "Sensor",
-    "IndoorWeatherStation": "Sensor",
     "OutdoorWeatherStation": "Sensor",
-    "ChargingPoint": "Sensor",
+    "SmokeDetector": "Sensor",
+    "Thermostat": "Climate",
+    "Tracker": "Sensor",
 }
 
 HILO_UNIT_CONVERSION: Final = {
     "Celcius": "°C",
-    "Watt": "W",
-    "Percentage": "%",
     "DB": "dB",
-    "PPM": "ppm",
-    "Mbar": "mbar",
     "Integer": "dB",
+    "Mbar": "mbar",
+    "Percentage": "%",
+    "PPM": "ppm",
+    "Watt": "W",
 }
+
 HILO_READING_TYPES: Final = {
+    "BatteryPercent": "Percentage",
+    "Co2": "PPM",
     "CurrentTemperature": "Celcius",
     "Disconnected": "null",
     "DrmsState": "OnOff",
@@ -178,17 +192,16 @@ HILO_READING_TYPES: Final = {
     "Intensity": "Percentage",
     "MaxTempSetpoint": "Celcius",
     "MinTempSetpoint": "Celcius",
+    "Noise": "DB",
     "OnOff": "OnOff",
     "Power": "Watt",
-    "TargetTemperature": "Celcius",
-    "Noise": "DB",
     "Pressure": "Mbar",
-    "Co2": "PPM",
+    "TargetTemperature": "Celcius",
     "WifiStatus": "Integer",
-    "BatteryPercent": "Percentage",
 }
 
 HILO_PROVIDERS: Final = {
+    0: "Hass-Hilo",
     1: "Hilo",
     2: "Netatmo",
     3: "OneLink",
