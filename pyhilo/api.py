@@ -91,6 +91,7 @@ class API:
         self._username: str
         self._refresh_token_callbacks: list[Callable[..., Any]] = []
         self.log_traces: bool = False
+        self._get_device_callbacks: list[Callable[..., Any]] = []
 
     @property
     def headers(self) -> dict[str, Any]:
@@ -666,6 +667,10 @@ class API:
         url = self._get_url("Devices", location_id)
         devices: list[dict[str, Any]] = await self.async_request("get", url)
         devices.append(await self.get_gateway(location_id))
+        # Now it's time to add devices coming from external sources like hass
+        # integration.
+        for callback in self._get_device_callbacks:
+            devices.append(callback())
         return devices
 
     async def _set_device_attribute(
