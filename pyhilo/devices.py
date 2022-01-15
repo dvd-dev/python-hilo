@@ -66,17 +66,22 @@ class Devices:
     def find_device(self, id: int) -> HiloDevice:
         return next((d for d in self.devices if d.id == id), None)  # type: ignore
 
+    def generate_device(self, device: dict) -> HiloDevice:
+        device["location_id"] = self.location_id
+        try:
+            device_type = HILO_DEVICE_TYPES[device["type"]]
+        except KeyError:
+            LOG.warning(f"Unknown device type {device['type']}, adding as Sensor")
+            device_type = "Sensor"
+        klass = globals()[device_type]
+        dev = self.find_device(device.get("id", 0)) or klass(self._api, **device)
+        dev.update(**device)
+        return dev
+
     async def update(self) -> None:
         for device in await self._api.get_devices(self.location_id):
-            device["location_id"] = self.location_id
-            try:
-                device_type = HILO_DEVICE_TYPES[device["type"]]
-            except KeyError:
-                LOG.warning(f"Unknown device type {device['type']}, adding as Sensor")
-                device_type = "Sensor"
-            klass = globals()[device_type]
-            dev = self.find_device(device.get("id", 0)) or klass(self._api, **device)
-            dev.update(**device)
+            LOG.debug(f"Generating device {device}")
+            dev = self.generate_device(device)
             if dev not in self.devices:
                 self.devices.append(dev)
 
