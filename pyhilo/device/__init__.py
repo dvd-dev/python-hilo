@@ -127,6 +127,12 @@ class HiloDevice:
         ]
 
     @property
+    def attributes(self) -> list[str]:
+        return [
+            cast(str, k.attr) for k in self.supported_attributes if k.attr != "Humidity"
+        ]
+
+    @property
     def is_on(self) -> bool:
         return cast(bool, self.get_value("is_on"))
 
