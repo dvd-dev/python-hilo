@@ -368,8 +368,8 @@ class API:
         data: dict[str, Any] = {}
         url = parse.urljoin(f"https://{host}", endpoint)
         if self.log_traces:
-            LOG.debug(f"RAW Headers: {kwargs['headers']}")
-            LOG.debug(f"RAW Async request: {method} {url}")
+            LOG.debug(f"[TRACE] Headers: {kwargs['headers']}")
+            LOG.debug(f"[TRACE] Async request: {method} {url}")
         async with self.session.request(method, url, **kwargs) as resp:
             if "application/json" in resp.headers.get("content-type", ""):
                 try:
@@ -381,7 +381,7 @@ class API:
             else:
                 data = {"message": await resp.text()}
             if self.log_traces:
-                LOG.debug("RAW Data received from /%s: %s", endpoint, data)
+                LOG.debug("[TRACE] Data received from /%s: %s", endpoint, data)
             resp.raise_for_status()
         return data
 

@@ -194,7 +194,9 @@ class WebsocketClient:
         assert self._client
 
         if self._api.log_traces:
-            LOG.debug(f"RAW Sending data to websocket server: {json.dumps(payload)}")
+            LOG.debug(
+                f"[TRACE] Sending data to websocket server: {json.dumps(payload)}"
+            )
         # Hilo added a control character (chr(30)) at the end of each payload they send.
         # They also expect this char to be there at the end of every payload we send them.
         await self._client.send_str(json.dumps(payload) + chr(30))
@@ -202,7 +204,7 @@ class WebsocketClient:
     def _parse_message(self, msg: dict[str, Any]) -> None:
         """Parse an incoming message."""
         if self._api.log_traces:
-            LOG.debug(f"RAW Received message from websocket: {msg}")
+            LOG.debug(f"[TRACE] Received message from websocket: {msg}")
         if msg.get("type") == SignalRMsgType.PING:
             schedule_callback(self._async_pong)
             return
@@ -248,7 +250,7 @@ class WebsocketClient:
 
         LOG.info("Websocket: Connecting to server")
         if self._api.log_traces:
-            LOG.debug(f"RAW Websocket URL: {self._api.full_ws_url}")
+            LOG.debug(f"[TRACE] Websocket URL: {self._api.full_ws_url}")
         headers = {
             "Sec-WebSocket-Extensions": "permessage-deflate; client_max_window_bits",
             "Pragma": "no-cache",
