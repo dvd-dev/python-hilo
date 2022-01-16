@@ -68,14 +68,16 @@ class Devices:
 
     def generate_device(self, device: dict) -> HiloDevice:
         device["location_id"] = self.location_id
+        if dev := self.find_device(device["id"]):
+            dev.update(**device)
+            return dev
+        dev = HiloDevice(self._api, **device)
         try:
-            device_type = HILO_DEVICE_TYPES[device["type"]]
+            device_type = HILO_DEVICE_TYPES[dev.type]
         except KeyError:
-            LOG.warning(f"Unknown device type {device['type']}, adding as Sensor")
+            LOG.warning(f"Unknown device type {dev.type}, adding as Sensor")
             device_type = "Sensor"
-        klass = globals()[device_type]
-        dev = self.find_device(device.get("id", 0)) or klass(self._api, **device)
-        dev.update(**device)
+        dev.__class__ = globals()[device_type]
         return dev
 
     async def update(self) -> None:

@@ -11,6 +11,8 @@ from pyhilo.const import (
     HILO_PROVIDERS,
     HILO_READING_TYPES,
     HILO_UNIT_CONVERSION,
+    JASCO_MODELS,
+    JASCO_OUTLETS,
     LOG,
 )
 from pyhilo.util import camel_to_snake, from_utc_timestamp
@@ -34,6 +36,7 @@ class HiloDevice:
         self.type = "Unknown"
         self.name = "Unknown"
         self.model: Union[str, None] = None
+        self.manufacturer: Union[str, None] = None
         self.supported_attributes: list[DeviceAttribute] = []
         self.settable_attributes: list[DeviceAttribute] = []
         self.readings: list[DeviceReading] = []
@@ -71,10 +74,14 @@ class HiloDevice:
                     att = "model"
                 new_val = val  # type: ignore
             setattr(self, att, new_val)
-        if self.type == "Thermostat" and not self.model:
+        if self.model:
+            self.model = self.model.replace("Model_", "")
+        elif self.type == "Thermostat":
             self.model = "EQ000016"
-        if self.model in ["43082", "43078", "46199"]:
+        if self.manufacturer == "Hilo" and self.model in JASCO_MODELS:
             self.manufacturer = "Jasco Enbrighten"
+            if self.model in JASCO_OUTLETS:
+                self.type = "Outlet"
         self._tag = f"[{self.type} {self.name} ({self.id})]"
         self.last_update = datetime.now()
 

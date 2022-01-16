@@ -1,4 +1,4 @@
-"""Light object """
+"""Switch object """
 
 from typing import Union
 
@@ -7,14 +7,10 @@ from pyhilo.const import LOG
 from pyhilo.device import HiloDevice
 
 
-class Light(HiloDevice):
+class Switch(HiloDevice):
     def __init__(self, api: API, **kwargs: dict[str, Union[str, int]]):
         super().__init__(api, **kwargs)
-        LOG.debug(f"Setting up Light device: {self.name}")
-
-    @property
-    def brightness(self) -> float:
-        return self.get_value("intensity") * 255 or 0
+        LOG.debug(f"Setting up Switch device: {self.name}")
 
     @property
     def state(self) -> str:

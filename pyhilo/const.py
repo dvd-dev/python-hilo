@@ -167,6 +167,7 @@ HILO_DEVICE_TYPES: Final = {
     "LightSwitch": "Light",
     "Meter": "Sensor",
     "OutdoorWeatherStation": "Sensor",
+    "Outlet": "Switch",
     "SmokeDetector": "Sensor",
     "Thermostat": "Climate",
     "Tracker": "Sensor",
@@ -207,3 +208,18 @@ HILO_PROVIDERS: Final = {
     2: "Netatmo",
     3: "OneLink",
 }
+
+JASCO_MODELS: Final = [
+    "43082",
+    "43078",
+    "46199",
+    "9063",
+    "45678",
+    "42405",
+    "43095",
+]
+
+JASCO_OUTLETS: Final = [
+    "42405",
+    "43095",
+]
