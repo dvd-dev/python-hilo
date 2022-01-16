@@ -19,8 +19,10 @@ from pyhilo.const import (
     ANDROID_CLIENT_HOSTNAME,
     ANDROID_CLIENT_POST,
     API_AUTOMATION_ENDPOINT,
+    API_EVENTS_ENDPOINT,
     API_GD_SERVICE_ENDPOINT,
     API_HOSTNAME,
+    API_NOTIFICATIONS_ENDPOINT,
     API_REGISTRATION_ENDPOINT,
     API_REGISTRATION_HEADERS,
     AUTH_CLIENT_ID,
@@ -387,7 +389,12 @@ class API:
         return data
 
     def _get_url(
-        self, endpoint: str, location_id: int, gd: bool = False, drms: bool = False
+        self,
+        endpoint: Union[str, None],
+        location_id: int,
+        gd: bool = False,
+        drms: bool = False,
+        events: bool = False,
     ) -> str:
         """Generate a path to the requested endpoint.
 
@@ -407,7 +414,12 @@ class API:
             base = API_GD_SERVICE_ENDPOINT
         if drms:
             base += "/DRMS"
-        return base + "/Locations/" + str(location_id) + "/" + str(endpoint)
+        if events:
+            base = API_EVENTS_ENDPOINT + API_NOTIFICATIONS_ENDPOINT
+        url = base + "/Locations/" + str(location_id)
+        if endpoint:
+            url += "/" + str(endpoint)
+        return url
 
     async def _async_handle_on_backoff(self, _: dict[str, Any]) -> None:
         """Handle a backoff retry
@@ -682,7 +694,36 @@ class API:
         url = self._get_url(f"Devices/{device.id}/Attributes", device.location_id)
         await self.async_request("put", url, json={key.hilo_attribute: value})
 
-    async def get_events(self, location_id: int, event_id: int = 0) -> dict[str, Any]:
+    async def get_event_notifications(self, location_id: int) -> dict[str, Any]:
+        """This will return events notifications
+        Event types:
+            203: Smoke detector test
+        {
+          "id": 123,
+          "eventUid": null,
+          "eventId": 456,
+          "eventTypeId": 203,
+          "userId": 123,
+          "loginName": "something@microsoft.com",
+          "locationId": 123,
+          "deviceIdentifier": "me@me.com",
+          "deviceId": 1234,
+          "notificationDateUTC": "2022-01-02T16:05:02.6936251Z",
+          "notificationTitle": "",
+          "notificationBody": "Test manuel de l’alarme détecté.",
+          "notificationCenterTitle": "",
+          "notificationCenterBody": "Test manuel de l’alarme détecté.",
+          "homePageNotificationTitle": "",
+          "homePageNotificationBody": "Test manuel de l’alarme détecté.",
+          "notificationDataJSON": "{\"NotificationType\":null,\"Title\":\"\",\"SubTitle\":null,\"Body\":\"Test manuel de l’alarme détecté.\",\"Badge\":0,\"Sound\":null,\"Data\":null,\"Tags\":null,\"Type\":\"TestDetected\",\"DeviceId\":324236,\"LocationId\":4051}",
+          "viewed": false
+        }"""
+        url = self._get_url(None, location_id, events=True)
+        return cast(dict[str, Any], await self.async_request("get", url))
+
+    async def get_gd_events(
+        self, location_id: int, event_id: int = 0
+    ) -> dict[str, Any]:
         """This will return either all the future challenges or details about a specific
         challenge.
         {

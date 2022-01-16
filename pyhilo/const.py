@@ -30,8 +30,9 @@ API_HOSTNAME: Final = "apim.hiloenergie.com"
 API_END: Final = "v1/api"
 API_AUTOMATION_ENDPOINT: Final = f"/Automation/{API_END}"
 API_GD_SERVICE_ENDPOINT: Final = f"/GDService/{API_END}"
-API_NOTIFICATION_ENDPOINT: Final = "/Notifications"
-API_REGISTRATION_ENDPOINT: Final = f"{API_NOTIFICATION_ENDPOINT}/Registrations"
+API_NOTIFICATIONS_ENDPOINT: Final = "/Notifications"
+API_EVENTS_ENDPOINT: Final = "/Events"
+API_REGISTRATION_ENDPOINT: Final = f"{API_NOTIFICATIONS_ENDPOINT}/Registrations"
 
 API_REGISTRATION_HEADERS: Final = {
     "AppId": ANDROID_PKG_NAME,
