@@ -3,7 +3,7 @@ from typing import Final
 
 LOG: Final = logging.getLogger(__package__)
 DEFAULT_STATE_FILE: Final = "hilo_state.yaml"
-REQUEST_RETRY: Final = 2
+REQUEST_RETRY: Final = 9
 TIMEOUT: Final = 10
 TOKEN_EXPIRATION_PADDING: Final = 300
 VERIFY: Final = True
