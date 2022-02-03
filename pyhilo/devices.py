@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import Any, Union
 
 from pyhilo import API
@@ -51,10 +50,7 @@ class Devices:
         updated_devices = []
         for reading in readings:
             if device := self.find_device(reading.device_id):
-                device.readings = [r for r in device.readings if r != reading] + [
-                    reading
-                ]
-                device.last_update = datetime.now()
+                device.update_readings(reading)
                 LOG.debug(f"{device} Received {reading}")
                 if device not in updated_devices:
                     updated_devices.append(device)

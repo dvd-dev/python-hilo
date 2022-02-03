@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, Union, cast
+from typing import TYPE_CHECKING, Any, Dict, Union, cast
 
 from pyhilo.const import (
     HILO_DEVICE_ATTRIBUTES,
@@ -29,7 +29,9 @@ def get_device_attributes() -> list[DeviceAttribute]:
 
 
 class HiloDevice:
-    def __init__(self, api: API, **kwargs: dict[str, Union[str, int]]) -> None:
+    def __init__(
+        self, api: API, **kwargs: Dict[str, Union[str, int, Dict[Any, Any]]]
+    ) -> None:
         self._api = api
         self.id = 0
         self.location_id = 0
@@ -42,12 +44,26 @@ class HiloDevice:
         self.readings: list[DeviceReading] = []
         self.update(**kwargs)
 
-    def update(self, **kwargs: dict[str, Union[str, int]]) -> None:
+    def update(self, **kwargs: Dict[str, Union[str, int, Dict]]) -> None:
         # TODO(dvd): This has to be re-written, this is not dynamic at all.
         if self._api.log_traces:
             LOG.debug(f"[TRACE] Adding device {kwargs}")
         for orig_att, val in kwargs.items():
             att = camel_to_snake(orig_att)
+            if reading_att := HILO_READING_TYPES.get(orig_att):
+                value: Union[str, int, Dict[Any, Any], None] = val
+                if isinstance(val, dict):
+                    value = val.get("value")
+                reading = {
+                    "deviceId": self.id,
+                    "locationId": self.location_id,
+                    "timeStampUTC": datetime.utcnow().isoformat(),
+                    "value": value,
+                    "device_attribute": DeviceAttribute(orig_att, reading_att),
+                }
+
+                self.update_readings(DeviceReading(**reading))  # type: ignore
+
             if att not in HILO_DEVICE_ATTRIBUTES:
                 LOG.warning(f"Unknown device attribute {att}: {val}")
                 continue
@@ -86,7 +102,7 @@ class HiloDevice:
         self.last_update = datetime.now()
 
     async def set_attribute(self, attribute: str, value: Union[str, int, None]) -> None:
-        if dev_attribute := self._api.dev_atts(attribute):
+        if dev_attribute := cast(DeviceAttribute, self._api.dev_atts(attribute)):
             LOG.debug(f"{self._tag} Setting {dev_attribute} to {value}")
             await self._set_attribute(dev_attribute, value)
             return
@@ -103,7 +119,7 @@ class HiloDevice:
             LOG.warning(f"{self._tag} Invalid attribute {attribute} for device")
 
     def get_attribute(self, attribute: str) -> Union[DeviceReading, None]:
-        if dev_attribute := self._api.dev_atts(attribute):
+        if dev_attribute := cast(DeviceAttribute, self._api.dev_atts(attribute)):
             return self._get_attribute(dev_attribute)
         LOG.warning(
             f"{self._tag} Unable to get attribute {attribute}: Unknown attribute"
@@ -147,6 +163,11 @@ class HiloDevice:
     def available(self) -> bool:
         return not self.get_value("disconnected") or False
 
+    def update_readings(self, reading: DeviceReading) -> None:
+        """Adds a reading to device and remove reading of the same type"""
+        self.readings = [r for r in self.readings if r != reading] + [reading]
+        self.last_update = datetime.now()
+
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, HiloDevice):
             return NotImplemented
@@ -181,7 +202,18 @@ class DeviceAttribute:
 
 
 class DeviceReading:
-    def __init__(self, **kwargs: dict[str, Any]):
+    def __init__(self, **kwargs: Dict[str, Any]):
+        # {
+        #    'deviceId': 111,
+        #    'locationId': 111,
+        #    'timeStampUTC': '2022-02-03T19:21:15.6604043Z',
+        #    'value': 1.0,
+        #    'device_attribute': DeviceAttribute(
+        #       hilo_attribute='Intensity',
+        #       hilo_value_type='Percentage',
+        #       attr='intensity',
+        #       value_type='%')
+        # }
         kwargs["timeStamp"] = from_utc_timestamp(kwargs.pop("timeStampUTC", ""))  # type: ignore
         self.id = 0
         self.value: Union[int, bool, str] = 0

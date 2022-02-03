@@ -189,17 +189,21 @@ HILO_READING_TYPES: Final = {
     "CurrentTemperature": "Celcius",
     "Disconnected": "null",
     "DrmsState": "OnOff",
+    "firmwareVersion": "null",
     "Heating": "Percentage",
     "Humidity": "Percentage",
     "Intensity": "Percentage",
     "MaxTempSetpoint": "Celcius",
     "MinTempSetpoint": "Celcius",
     "Noise": "DB",
+    "onlineStatus": "null",
     "OnOff": "OnOff",
     "Power": "Watt",
     "Pressure": "Mbar",
     "TargetTemperature": "Celcius",
     "WifiStatus": "Integer",
+    "zigBeePairingActivated": "OnOff",
+    "zigBeeChannel": "Integer",
 }
 
 HILO_PROVIDERS: Final = {
