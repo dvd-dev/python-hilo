@@ -42,6 +42,7 @@ class HiloDevice:
         self.supported_attributes: list[DeviceAttribute] = []
         self.settable_attributes: list[DeviceAttribute] = []
         self.readings: list[DeviceReading] = []
+        self.net_consumption: bool = False
         self.update(**kwargs)
 
     def update(self, **kwargs: Dict[str, Union[str, int, Dict]]) -> None:
