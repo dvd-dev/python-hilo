@@ -522,6 +522,7 @@ class API:
         if reg_id := reg_state.get("reg_id"):
             await self.delete_registration(reg_id)
         self._reg_id = await self.post_registration()
+        await self.delete_registration(self._reg_id)
         reg_dict: RegistrationDict = {"reg_id": self._reg_id}
         set_state(self._state_yaml, "registration", reg_dict)
         (self.ws_url, self.ws_token) = await self.post_devicehub_negociate()
