@@ -200,6 +200,7 @@ HILO_READING_TYPES: Final = {
     "OnOff": "OnOff",
     "Power": "Watt",
     "Pressure": "Mbar",
+    "Status": "OnOff",
     "TargetTemperature": "Celcius",
     "WifiStatus": "Integer",
     "zigBeePairingActivated": "OnOff",
