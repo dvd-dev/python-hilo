@@ -54,7 +54,10 @@ DEFAULT_USER_AGENT: Final = (
 # NOTE(dvd): Not sure how to get new ones so I'm using the ones from my emulator
 # We can't unfortunately randomize this device id, I believe it's generated when
 # an android device registers to the play store, but I'm no android dev.
-ANDROID_DEVICE_ID: Final = 3530136576518667218
+#ANDROID_DEVICE_ID: Final = 3530136576518667218
+# NOTE(dvd): Based on issue #113, this can be set to 0
+ANDROID_DEVICE_ID: Final = 0
+
 ANDROID_DEVICE_SECURITY_TOKEN: Final = 7776414007788361535
 ANDROID_CERT: Final = "59F0B6042655AD8AE46120E42417F80641D14CEF"
 GOOGLE_API_KEY: Final = "AIzaSyAHZ8_vQRoZZshDkQ0gsPVxSJ_RWQynMWQ"
