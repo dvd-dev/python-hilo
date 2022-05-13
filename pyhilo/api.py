@@ -520,36 +520,6 @@ class API:
         (self.ws_url, self.ws_token) = await self.post_devicehub_negociate()
         await self.get_websocket_params()
 
-    async def delete_registration(self, reg_id: str) -> None:
-        LOG.debug(f"Deleting registration {reg_id}")
-        url = f"{API_REGISTRATION_ENDPOINT}/{reg_id}"
-        await self.async_request("delete", url)
-
-    async def post_registration(self) -> str:
-        LOG.debug("Requesting new registration")
-        url = f"{API_REGISTRATION_ENDPOINT}"
-        resp: dict[str, Any] = await self.async_request(
-            "post",
-            url,
-            headers={
-                **self.headers,
-                **{
-                    "Content-Type": "text/plain",
-                    "Content-Length": "0",
-                    "Accept": "text/plain",
-                },
-            },
-        )
-        return resp.get("message", "")
-
-    async def put_registration(self, reg_id: str, handler: str) -> str:
-        LOG.debug("Submitting handler for registration")
-        url = f"{API_REGISTRATION_ENDPOINT}/{reg_id}"
-        resp: dict[str, Any] = await self.async_request(
-            "put", url, json={"platform": "fcm", "handle": handler}
-        )
-        return resp.get("message", "")
-
     async def post_devicehub_negociate(self) -> tuple[str, str]:
         LOG.debug("Getting websocket url")
         url = f"{AUTOMATION_DEVICEHUB_ENDPOINT}/negotiate"
