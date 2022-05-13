@@ -517,17 +517,8 @@ class API:
         self.websocket = WebsocketClient(self)
 
     async def refresh_ws_token(self) -> None:
-        reg_state = self.state.get("registration", {})
-        android_state = self.state.get("android", {})
-        if reg_id := reg_state.get("reg_id"):
-            await self.delete_registration(reg_id)
-        self._reg_id = await self.post_registration()
-        await self.delete_registration(self._reg_id)
-        reg_dict: RegistrationDict = {"reg_id": self._reg_id}
-        set_state(self._state_yaml, "registration", reg_dict)
         (self.ws_url, self.ws_token) = await self.post_devicehub_negociate()
         await self.get_websocket_params()
-        await self.put_registration(self._reg_id, android_state.get("token", ""))
 
     async def delete_registration(self, reg_id: str) -> None:
         LOG.debug(f"Deleting registration {reg_id}")
