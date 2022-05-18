@@ -177,8 +177,11 @@ class WebsocketClient:
 
         try:
             data = json.loads(msg.data[:-1])
-        except ValueError as err:
-            raise InvalidMessageError("Received invalid JSON") from err
+        except ValueError as v_exc:
+            raise InvalidMessageError("Received invalid JSON") from v_exc
+        except json.decoder.JSONDecodeError as j_exc:
+            LOG.error(f"Received invalid JSON: {msg.data}")
+            data = {}
 
         self._watchdog.trigger()
 
