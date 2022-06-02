@@ -101,7 +101,7 @@ def set_state(
     :type state: ``StateDict``
     :rtype: ``StateDict``
     """
-    current_state = get_state(state_yaml)
+    current_state = get_state(state_yaml) or {}
     merged_state: dict[str, Any] = {key: {**current_state.get(key, {}), **state}}  # type: ignore
     new_state: dict[str, Any] = {**current_state, **merged_state}
     with open(state_yaml, "w") as yaml_file:
