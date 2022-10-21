@@ -4,7 +4,7 @@ async-timeout>=4.0.0
 attrs==21.2.0
 backoff==2.1.2
 charset-normalizer==2.1.0
-distro==1.6.0
+distro==1.8.0
 frozenlist==1.2.0
 idna==3.3
 multidict==6.0.2
