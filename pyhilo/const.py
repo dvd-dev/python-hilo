@@ -1,4 +1,7 @@
 import logging
+import platform
+import aiohttp
+import homeassistant.core
 from typing import Final
 
 LOG: Final = logging.getLogger(__package__)
@@ -46,8 +49,7 @@ AUTOMATION_DEVICEHUB_ENDPOINT: Final = "/DeviceHub"
 
 # Request constants
 DEFAULT_USER_AGENT: Final = (
-    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
-    "AppleWebKit/605.1.15 (KHTML, like Gecko) Version/15.0 Safari/605.1.15"
+    f"HomeAssistantHilo/{HILO_APP_VERSION} HomeAssistant/{homeassistant.core.__version__} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
 )
 
 
@@ -154,6 +156,7 @@ HILO_DEVICE_ATTRIBUTES: Final = [
     "type",
     "zig_bee_channel",
     "zig_bee_pairing_activated",
+    "gateway_asset_id",
 ]
 
 HILO_LIST_ATTRIBUTES: Final = [
