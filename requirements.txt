@@ -12,4 +12,4 @@ python-dateutil==2.8.2
 ruyaml==0.91.0
 six==1.16.0
 typing_extensions==4.3.0
-yarl==1.7.2
+yarl==1.8.2
