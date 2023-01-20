@@ -164,6 +164,7 @@ HILO_LIST_ATTRIBUTES: Final = [
 
 HILO_DEVICE_TYPES: Final = {
     "ChargingPoint": "Sensor",
+    "ColorBulb": "Light",
     "Gateway": "Sensor",
     "IndoorWeatherStation": "Sensor",
     "LightDimmer": "Light",
@@ -189,11 +190,13 @@ HILO_UNIT_CONVERSION: Final = {
 HILO_READING_TYPES: Final = {
     "BatteryPercent": "Percentage",
     "Co2": "PPM",
+    "ColorTemperature": "Integer",
     "CurrentTemperature": "Celcius",
     "Disconnected": "null",
     "DrmsState": "OnOff",
     "firmwareVersion": "null",
     "Heating": "Percentage",
+    "Hue": "Integer",
     "Humidity": "Percentage",
     "Intensity": "Percentage",
     "MaxTempSetpoint": "Celcius",
@@ -203,6 +206,7 @@ HILO_READING_TYPES: Final = {
     "OnOff": "OnOff",
     "Power": "Watt",
     "Pressure": "Mbar",
+    "Saturation": "Integer",
     "Status": "OnOff",
     "TargetTemperature": "Celcius",
     "WifiStatus": "Integer",
