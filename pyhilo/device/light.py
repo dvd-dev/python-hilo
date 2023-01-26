@@ -19,3 +19,19 @@ class Light(HiloDevice):
     @property
     def state(self) -> str:
         return "on" if self.get_value("is_on") else "off"
+
+    @property
+    def hue(self) -> int:
+        return self.get_value("hue") or 0
+
+    @property
+    def intensity(self) -> int:
+        return self.get_value("intensity") * 255 or 0
+
+    @property
+    def saturation(self) -> int:
+        return self.get_value("saturation") or 0
+
+    @property
+    def color_temperature(self) -> int:
+        return self.get_value("ColorTemperature") or 0
