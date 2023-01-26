@@ -1,6 +1,3 @@
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/dvd-dev/python-hilo.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/dvd-dev/python-hilo/alerts/)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/dvd-dev/python-hilo.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/dvd-dev/python-hilo/context:python)
-
 # python-hilo
 
 `python-hilo` (aka `pyhilo`) is a Python 3.9, `asyncio`-driven interface to the unofficial
