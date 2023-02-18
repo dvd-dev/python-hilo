@@ -33,11 +33,6 @@ class Climate(HiloDevice):
         attr = self.get_value("heating", 0)
         return "heating" if attr > 0 else "idle"
 
-    @property
-    def hvac_mode(self) -> str:
-        attr = self.get_value("current_temperature", 0)
-        return "heat" if attr > 5 else "off"
-
     async def async_set_temperature(self, **kwargs: dict[str, int]) -> None:
         temperature = kwargs.get("temperature", 0)
         if temperature:
