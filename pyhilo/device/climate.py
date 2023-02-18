@@ -29,9 +29,9 @@ class Climate(HiloDevice):
         return cast(float, self.get_value("min_temp_setpoint", 0))
 
     @property
-    def hvac_mode(self) -> str:
+    def hvac_action(self) -> str:
         attr = self.get_value("heating", 0)
-        return "heat" if attr > 0 else "off"
+        return "heating" if attr > 0 else "idle"
 
     async def async_set_temperature(self, **kwargs: dict[str, int]) -> None:
         temperature = kwargs.get("temperature", 0)
