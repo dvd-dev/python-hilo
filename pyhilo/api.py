@@ -166,27 +166,11 @@ class API:
         api._username = username
         api._state_yaml = state_yaml
         api.state = get_state(state_yaml)
-        token_state = api.state.get("token", {})
-        token_expiration = (
-            token_state.get("expires_at", datetime.now()) or datetime.now()
+        password = parse.quote(password, safe="!@#$%^&*()")
+        auth_body = api.auth_body(
+            AUTH_TYPE_PASSWORD, username=username, password=password
         )
-        refresh_token = token_state.get("refresh")
-        if datetime.now() < token_expiration:
-            api._access_token = token_state.get("access")
-            api._refresh_token = token_state.get("refresh")
-            api._access_token_expire_dt = token_state.get("expires_at", datetime.now())
-            LOG.info(
-                f"Saved state token seems valid and expires on {api._access_token_expire_dt}"
-            )
-        elif refresh_token:
-            api._refresh_token = refresh_token
-            await api._async_refresh_access_token()
-        else:
-            password = parse.quote(password, safe="!@#$%^&*()")
-            auth_body = api.auth_body(
-                AUTH_TYPE_PASSWORD, username=username, password=password
-            )
-            await api.async_auth_post(auth_body)
+        await api.async_auth_post(auth_body)
         await api._async_post_init()
         return api
 
@@ -290,7 +274,8 @@ class API:
             )
         except ClientResponseError as err:
             LOG.error(f"ClientResponseError: {err}")
-            if err.status in (401, 403):
+            if err.status in (400, 401, 403):
+                LOG.error(f"Raising InvalidCredentialsError from {err}")
                 raise InvalidCredentialsError("Invalid credentials") from err
             raise RequestError(err) from err
         self._access_token = resp.get("access_token")
