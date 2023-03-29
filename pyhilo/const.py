@@ -29,7 +29,7 @@ AUTH_SCOPE: Final = "openid 9870f087-25f8-43b6-9cad-d4b74ce512e1 offline_access"
 SUBSCRIPTION_KEY: Final = "20eeaedcb86945afa3fe792cea89b8bf"
 
 # API constants
-API_HOSTNAME: Final = "apim.hiloenergie.com"
+API_HOSTNAME: Final = "api.hiloenergie.com"
 API_END: Final = "v1/api"
 API_AUTOMATION_ENDPOINT: Final = f"/Automation/{API_END}"
 API_GD_SERVICE_ENDPOINT: Final = f"/GDService/{API_END}"
