@@ -1,8 +1,8 @@
 import logging
 import platform
+from typing import Final
 import aiohttp
 import homeassistant.core
-from typing import Final
 
 LOG: Final = logging.getLogger(__package__)
 DEFAULT_STATE_FILE: Final = "hilo_state.yaml"
