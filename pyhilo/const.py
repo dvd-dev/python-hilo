@@ -1,6 +1,7 @@
 import logging
 import platform
 from typing import Final
+
 import aiohttp
 import homeassistant.core
 
