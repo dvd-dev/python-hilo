@@ -9,7 +9,7 @@ from pyhilo.device import HiloDevice
 
 class Light(HiloDevice):
     def __init__(self, api: API, **kwargs: dict[str, Union[str, int]]):
-        super().__init__(api, **kwargs)
+        super().__init__(api, **kwargs)  # type: ignore
         LOG.debug(f"Setting up Light device: {self.name}")
 
     @property

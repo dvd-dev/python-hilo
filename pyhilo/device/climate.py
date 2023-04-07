@@ -9,7 +9,7 @@ from pyhilo.device import HiloDevice
 
 class Climate(HiloDevice):
     def __init__(self, api: API, **kwargs: dict[str, Union[str, int]]):
-        super().__init__(api, **kwargs)
+        super().__init__(api, **kwargs)  # type: ignore
         LOG.debug(f"Setting up Climate device: {self.name}")
 
     @property

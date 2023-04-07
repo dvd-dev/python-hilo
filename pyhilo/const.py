@@ -49,15 +49,13 @@ AUTOMATION_HOSTNAME: Final = "automation.hiloenergie.com"
 AUTOMATION_DEVICEHUB_ENDPOINT: Final = "/DeviceHub"
 
 # Request constants
-DEFAULT_USER_AGENT: Final = (
-    f"HomeAssistantHilo/{HILO_APP_VERSION} HomeAssistant/{homeassistant.core.__version__} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
-)
+DEFAULT_USER_AGENT: Final = f"HomeAssistantHilo/{HILO_APP_VERSION} HomeAssistant/{homeassistant.core.__version__} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
 
 
 # NOTE(dvd): Not sure how to get new ones so I'm using the ones from my emulator
 # We can't unfortunately randomize this device id, I believe it's generated when
 # an android device registers to the play store, but I'm no android dev.
-#ANDROID_DEVICE_ID: Final = 3530136576518667218
+# ANDROID_DEVICE_ID: Final = 3530136576518667218
 # NOTE(dvd): Based on issue #113, this can be set to 0
 ANDROID_DEVICE_ID: Final = 3530136576518667218
 

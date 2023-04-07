@@ -181,6 +181,7 @@ class WebsocketClient:
             raise InvalidMessageError("Received invalid JSON") from v_exc
         except json.decoder.JSONDecodeError as j_exc:
             LOG.error(f"Received invalid JSON: {msg.data}")
+            LOG.exception(j_exc)
             data = {}
 
         self._watchdog.trigger()
@@ -280,7 +281,7 @@ class WebsocketClient:
             )
         except (ClientError, ServerDisconnectedError, WSServerHandshakeError) as err:
             LOG.error(f"Unable to connect to WS server {err}")
-            if hasattr(err, "status") and err.status in (401, 403, 404, 409):  # type: ignore
+            if hasattr(err, "status") and err.status in (401, 403, 404, 409):
                 raise InvalidCredentialsError("Invalid credentials") from err
         except Exception as err:
             LOG.error(f"Unable to connect to WS server {err}")

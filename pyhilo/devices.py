@@ -80,9 +80,9 @@ class Devices:
     async def update(self) -> None:
         fresh_devices = await self._api.get_devices(self.location_id)
         generated_devices = []
-        for device in fresh_devices:
-            LOG.debug(f"Generating device {device}")
-            dev = self.generate_device(device)
+        for raw_device in fresh_devices:
+            LOG.debug(f"Generating device {raw_device}")
+            dev = self.generate_device(raw_device)
             generated_devices.append(dev)
             if dev not in self.devices:
                 self.devices.append(dev)

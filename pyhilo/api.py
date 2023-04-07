@@ -53,7 +53,6 @@ from pyhilo.device import DeviceAttribute, HiloDevice, get_device_attributes
 from pyhilo.exceptions import InvalidCredentialsError, RequestError
 from pyhilo.util import schedule_callback
 from pyhilo.util.state import (
-    RegistrationDict,
     TokenDict,
     WebsocketDict,
     WebsocketTransportsDict,
