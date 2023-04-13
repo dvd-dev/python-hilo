@@ -1,7 +1,7 @@
 aiohttp>=3.8.0
 aiosignal>=1.1.0
 async-timeout>=4.0.0
-attrs==22.1.0
+attrs==22.2.0
 backoff==2.2.1
 charset-normalizer==3.0.1
 distro==1.8.0
