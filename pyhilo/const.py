@@ -211,6 +211,7 @@ HILO_READING_TYPES: Final = {
     "Saturation": "Integer",
     "Status": "OnOff",
     "TargetTemperature": "Celcius",
+    "Unpaired": "null",
     "WifiStatus": "Integer",
     "zigBeePairingActivated": "OnOff",
     "zigBeeChannel": "Integer",
