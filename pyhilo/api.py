@@ -187,7 +187,7 @@ class API:
                 for x in self.device_attributes
                 if x.hilo_attribute == attribute or x.attr == attribute
             ),
-            DeviceAttribute(attribute, HILO_READING_TYPES.get(value_type, ""))
+            DeviceAttribute(attribute, HILO_READING_TYPES.get(value_type, "null"))
             if value_type
             else attribute,
         )
