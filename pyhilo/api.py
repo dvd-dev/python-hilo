@@ -188,8 +188,6 @@ class API:
                 if x.hilo_attribute == attribute or x.attr == attribute
             ),
             DeviceAttribute(attribute, HILO_READING_TYPES.get(value_type, ""))
-            if value_type
-            else attribute,
         )
 
     def _get_fid_state(self) -> bool:
@@ -768,6 +766,8 @@ class API:
             "zigBeeChannel",
             "firmwareVersion",
             "onlineStatus",
+            "lastStatusTime",
+            "disconnected"
         ]
 
         gw = {
@@ -779,6 +779,7 @@ class API:
             "settableAttributes": "",
             "id": 1,
             "identifier": req[0].get("dsn"),
+            "sdi": req[0].get("sdi"),
             "provider": 1,
             "model_number": "EQ000017",
             "sw_version": req[0].get("firmwareVersion"),

@@ -6,7 +6,7 @@ Hilo API from Hydro Quebec. This is meant to be integrated into Home Assistant.
 Nothing is fully functional right now except for the PoC. Before this package, the Hilo API
 was returning all information via some REST calls. Since the end of 2021, Hilo has deprecated
 some of the endpoints including the ones that returns the status of the devices. This was
-replaced with a websocket system using Google Firebase.
+replaced with a websocket system using Microsoft SignalR.
 
 ## Running the PoC
 
