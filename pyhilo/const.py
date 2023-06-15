@@ -227,6 +227,7 @@ HILO_PROVIDERS: Final = {
 JASCO_MODELS: Final = [
     "43082",
     "43078",
+    "43100",
     "46199",
     "9063",
     "45678",
@@ -238,5 +239,6 @@ JASCO_MODELS: Final = [
 JASCO_OUTLETS: Final = [
     "42405",
     "43095",
+    "43100",
     "45853",
 ]
