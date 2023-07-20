@@ -12,7 +12,7 @@ TIMEOUT: Final = 10
 TOKEN_EXPIRATION_PADDING: Final = 300
 VERIFY: Final = True
 DEVICE_REFRESH_TIME: Final = 1800
-PYHILO_VERSION: Final = "2023.04.05" # TODO: Find a way to keep in sync with pyproject.toml automatically 
+PYHILO_VERSION: Final = "2023.06.01" # TODO: Find a way to keep in sync with pyproject.toml automatically 
 
 CONTENT_TYPE_FORM: Final = "application/x-www-form-urlencoded"
 ANDROID_PKG_NAME: Final = "com.hiloenergie.hilo"
@@ -211,6 +211,7 @@ HILO_READING_TYPES: Final = {
     "Saturation": "Integer",
     "Status": "OnOff",
     "TargetTemperature": "Celcius",
+    "Unpaired": "null",
     "WifiStatus": "Integer",
     "zigBeePairingActivated": "OnOff",
     "zigBeeChannel": "Integer",
@@ -231,9 +232,11 @@ JASCO_MODELS: Final = [
     "45678",
     "42405",
     "43095",
+    "45853",
 ]
 
 JASCO_OUTLETS: Final = [
     "42405",
     "43095",
+    "45853",
 ]
