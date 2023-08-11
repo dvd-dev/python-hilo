@@ -12,7 +12,7 @@ TIMEOUT: Final = 10
 TOKEN_EXPIRATION_PADDING: Final = 300
 VERIFY: Final = True
 DEVICE_REFRESH_TIME: Final = 1800
-HILO_APP_VERSION: Final = "3.0.212"
+PYHILO_VERSION: Final = "2023.06.01" # TODO: Find a way to keep in sync with pyproject.toml automatically 
 
 CONTENT_TYPE_FORM: Final = "application/x-www-form-urlencoded"
 ANDROID_PKG_NAME: Final = "com.hiloenergie.hilo"
@@ -49,7 +49,7 @@ AUTOMATION_HOSTNAME: Final = "automation.hiloenergie.com"
 AUTOMATION_DEVICEHUB_ENDPOINT: Final = "/DeviceHub"
 
 # Request constants
-DEFAULT_USER_AGENT: Final = f"HomeAssistantHilo/{HILO_APP_VERSION} HomeAssistant/{homeassistant.core.__version__} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
+DEFAULT_USER_AGENT: Final = f"PyHilo/{PYHILO_VERSION} HomeAssistant/{homeassistant.core.__version__} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
 
 
 # NOTE(dvd): Not sure how to get new ones so I'm using the ones from my emulator
@@ -118,7 +118,7 @@ ANDROID_CLIENT_POST: Final = {
     "X-firebase-app-name-hash": "R1dAH9Ui7M-ynoznwBdw01tLxhI",
     "X-Firebase-Client": FB_CLIENT,
     "X-Firebase-Client-Log-Type": 1,
-    "X-app_ver_name": HILO_APP_VERSION,
+    "X-app_ver_name": PYHILO_VERSION,
     "app": ANDROID_PKG_NAME,
     "app_ver": 5357,
     "info": "Y8qNKupTk7IVoLPgN7e-uDAzqVicyRc",
