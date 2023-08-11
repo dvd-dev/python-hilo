@@ -768,6 +768,8 @@ class API:
             "zigBeeChannel",
             "firmwareVersion",
             "onlineStatus",
+            "lastStatusTime",
+            "disconnected"
         ]
 
         gw = {
@@ -779,6 +781,7 @@ class API:
             "settableAttributes": "",
             "id": 1,
             "identifier": req[0].get("dsn"),
+            "sdi": req[0].get("sdi"),
             "provider": 1,
             "model_number": "EQ000017",
             "sw_version": req[0].get("firmwareVersion"),
