@@ -38,6 +38,8 @@ class Devices:
     def parse_values_received(self, values: list[dict[str, Any]]) -> list[HiloDevice]:
         readings = []
         for val in values:
+            if val.get("valueType") == None:
+                val["valueType"] = "OnOff"
             val["device_attribute"] = self._api.dev_atts(
                 val.pop("attribute"), val.pop("valueType")
             )
