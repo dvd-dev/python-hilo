@@ -39,7 +39,7 @@ class Devices:
         readings = []
         for val in values:
             val["device_attribute"] = self._api.dev_atts(
-                val.pop("attribute"), val.pop("valueType", None)
+                val.pop("attribute"), val.pop("valueType", "null")
             )
             readings.append(DeviceReading(**val))
         return self._map_readings_to_devices(readings)
