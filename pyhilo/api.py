@@ -769,7 +769,7 @@ class API:
             "firmwareVersion",
             "onlineStatus",
             "lastStatusTime",
-            "disconnected"
+            "disconnected",
         ]
 
         gw = {
