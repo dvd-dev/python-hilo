@@ -298,7 +298,7 @@ class WebsocketClient:
 
     async def async_disconnect(self) -> None:
         """Disconnect from the websocket server."""
-        self._clean_queue()
+        await self._clean_queue()
         if not self.connected:
             return
 
@@ -323,7 +323,7 @@ class WebsocketClient:
         finally:
             LOG.info("Websocket: Listen completed; cleaning up")
             self._watchdog.cancel()
-            self._clean_queue()
+            await self._clean_queue()
 
             for callback in self._disconnect_callbacks:
                 schedule_callback(callback)
