@@ -36,6 +36,7 @@ class Event:
         if allowed_wH > 0:
             self.used_percentage = round(used_wH / allowed_wH * 100, 2)
         self.dict_items = [
+            "event_id",
             "participating",
             "configurable",
             "period",

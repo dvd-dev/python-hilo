@@ -92,10 +92,16 @@ class Devices:
                 # Don't do anything with unpaired device for now.
                 # self.devices.remove(device)
 
-    async def update_gateway(self) -> None:
-        gateway = await self._api.get_gateway(self.location_id)
-        LOG.debug(f"Generating device (gateway) {gateway}")
-        self.generate_device(gateway)
+    async def update_devicelist_from_signalr(self, values: list[dict[str, Any]]) -> list[HiloDevice]:
+        new_devices = []
+        for raw_device in values:
+            LOG.debug(f"Generating device {raw_device}")
+            dev = self.generate_device(raw_device)
+            if dev not in self.devices:
+                self.devices.append(dev)
+                new_devices.append(dev)
+
+        return new_devices
 
     async def async_init(self) -> None:
         """Initialize the Hilo "manager" class."""
