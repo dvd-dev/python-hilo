@@ -93,7 +93,7 @@ class Devices:
                 # self.devices.remove(device)
 
     async def update_devicelist_from_signalr(
-            self, values: list[dict[str, Any]]
+        self, values: list[dict[str, Any]]
     ) -> list[HiloDevice]:
         new_devices = []
         for raw_device in values:
