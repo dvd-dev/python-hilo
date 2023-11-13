@@ -92,7 +92,9 @@ class Devices:
                 # Don't do anything with unpaired device for now.
                 # self.devices.remove(device)
 
-    async def update_devicelist_from_signalr(self, values: list[dict[str, Any]]) -> list[HiloDevice]:
+    async def update_devicelist_from_signalr(
+            self, values: list[dict[str, Any]]
+    ) -> list[HiloDevice]:
         new_devices = []
         for raw_device in values:
             LOG.debug(f"Generating device {raw_device}")

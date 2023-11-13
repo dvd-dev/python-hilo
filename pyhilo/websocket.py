@@ -170,7 +170,9 @@ class WebsocketClient:
             raise ConnectionClosedError("Connection was closed.")
 
         if response.type == WSMsgType.ERROR:
-            LOG.error(f"Websocket: Received error event, Connection failed: {response.type}")
+            LOG.error(
+                f"Websocket: Received error event, Connection failed: {response.type}"
+            )
             raise ConnectionFailedError
 
         if response.type != WSMsgType.TEXT:
