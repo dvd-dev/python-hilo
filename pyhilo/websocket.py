@@ -159,7 +159,7 @@ class WebsocketClient:
 
         return remove
 
-    async def _async_receive_json(self) -> dict[str, Any]:
+    async def _async_receive_json(self) -> list[Dict[str, Any]]:
         """Receive a JSON response from the websocket server."""
         assert self._client
 
@@ -179,8 +179,8 @@ class WebsocketClient:
             LOG.error(f"Websocket: Received invalid message: {response}")
             raise InvalidMessageError(f"Received non-text message: {response.type}")
 
+        messages: list[Dict[str, Any]] = []
         try:
-            messages = []
             # Sometimes the http lib stacks multiple messages in the buffer, we need to split them to process.
             received_messages = response.data.strip().split("\x1e")
             for msg in received_messages:
@@ -195,7 +195,7 @@ class WebsocketClient:
 
         self._watchdog.trigger()
 
-        return cast(Dict[str, Any], messages)
+        return messages
 
     async def _async_send_json(self, payload: dict[str, Any]) -> None:
         """Send a JSON message to the websocket server.
@@ -331,7 +331,7 @@ class WebsocketClient:
             LOG.exception(err)
             pass
         except InvalidMessageError as err:
-            LOG.warning(f"Websocket: Received invalid json : {message}")
+            LOG.warning(f"Websocket: Received invalid json : {err}")
             pass
         finally:
             LOG.info("Websocket: Listen completed; cleaning up")
