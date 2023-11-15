@@ -12,7 +12,7 @@ TIMEOUT: Final = 10
 TOKEN_EXPIRATION_PADDING: Final = 300
 VERIFY: Final = True
 DEVICE_REFRESH_TIME: Final = 1800
-PYHILO_VERSION: Final = "2023.08.03"
+PYHILO_VERSION: Final = "2023.11.01"
 # TODO: Find a way to keep previous line in sync with pyproject.toml automatically
 
 CONTENT_TYPE_FORM: Final = "application/x-www-form-urlencoded"
@@ -170,6 +170,7 @@ HILO_DEVICE_ATTRIBUTES: Final = [
     "zigbee_channel",
     "zig_bee_pairing_activated",
     "gateway_asset_id",
+    "e_tag",
 ]
 
 HILO_LIST_ATTRIBUTES: Final = [
@@ -190,6 +191,10 @@ HILO_DEVICE_TYPES: Final = {
     "Outlet": "Switch",
     "SmokeDetector": "Sensor",
     "Thermostat": "Climate",
+    "FloorThermostat": "Climate",
+    "Ccr": "Switch",
+    "Cee": "Switch",
+    "Thermostat24V": "Climate",
     "Tracker": "Sensor",
 }
 

@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from enum import IntEnum
 import json
 from os import environ
-from typing import TYPE_CHECKING, Any, Callable, Dict, cast
+from typing import TYPE_CHECKING, Any, Callable, Dict
 
 from aiohttp import ClientWebSocketResponse, WSMsgType
 from aiohttp.client_exceptions import (
@@ -159,34 +159,43 @@ class WebsocketClient:
 
         return remove
 
-    async def _async_receive_json(self) -> dict[str, Any]:
+    async def _async_receive_json(self) -> list[Dict[str, Any]]:
         """Receive a JSON response from the websocket server."""
         assert self._client
-        msg = await self._client.receive(300)
-        if msg.type in (WSMsgType.CLOSE, WSMsgType.CLOSED, WSMsgType.CLOSING):
-            LOG.error(f"Websocket: Received event to close connection: {msg.type}")
+
+        response = await self._client.receive(300)
+
+        if response.type in (WSMsgType.CLOSE, WSMsgType.CLOSED, WSMsgType.CLOSING):
+            LOG.error(f"Websocket: Received event to close connection: {response.type}")
             raise ConnectionClosedError("Connection was closed.")
 
-        if msg.type == WSMsgType.ERROR:
-            LOG.error(f"Websocket: Received error event, Connection failed: {msg.type}")
+        if response.type == WSMsgType.ERROR:
+            LOG.error(
+                f"Websocket: Received error event, Connection failed: {response.type}"
+            )
             raise ConnectionFailedError
 
-        if msg.type != WSMsgType.TEXT:
-            LOG.error(f"Websocket: Received invalid message: {msg}")
-            raise InvalidMessageError(f"Received non-text message: {msg.type}")
+        if response.type != WSMsgType.TEXT:
+            LOG.error(f"Websocket: Received invalid message: {response}")
+            raise InvalidMessageError(f"Received non-text message: {response.type}")
 
+        messages: list[Dict[str, Any]] = []
         try:
-            data = json.loads(msg.data[:-1])
+            # Sometimes the http lib stacks multiple messages in the buffer, we need to split them to process.
+            received_messages = response.data.strip().split("\x1e")
+            for msg in received_messages:
+                data = json.loads(msg)
+                messages.append(data)
         except ValueError as v_exc:
             raise InvalidMessageError("Received invalid JSON") from v_exc
         except json.decoder.JSONDecodeError as j_exc:
-            LOG.error(f"Received invalid JSON: {msg.data}")
+            LOG.error(f"Received invalid JSON: {msg}")
             LOG.exception(j_exc)
             data = {}
 
         self._watchdog.trigger()
 
-        return cast(Dict[str, Any], data)
+        return messages
 
     async def _async_send_json(self, payload: dict[str, Any]) -> None:
         """Send a JSON message to the websocket server.
@@ -314,11 +323,15 @@ class WebsocketClient:
         LOG.info("Websocket: Listen started.")
         try:
             while not self._client.closed:
-                message = await self._async_receive_json()
-                self._parse_message(message)
+                messages = await self._async_receive_json()
+                for msg in messages:
+                    self._parse_message(msg)
         except ConnectionClosedError as err:
             LOG.error(f"Websocket: Closed while listening: {err}")
             LOG.exception(err)
+            pass
+        except InvalidMessageError as err:
+            LOG.warning(f"Websocket: Received invalid json : {err}")
             pass
         finally:
             LOG.info("Websocket: Listen completed; cleaning up")
@@ -332,7 +345,7 @@ class WebsocketClient:
         """Reconnect (and re-listen, if appropriate) to the websocket."""
         LOG.warning("Websocket: Reconnecting")
         await self.async_disconnect()
-        await asyncio.sleep(1)
+        await asyncio.sleep(5)
         await self.async_connect()
 
     async def send_status(self) -> None:
