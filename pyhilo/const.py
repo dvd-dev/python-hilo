@@ -12,7 +12,7 @@ TIMEOUT: Final = 10
 TOKEN_EXPIRATION_PADDING: Final = 300
 VERIFY: Final = True
 DEVICE_REFRESH_TIME: Final = 1800
-PYHILO_VERSION: Final = "2023.11.01"
+PYHILO_VERSION: Final = "2023.11.02"
 # TODO: Find a way to keep previous line in sync with pyproject.toml automatically
 
 CONTENT_TYPE_FORM: Final = "application/x-www-form-urlencoded"
