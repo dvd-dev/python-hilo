@@ -12,7 +12,7 @@ TIMEOUT: Final = 10
 TOKEN_EXPIRATION_PADDING: Final = 300
 VERIFY: Final = True
 DEVICE_REFRESH_TIME: Final = 1800
-PYHILO_VERSION: Final = "2023.11.01"
+PYHILO_VERSION: Final = "2023.11.02"
 # TODO: Find a way to keep previous line in sync with pyproject.toml automatically
 
 CONTENT_TYPE_FORM: Final = "application/x-www-form-urlencoded"
@@ -36,7 +36,7 @@ API_END: Final = "v1/api"
 API_AUTOMATION_ENDPOINT: Final = f"/Automation/{API_END}"
 API_GD_SERVICE_ENDPOINT: Final = f"/GDService/{API_END}"
 API_NOTIFICATIONS_ENDPOINT: Final = "/Notifications"
-API_EVENTS_ENDPOINT: Final = "/Events"
+API_EVENTS_ENDPOINT: Final = "/Notifications"
 API_REGISTRATION_ENDPOINT: Final = f"{API_NOTIFICATIONS_ENDPOINT}/Registrations"
 
 API_REGISTRATION_HEADERS: Final = {
