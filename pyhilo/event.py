@@ -79,10 +79,25 @@ class Event:
             self.phases_list[:0] = ["appreciation_start", "appreciation_end"]
         return self.appreciation_start
 
+    def pre_cold(self, hours: int) -> datetime:
+        """Wrapper to return X hours before appreciation.
+        Will also set pre_cold_start and pre_cold_end phases.
+        """
+        self.pre_cold_start = self.appreciation_start - timedelta(hours=hours)
+        self.pre_cold_end = self.appreciation_start
+        if "pre_cold_start" not in self.phases_list:
+            self.phases_list[:0] = ["pre_cold_start", "pre_cold_end","appreciation_start", "appreciation_end"]
+        return self.pre_cold_start
+
     @property
     def state(self) -> str:
         now = datetime.now(self.preheat_start.tzinfo)
         if (
+            "pre_cold_start" in self.phases_list
+            and self.pre_cold_start <= now
+        ):
+            return "pre_cold"        
+        elif (
             "appreciation_start" in self.phases_list
             and self.appreciation_start <= now < self.appreciation_end
         ):
