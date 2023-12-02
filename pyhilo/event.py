@@ -7,6 +7,10 @@ from pyhilo.util import camel_to_snake, from_utc_timestamp
 
 
 class Event:
+    pre_cold_start: datetime
+    pre_cold_end: datetime
+    appreciation_start: datetime
+    appreciation_end: datetime
     preheat_start: datetime
     preheat_end: datetime
     reduction_start: datetime
@@ -69,7 +73,9 @@ class Event:
             setattr(self, phase, from_utc_timestamp(value))
             self.phases_list.append(phase)
 
-    def _create_phases(self, hours: int, phase_name: str, parent_phase: str) -> datetime:
+    def _create_phases(
+        self, hours: int, phase_name: str, parent_phase: str
+    ) -> datetime:
         parent_start = getattr(self, f"{parent_phase}_start")
         phase_start = f"{phase_name}_start"
         phase_end = f"{phase_name}_end"
@@ -77,7 +83,7 @@ class Event:
         setattr(self, phase_end, parent_start)
         if phase_start not in self.phases_list:
             self.phases_list[:0] = [phase_start, phase_end]
-        return getattr(self, phase_start)
+        return getattr(self, phase_start)  # type: ignore [no-any-return]
 
     def appreciation(self, hours: int) -> datetime:
         return self._create_phases(hours, "appreciation", "preheat")
@@ -88,11 +94,8 @@ class Event:
     @property
     def state(self) -> str:
         now = datetime.now(self.preheat_start.tzinfo)
-        if (
-            "pre_cold_start" in self.phases_list
-            and self.pre_cold_start <= now
-        ):
-            return "pre_cold"        
+        if "pre_cold_start" in self.phases_list and self.pre_cold_start <= now:
+            return "pre_cold"
         elif (
             "appreciation_start" in self.phases_list
             and self.appreciation_start <= now < self.appreciation_end
