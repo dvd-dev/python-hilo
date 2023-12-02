@@ -69,25 +69,21 @@ class Event:
             setattr(self, phase, from_utc_timestamp(value))
             self.phases_list.append(phase)
 
+    def _create_phases(self, hours: int, phase_name: str, parent_phase: str) -> datetime:
+        parent_start = getattr(self, f"{parent_phase}_start")
+        phase_start = f"{phase_name}_start"
+        phase_end = f"{phase_name}_end"
+        setattr(self, phase_start, parent_start - timedelta(hours=hours))
+        setattr(self, phase_end, parent_start)
+        if phase_start not in self.phases_list:
+            self.phases_list[:0] = [phase_start, phase_end]
+        return getattr(self, phase_start)
+
     def appreciation(self, hours: int) -> datetime:
-        """Wrapper to return X hours before pre_heat.
-        Will also set appreciation_start and appreciation end phases.
-        """
-        self.appreciation_start = self.preheat_start - timedelta(hours=hours)
-        self.appreciation_end = self.preheat_start
-        if "appreciation_start" not in self.phases_list:
-            self.phases_list[:0] = ["appreciation_start", "appreciation_end"]
-        return self.appreciation_start
+        return self._create_phases(hours, "appreciation", "preheat")
 
     def pre_cold(self, hours: int) -> datetime:
-        """Wrapper to return X hours before appreciation.
-        Will also set pre_cold_start and pre_cold_end phases.
-        """
-        self.pre_cold_start = self.appreciation_start - timedelta(hours=hours)
-        self.pre_cold_end = self.appreciation_start
-        if "pre_cold_start" not in self.phases_list:
-            self.phases_list[:0] = ["pre_cold_start", "pre_cold_end","appreciation_start", "appreciation_end"]
-        return self.pre_cold_start
+        return self._create_phases(hours, "pre_cold", "appreciation")
 
     @property
     def state(self) -> str:
