@@ -7,6 +7,7 @@ from pyhilo.util import camel_to_snake, from_utc_timestamp
 
 
 class Event:
+    setting_deadline: datetime
     pre_cold_start: datetime
     pre_cold_end: datetime
     appreciation_start: datetime
@@ -64,13 +65,15 @@ class Event:
             return
         self.phases_list = []
         for key, value in phases.items():
-            if not key.endswith("DateUTC"):
-                continue
-            phase_match = re.match(r"(.*)DateUTC", key)
-            if not phase_match:
-                continue
-            phase = camel_to_snake(phase_match.group(1))
-            setattr(self, phase, from_utc_timestamp(value))
+            phase_match = re.match(r"(.*)(DateUTC|Utc)", key)
+            if phase_match:
+                phase = camel_to_snake(phase_match.group(1))
+            else:
+                phase = key
+            try:
+                setattr(self, phase, from_utc_timestamp(value))
+            except TypeError:
+                setattr(self, phase, value)
             self.phases_list.append(phase)
 
     def _create_phases(
