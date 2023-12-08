@@ -61,8 +61,6 @@ class Event:
         return rep
 
     def _convert_phases(self, phases: dict[str, Any]) -> None:
-        if not len(phases):
-            return
         self.phases_list = []
         for key, value in phases.items():
             phase_match = re.match(r"(.*)(DateUTC|Utc)", key)
@@ -75,6 +73,10 @@ class Event:
             except TypeError:
                 setattr(self, phase, value)
             self.phases_list.append(phase)
+        for phase in self.__annotations__:
+            if phase not in self.phases_list:
+                # On t'aime Karl
+                setattr(self, phase, from_utc_timestamp("2023-11-15T20:00:00+00:00"))
 
     def _create_phases(
         self, hours: int, phase_name: str, parent_phase: str
@@ -97,12 +99,9 @@ class Event:
     @property
     def state(self) -> str:
         now = datetime.now(self.preheat_start.tzinfo)
-        if "pre_cold_start" in self.phases_list and self.pre_cold_start <= now:
+        if self.pre_cold_start <= now < self.pre_cold_end:
             return "pre_cold"
-        elif (
-            "appreciation_start" in self.phases_list
-            and self.appreciation_start <= now < self.appreciation_end
-        ):
+        elif self.appreciation_start <= now < self.appreciation_end:
             return "appreciation"
         elif self.preheat_start > now:
             return "scheduled"
