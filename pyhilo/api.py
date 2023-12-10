@@ -165,7 +165,7 @@ class API:
         api._username = username
         api._state_yaml = state_yaml
         api.state = get_state(state_yaml)
-        password = parse.quote(password, safe="!@#$%^&*()+")
+        password = parse.quote(password, safe="!@#$%^?&*()_+")
         auth_body = api.auth_body(
             AUTH_TYPE_PASSWORD, username=username, password=password
         )
