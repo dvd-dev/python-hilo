@@ -128,7 +128,7 @@ class HiloDevice:
                         "device_attribute": attribute,
                     }
                 )
-            )
+            )  # type: ignore
         else:
             LOG.warning(f"{self._tag} Invalid attribute {attribute} for device")
 
