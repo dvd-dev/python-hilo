@@ -119,12 +119,12 @@ class HiloDevice:
             # Update internal state after sending request to API, assuming it will
             # succeed and we will get a reading back form signalR. This avoids ui flickering.
             self.update_readings(DeviceReading(**{
-                    "deviceId": self.id,
-                    "locationId": self.location_id,
-                    "timeStampUTC": datetime.utcnow().isoformat(),
-                    "value": value,
-                    "device_attribute": attribute,
-                }))
+                "deviceId": self.id,
+                "locationId": self.location_id,
+                "timeStampUTC": datetime.utcnow().isoformat(),
+                "value": value,
+                "device_attribute": attribute,
+            }))
         else:
             LOG.warning(f"{self._tag} Invalid attribute {attribute} for device")
 
