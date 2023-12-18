@@ -19,19 +19,19 @@ CONTENT_TYPE_FORM: Final = "application/x-www-form-urlencoded"
 ANDROID_PKG_NAME: Final = "com.hiloenergie.hilo"
 DOMAIN: Final = "hilo"
 # Auth constants
-AUTH_HOSTNAME: Final = "hilodirectoryb2c.b2clogin.com"
+AUTH_HOSTNAME: Final = "connexion.dev.hiloenergie.com"
 AUTH_ENDPOINT: Final = (
-    "/hilodirectoryb2c.onmicrosoft.com/oauth2/v2.0/token?p=B2C_1A_B2C_1_PasswordFlow"
+    "/hiloenergiedomotiquedev.onmicrosoft.com/B2C_1A_ROPC_Auth/oauth2/v2.0/token"
 )
-AUTH_CLIENT_ID: Final = "9870f087-25f8-43b6-9cad-d4b74ce512e1"
+AUTH_CLIENT_ID: Final = "32b8ddaa-e74f-4520-8921-2baa72e58765"
 AUTH_TYPE_PASSWORD: Final = "password"
 AUTH_TYPE_REFRESH: Final = "refresh_token"
 AUTH_RESPONSE_TYPE: Final = "token id_token"
-AUTH_SCOPE: Final = "openid 9870f087-25f8-43b6-9cad-d4b74ce512e1 offline_access"
-SUBSCRIPTION_KEY: Final = "20eeaedcb86945afa3fe792cea89b8bf"
+AUTH_SCOPE: Final = "openid https://hiloenergiedomotiquedev.onmicrosoft.com/hiloapis/user_impersonation offline_access"
+SUBSCRIPTION_KEY: Final = "6dce94763d5743e0a3d7e7ddc83bdb39"
 
 # API constants
-API_HOSTNAME: Final = "api.hiloenergie.com"
+API_HOSTNAME: Final = "api.dev.hiloenergie.com"
 API_END: Final = "v1/api"
 API_AUTOMATION_ENDPOINT: Final = f"/Automation/{API_END}"
 API_GD_SERVICE_ENDPOINT: Final = f"/GDService/{API_END}"
@@ -46,11 +46,11 @@ API_REGISTRATION_HEADERS: Final = {
 }
 
 # Automation server constants
-AUTOMATION_HOSTNAME: Final = "automation.hiloenergie.com"
+AUTOMATION_HOSTNAME: Final = "automation.dev.hiloenergie.com"
 AUTOMATION_DEVICEHUB_ENDPOINT: Final = "/DeviceHub"
 
 # Request constants
-DEFAULT_USER_AGENT: Final = f"PyHilo/{PYHILO_VERSION} HomeAssistant/{homeassistant.core.__version__} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
+DEFAULT_USER_AGENT: Final = f"PyHilo/{PYHILO_VERSION}-dev HomeAssistant/{homeassistant.core.__version__} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
 
 
 # NOTE(dvd): Not sure how to get new ones so I'm using the ones from my emulator
