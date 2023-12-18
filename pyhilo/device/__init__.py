@@ -126,8 +126,8 @@ class HiloDevice:
                         "timeStampUTC": datetime.utcnow().isoformat(),
                         "value": value,
                         "device_attribute": attribute,
-                    }
-                )  # type: ignore
+                    }  # type: ignore
+                )
             )
         else:
             LOG.warning(f"{self._tag} Invalid attribute {attribute} for device")
