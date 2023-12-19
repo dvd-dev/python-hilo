@@ -17,15 +17,14 @@ from pyhilo.const import (
     AUTH_SCOPE,
 )
 
-# TODO Dave rename
-class OAuth2Impl(LocalOAuth2Implementation):
+class AuthCodeWithPKCEImplementation(LocalOAuth2Implementation):
     """Custom OAuth2 implementation."""
 
     def __init__(
         self,
         hass: HomeAssistant,
     ) -> None:
-        """Initialize OAuth2Impl."""
+        """Initialize AuthCodeWithPKCEImplementation."""
         super().__init__(
             hass,
             DOMAIN,
@@ -41,7 +40,7 @@ class OAuth2Impl(LocalOAuth2Implementation):
     @property
     def name(self) -> str:
         """Name of the implementation."""
-        return "HiloId"
+        return "Hilo"
 
     @property
     def extra_authorize_data(self) -> dict:

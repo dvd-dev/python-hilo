@@ -53,7 +53,6 @@ from pyhilo.util.state import (
 )
 from pyhilo.websocket import WebsocketClient
 
-# TODO Dave refact + lots of stuff to remove for auth handling.
 class API:
     """An API object to interact with the Hilo cloud.
 
@@ -198,100 +197,6 @@ class API:
             await self.fb_install(self._fb_id)
             self._get_fid_state()
 
-    # TODO Dave remove
-    # async def _async_refresh_access_token(self) -> None:
-    #     """Update access/refresh tokens from a refresh token
-    #     and schedule a callback for later to refresh it.
-    #     """
-    #     auth_body = self.auth_body(
-    #         AUTH_TYPE_REFRESH,
-    #         refresh_token=self._refresh_token,
-    #     )
-    #     await self.async_auth_post(auth_body)
-    #     for callback in self._refresh_token_callbacks:
-    #         schedule_callback(callback, self._refresh_token)
-
-    # TODO Dave essayeer de remplacer avec mon stock, remove mon stock handle l'auth
-    # async def async_auth_post(self, body: dict) -> None:
-    #     """Prepares an authentication request for the Web API.
-
-    #     :param body: Contains the parameters passed to get tokens
-    #     :type body: dict
-    #     :raises InvalidCredentialsError: Invalid username/password
-    #     :raises RequestError: Other error
-    #     """
-    #     try:
-    #         LOG.debug("Authentication intiated")
-    #         resp = await self._async_request(
-    #             "post",
-    #             AUTH_ENDPOINT,
-    #             host=AUTH_HOSTNAME,
-    #             headers={
-    #                 "Content-Type": CONTENT_TYPE_FORM,
-    #             },
-    #             data=body,
-    #         )
-    #     except ClientResponseError as err:
-    #         LOG.error(f"ClientResponseError: {err}")
-    #         if err.status in (400, 401, 403):
-    #             LOG.error(f"Raising InvalidCredentialsError from {err}")
-    #             raise InvalidCredentialsError("Invalid credentials") from err
-    #         raise RequestError(err) from err
-    #     self._access_token = resp.get("access_token")
-    #     self._access_token_expire_dt = datetime.now() + timedelta(
-    #         seconds=int(str(resp.get("expires_in")))
-    #     )
-    #     self._refresh_token = resp.get(AUTH_TYPE_REFRESH, "")
-    #     token_dict: TokenDict = {
-    #         "access": self._access_token,
-    #         "refresh": self._refresh_token,
-    #         "expires_at": self._access_token_expire_dt,
-    #     }
-    #     # TODO Dave trouver et rempalcer les usages, il n'y en a plus. Les seuls usages de "token" sont pour fb ou android
-    #     set_state(self._state_yaml, "token", token_dict)
-
-    # def auth_body(
-    #     self,
-    #     grant_type: str,
-    #     *,
-    #     username: str = "",
-    #     password: str = "",
-    #     refresh_token: str = "",
-    # ) -> dict[Any, Any]:
-    #     """Generates a dict to pass to the authentication endpoint for
-    #     the Web API.
-
-    #     :param grant_type: either password or refresh_token
-    #     :type grant_type: str
-    #     :param username: defaults to ""
-    #     :type username: str, optional
-    #     :param password: defaults to ""
-    #     :type password: str, optional
-    #     :param refresh_token: Refresh token received from a previous password auth, defaults to ""
-    #     :type refresh_token: str, optional
-    #     :return: Dict structured for authentication
-    #     :rtype: dict[Any, Any]
-    #     """
-    #     LOG.debug(f"Auth body for grant {grant_type}")
-    #     body = {
-    #         "grant_type": grant_type,
-    #         "client_id": AUTH_CLIENT_ID,
-    #         "scope": AUTH_SCOPE,
-    #     }
-    #     if grant_type == AUTH_TYPE_PASSWORD:
-    #         body = {
-    #             **body,
-    #             **{
-    #                 "response_type": AUTH_RESPONSE_TYPE,
-    #                 "username": username,
-    #                 "password": password,
-    #             },
-    #         }
-    #     elif grant_type == AUTH_TYPE_REFRESH:
-    #         body[AUTH_TYPE_REFRESH] = refresh_token
-    #     return body
-
-    # TODO Dave merge avec mon stock
     async def _async_request(
         self, method: str, endpoint: str, host: str = API_HOSTNAME, **kwargs: Any
     ) -> dict[str, Any]:
@@ -315,7 +220,7 @@ class API:
             kwargs["headers"] = {**kwargs["headers"], **ANDROID_CLIENT_HEADERS}
         if host == API_HOSTNAME:
             access_token = await self.async_get_access_token()
-            kwargs["headers"]["authorization"] = f"Bearer {access_token}"        
+            kwargs["headers"]["authorization"] = f"Bearer {access_token}"
         kwargs["headers"]["Host"] = host
 
         data: dict[str, Any] = {}
@@ -371,7 +276,6 @@ class API:
             url += "/" + str(endpoint)
         return url
 
-    # TODO Dave trouver un moyen de déléguer la gestion du token au get seulement.
     async def _async_handle_on_backoff(self, _: dict[str, Any]) -> None:
         """Handle a backoff retry
 
@@ -394,14 +298,6 @@ class API:
                     (self.ws_url, self.ws_token) = await self.post_devicehub_negociate()
                     await self.get_websocket_params()
                 return
-            # TODO Dave _async_request s'assure toujours d'avoir un access token donc si fonctionne bien, ceci n'est plus nécessaire
-            # if TYPE_CHECKING:
-            #     assert self._access_token_expire_dt
-            # async with self._backoff_refresh_lock_api:
-            #     if datetime.now() <= self._access_token_expire_dt:
-            #         return
-            #     LOG.info("401 detected on api; refreshing api token")
-            #     await self._async_refresh_access_token()
 
     @staticmethod
     def _handle_on_giveup(_: dict[str, Any]) -> None:
@@ -443,23 +339,6 @@ class API:
     def enable_request_retries(self) -> None:
         """Enable the request retry mechanism."""
         self.async_request = self._wrap_request_method(self._request_retries)
-
-    # TODO Dave remove
-    # def add_refresh_token_callback(
-    #     self, callback: Callable[..., None]
-    # ) -> Callable[..., None]:
-    #     """Add a callback that should be triggered when tokens are refreshed.
-    #     Note that callbacks should expect to receive a refresh token as a parameter.
-    #     :param callback: The method to call after receiving an event.
-    #     :type callback: ``Callable[..., None]``
-    #     """
-    #     self._refresh_token_callbacks.append(callback)
-
-    #     def remove() -> None:
-    #         """Remove the callback."""
-    #         self._refresh_token_callbacks.remove(callback)
-
-    #     return remove
 
     async def _async_post_init(self) -> None:
         """Perform some post-init actions."""
