@@ -13,7 +13,7 @@ class EndpointUnavailableError(HiloError):
 
     pass
 
-
+# TODO Dave still used?
 class InvalidCredentialsError(HiloError):
     """An error related to invalid credentials."""
 
