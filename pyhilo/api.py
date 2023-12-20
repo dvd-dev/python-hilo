@@ -107,6 +107,8 @@ class API:
             oauth_session=oauth_session,
             request_retries=request_retries,
             log_traces=log_traces)
+        # Test token before post init
+        await api.async_get_access_token()
         await api._async_post_init()
         return api
 
