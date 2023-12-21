@@ -182,6 +182,7 @@ HILO_LIST_ATTRIBUTES: Final = [
 HILO_DEVICE_TYPES: Final = {
     "ChargingPoint": "Sensor",
     "ColorBulb": "Light",
+    "WhiteBulb": "Light",
     "Gateway": "Sensor",
     "IndoorWeatherStation": "Sensor",
     "LightDimmer": "Light",
