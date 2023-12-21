@@ -8,10 +8,6 @@ import homeassistant.core
 LOG: Final = logging.getLogger(__package__)
 DEFAULT_STATE_FILE: Final = "hilo_state.yaml"
 REQUEST_RETRY: Final = 9
-TIMEOUT: Final = 10
-TOKEN_EXPIRATION_PADDING: Final = 300
-VERIFY: Final = True
-DEVICE_REFRESH_TIME: Final = 1800
 PYHILO_VERSION: Final = "2023.12.01"
 # TODO: Find a way to keep previous line in sync with pyproject.toml automatically
 
@@ -19,15 +15,15 @@ CONTENT_TYPE_FORM: Final = "application/x-www-form-urlencoded"
 ANDROID_PKG_NAME: Final = "com.hiloenergie.hilo"
 DOMAIN: Final = "hilo"
 # Auth constants
-AUTH_HOSTNAME: Final = "hilodirectoryb2c.b2clogin.com"
+AUTH_HOSTNAME: Final = "connexion.hiloenergie.com"
 AUTH_ENDPOINT: Final = (
-    "/hilodirectoryb2c.onmicrosoft.com/oauth2/v2.0/token?p=B2C_1A_B2C_1_PasswordFlow"
+    "/HiloDirectoryB2C.onmicrosoft.com/B2C_1A_SIGN_IN/oauth2/v2.0/"
 )
-AUTH_CLIENT_ID: Final = "9870f087-25f8-43b6-9cad-d4b74ce512e1"
-AUTH_TYPE_PASSWORD: Final = "password"
-AUTH_TYPE_REFRESH: Final = "refresh_token"
-AUTH_RESPONSE_TYPE: Final = "token id_token"
-AUTH_SCOPE: Final = "openid 9870f087-25f8-43b6-9cad-d4b74ce512e1 offline_access"
+AUTH_AUTHORIZE: Final = f"https://{AUTH_HOSTNAME}{AUTH_ENDPOINT}authorize"
+AUTH_TOKEN: Final = f"https://{AUTH_HOSTNAME}{AUTH_ENDPOINT}token"
+AUTH_CHALLENGE_METHOD: Final = "S256"
+AUTH_CLIENT_ID: Final = "1ca9f585-4a55-4085-8e30-9746a65fa561"
+AUTH_SCOPE: Final = "openid https://HiloDirectoryB2C.onmicrosoft.com/hiloapis/user_impersonation offline_access"
 SUBSCRIPTION_KEY: Final = "20eeaedcb86945afa3fe792cea89b8bf"
 
 # API constants
@@ -45,8 +41,7 @@ API_REGISTRATION_HEADERS: Final = {
     "Hilo-Tenant": DOMAIN,
 }
 
-# Automation server constants
-AUTOMATION_HOSTNAME: Final = "automation.hiloenergie.com"
+# Automation server constant
 AUTOMATION_DEVICEHUB_ENDPOINT: Final = "/DeviceHub"
 
 # Request constants
