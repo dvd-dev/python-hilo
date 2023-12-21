@@ -16,9 +16,7 @@ ANDROID_PKG_NAME: Final = "com.hiloenergie.hilo"
 DOMAIN: Final = "hilo"
 # Auth constants
 AUTH_HOSTNAME: Final = "connexion.hiloenergie.com"
-AUTH_ENDPOINT: Final = (
-    "/HiloDirectoryB2C.onmicrosoft.com/B2C_1A_SIGN_IN/oauth2/v2.0/"
-)
+AUTH_ENDPOINT: Final = "/HiloDirectoryB2C.onmicrosoft.com/B2C_1A_SIGN_IN/oauth2/v2.0/"
 AUTH_AUTHORIZE: Final = f"https://{AUTH_HOSTNAME}{AUTH_ENDPOINT}authorize"
 AUTH_TOKEN: Final = f"https://{AUTH_HOSTNAME}{AUTH_ENDPOINT}token"
 AUTH_CHALLENGE_METHOD: Final = "S256"

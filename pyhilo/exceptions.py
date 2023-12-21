@@ -13,6 +13,7 @@ class EndpointUnavailableError(HiloError):
 
     pass
 
+
 class InvalidCredentialsError(HiloError):
     """An error related to invalid credentials."""
 

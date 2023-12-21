@@ -9,13 +9,14 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.config_entry_oauth2_flow import LocalOAuth2Implementation
 
 from pyhilo.const import (
-    DOMAIN,
     AUTH_AUTHORIZE,
-    AUTH_TOKEN,
     AUTH_CHALLENGE_METHOD,
     AUTH_CLIENT_ID,
     AUTH_SCOPE,
+    AUTH_TOKEN,
+    DOMAIN,
 )
+
 
 class AuthCodeWithPKCEImplementation(LocalOAuth2Implementation):
     """Custom OAuth2 implementation."""

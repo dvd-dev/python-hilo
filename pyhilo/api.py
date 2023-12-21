@@ -11,9 +11,7 @@ from urllib import parse
 
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientResponseError
-
 import backoff
-
 from homeassistant.helpers import config_entry_oauth2_flow
 
 from pyhilo.const import (
@@ -52,6 +50,7 @@ from pyhilo.util.state import (
     set_state,
 )
 from pyhilo.websocket import WebsocketClient
+
 
 class API:
     """An API object to interact with the Hilo cloud.
@@ -93,20 +92,21 @@ class API:
         request_retries: int = REQUEST_RETRY,
         log_traces: bool = False,
     ) -> API:
-        """Get an authenticated API object.        
+        """Get an authenticated API object.
         :param session: The ``aiohttp`` ``ClientSession`` session used for all HTTP requests
         :type session: ``aiohttp.client.ClientSession``
         :param oauth_session: The session to make requests authenticated with OAuth2.
         :type oauth_session: ``config_entry_oauth2_flow.OAuth2Session``
         :param request_retries: The default number of request retries to use
-        :type request_retries: ``int``        
+        :type request_retries: ``int``
         :rtype: :meth:`pyhilo.api.API`
         """
         api = cls(
             session=session,
             oauth_session=oauth_session,
             request_retries=request_retries,
-            log_traces=log_traces)
+            log_traces=log_traces,
+        )
         # Test token before post init
         await api.async_get_access_token()
         await api._async_post_init()
@@ -121,7 +121,7 @@ class API:
             **headers,
             **{
                 "Content-Type": "application/json; charset=utf-8",
-                "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,                
+                "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
             },
         }
 
