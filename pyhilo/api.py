@@ -130,7 +130,7 @@ class API:
         if not self._oauth_session.valid_token:
             await self._oauth_session.async_ensure_token_valid()
 
-        return self._oauth_session.token["access_token"]
+        return str(self._oauth_session.token["access_token"])
 
     def dev_atts(
         self, attribute: str, value_type: Union[str, None] = None
