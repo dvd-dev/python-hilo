@@ -3,7 +3,7 @@ import base64
 import hashlib
 import os
 import re
-from typing import Any
+from typing import Any, cast
 
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.config_entry_oauth2_flow import LocalOAuth2Implementation
@@ -18,7 +18,7 @@ from pyhilo.const import (
 )
 
 
-class AuthCodeWithPKCEImplementation(LocalOAuth2Implementation):
+class AuthCodeWithPKCEImplementation(LocalOAuth2Implementation):  # type: ignore[misc]
     """Custom OAuth2 implementation."""
 
     def __init__(
@@ -54,13 +54,16 @@ class AuthCodeWithPKCEImplementation(LocalOAuth2Implementation):
 
     async def async_resolve_external_data(self, external_data: Any) -> dict:
         """Resolve the authorization code to tokens."""
-        return await self._token_request(
-            {
-                "grant_type": "authorization_code",
-                "code": external_data["code"],
-                "redirect_uri": external_data["state"]["redirect_uri"],
-                "code_verifier": self._code_verifier,
-            }
+        return cast(
+            dict,
+            await self._token_request(
+                {
+                    "grant_type": "authorization_code",
+                    "code": external_data["code"],
+                    "redirect_uri": external_data["state"]["redirect_uri"],
+                    "code_verifier": self._code_verifier,
+                },
+            ),
         )
 
     # Ref : https://blog.sanghviharshit.com/reverse-engineering-private-api-oauth-code-flow-with-pkce/
