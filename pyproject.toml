@@ -40,7 +40,7 @@ exclude = ".venv/.*"
 
 [tool.poetry]
 name = "python-hilo"
-version = "2023.12.01"
+version = "2024.1.1"
 description = "A Python3, async interface to the Hilo API"
 readme = "README.md"
 authors = ["David Vallee Delisle <me@dvd.dev>"]

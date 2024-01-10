@@ -111,7 +111,7 @@ class Event:
             return "reduction"
         elif self.recovery_start <= now < self.recovery_end:
             return "recovery"
-        elif now <= self.recovery_end:
+        elif now >= self.recovery_end:
             return "completed"
         elif self.progress:
             return self.progress
