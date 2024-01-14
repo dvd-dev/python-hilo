@@ -41,6 +41,9 @@ class Event:
         self.last_update = datetime.now()
         if allowed_wH > 0:
             self.used_percentage = round(used_wH / allowed_wH * 100, 2)
+        self._phase_time_mapping = {
+            "pre_heat": "preheat",
+        }
         self.dict_items = [
             "event_id",
             "participating",
@@ -97,6 +100,28 @@ class Event:
 
     def pre_cold(self, hours: int) -> datetime:
         return self._create_phases(hours, "pre_cold", "appreciation")
+
+    @property
+    def invalid(self) -> bool:
+        return cast(
+            bool,
+            (
+                self.current_phase_times
+                and self.last_update < self.current_phase_times["start"]
+            ),
+        )
+
+    @property
+    def current_phase_times(self) -> dict[str, datetime]:
+        if self.state in ["completed", "off", "unknown"]:
+            return {}
+        phase_timestamp = self._phase_time_mapping.get(self.state, self.state)
+        phase_start = f"{phase_timestamp}_start"
+        phase_end = f"{phase_timestamp}_end"
+        return {
+            "start": getattr(self, phase_start),
+            "end": getattr(self, phase_end),
+        }
 
     @property
     def state(self) -> str:
