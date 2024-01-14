@@ -38,6 +38,7 @@ class Event:
         self.allowed_kWh: float = round(allowed_wH / 1000, 2)
         self.used_kWh: float = round(used_wH / 1000, 2)
         self.used_percentage: float = 0
+        self.last_update = datetime.now()
         if allowed_wH > 0:
             self.used_percentage = round(used_wH / allowed_wH * 100, 2)
         self.dict_items = [
@@ -52,6 +53,7 @@ class Event:
             "allowed_kWh",
             "used_kWh",
             "used_percentage",
+            "last_update",
         ]
 
     def as_dict(self) -> dict[str, Any]:
