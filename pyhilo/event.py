@@ -113,7 +113,7 @@ class Event:
 
     @property
     def current_phase_times(self) -> dict[str, datetime]:
-        if self.state in ["completed", "off", "unknown"]:
+        if self.state in ["completed", "off", "scheduled", "unknown"]:
             return {}
         phase_timestamp = self._phase_time_mapping.get(self.state, self.state)
         phase_start = f"{phase_timestamp}_start"
