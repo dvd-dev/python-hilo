@@ -38,7 +38,7 @@ class Event:
         self.allowed_kWh: float = round(allowed_wH / 1000, 2)
         self.used_kWh: float = round(used_wH / 1000, 2)
         self.used_percentage: float = 0
-        self.last_update = datetime.now(timezone.utc)
+        self.last_update = datetime.now(timezone.utc).astimezone()
         if allowed_wH > 0:
             self.used_percentage = round(used_wH / allowed_wH * 100, 2)
         self._phase_time_mapping = {
