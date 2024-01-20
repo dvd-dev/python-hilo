@@ -80,7 +80,7 @@ class Event:
             self.phases_list.append(phase)
         for phase in self.__annotations__:
             if phase not in self.phases_list:
-                # On t'aime Karl
+                # On t'aime Carl
                 setattr(self, phase, from_utc_timestamp("2023-11-15T20:00:00+00:00"))
 
     def _create_phases(
