@@ -1,5 +1,5 @@
 """Event object """
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import re
 from typing import Any, cast
 
@@ -38,8 +38,12 @@ class Event:
         self.allowed_kWh: float = round(allowed_wH / 1000, 2)
         self.used_kWh: float = round(used_wH / 1000, 2)
         self.used_percentage: float = 0
+        self.last_update = datetime.now(timezone.utc).astimezone()
         if allowed_wH > 0:
             self.used_percentage = round(used_wH / allowed_wH * 100, 2)
+        self._phase_time_mapping = {
+            "pre_heat": "preheat",
+        }
         self.dict_items = [
             "event_id",
             "participating",
@@ -52,6 +56,7 @@ class Event:
             "allowed_kWh",
             "used_kWh",
             "used_percentage",
+            "last_update",
         ]
 
     def as_dict(self) -> dict[str, Any]:
@@ -75,7 +80,7 @@ class Event:
             self.phases_list.append(phase)
         for phase in self.__annotations__:
             if phase not in self.phases_list:
-                # On t'aime Carl
+                # On t'aime Karl
                 setattr(self, phase, from_utc_timestamp("2023-11-15T20:00:00+00:00"))
 
     def _create_phases(
@@ -95,6 +100,28 @@ class Event:
 
     def pre_cold(self, hours: int) -> datetime:
         return self._create_phases(hours, "pre_cold", "appreciation")
+
+    @property
+    def invalid(self) -> bool:
+        return cast(
+            bool,
+            (
+                self.current_phase_times
+                and self.last_update < self.current_phase_times["start"]
+            ),
+        )
+
+    @property
+    def current_phase_times(self) -> dict[str, datetime]:
+        if self.state in ["completed", "off", "scheduled", "unknown"]:
+            return {}
+        phase_timestamp = self._phase_time_mapping.get(self.state, self.state)
+        phase_start = f"{phase_timestamp}_start"
+        phase_end = f"{phase_timestamp}_end"
+        return {
+            "start": getattr(self, phase_start),
+            "end": getattr(self, phase_end),
+        }
 
     @property
     def state(self) -> str:
