@@ -246,6 +246,7 @@ HILO_PROVIDERS: Final = {
 
 JASCO_MODELS: Final = [
     "43082",
+    "43076",
     "43078",
     "43100",
     "46199",
