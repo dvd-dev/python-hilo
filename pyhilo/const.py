@@ -263,3 +263,8 @@ JASCO_OUTLETS: Final = [
     "43100",
     "45853",
 ]
+
+UNMONITORED_DEVICES: Final = [
+    "43076",
+    "43100",
+]
