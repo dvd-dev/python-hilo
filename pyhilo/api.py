@@ -745,7 +745,7 @@ class API:
         return cast(dict[str, Any], await self.async_request("get", url))
 
     async def get_seasons(self, location_id: int) -> dict[str, Any]:
-        """This will return the rewards and current season total        
+        """This will return the rewards and current season total
         https://api.hiloenergie.com/challenge/v1/api/Locations/XXXX/Seasons
         [
           {
