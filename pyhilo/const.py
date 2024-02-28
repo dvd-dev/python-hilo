@@ -28,6 +28,7 @@ SUBSCRIPTION_KEY: Final = "20eeaedcb86945afa3fe792cea89b8bf"
 API_HOSTNAME: Final = "api.hiloenergie.com"
 API_END: Final = "v1/api"
 API_AUTOMATION_ENDPOINT: Final = f"/Automation/{API_END}"
+API_CHALLENGE_ENDPOINT: Final = f"/challenge/{API_END}"
 API_GD_SERVICE_ENDPOINT: Final = f"/GDService/{API_END}"
 API_NOTIFICATIONS_ENDPOINT: Final = "/Notifications"
 API_EVENTS_ENDPOINT: Final = "/Notifications"
@@ -239,6 +240,7 @@ HILO_PROVIDERS: Final = {
 
 JASCO_MODELS: Final = [
     "43082",
+    "43076",
     "43078",
     "43100",
     "46199",
@@ -254,4 +256,9 @@ JASCO_OUTLETS: Final = [
     "43095",
     "43100",
     "45853",
+]
+
+UNMONITORED_DEVICES: Final = [
+    "43076",
+    "43100",
 ]

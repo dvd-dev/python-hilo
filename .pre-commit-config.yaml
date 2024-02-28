@@ -57,7 +57,7 @@ repos:
       - id: no-commit-to-branch
         args:
           - --branch=dev
-          - --branch=master
+          - --branch=main
 #  - repo: https://github.com/PyCQA/pydocstyle
 #    rev: 5.0.2
 #    hooks:
