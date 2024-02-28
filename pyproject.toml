@@ -40,7 +40,7 @@ exclude = ".venv/.*"
 
 [tool.poetry]
 name = "python-hilo"
-version = "2023.12.02"
+version = "2024.2.2"
 description = "A Python3, async interface to the Hilo API"
 readme = "README.md"
 authors = ["David Vallee Delisle <me@dvd.dev>"]
@@ -77,14 +77,14 @@ websockets = ">=8.1,<12.0"
 
 [tool.poetry.dev-dependencies]
 Sphinx = "^7.1.2"
-aresponses = "^2.1.4"
+aresponses = "^3.0.0"
 asynctest = "^0.13.0"
 pre-commit = "^3.2.2"
-pytest = "^7.2.0"
+pytest = "^8.0.0"
 pytest-aiohttp = "^1.0.4"
 pytest-cov = "^4.0.0"
 sphinx-rtd-theme = "^2.0.0"
-types-pytz = "^2023.3.0"
+types-pytz = "^2024.1.0"
 
 [tool.pylint.BASIC]
 expected-line-ending-format = "LF"

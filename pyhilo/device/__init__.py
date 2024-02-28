@@ -5,6 +5,8 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Union, cast
 
+from homeassistant.const import STATE_UNKNOWN
+
 from pyhilo.const import (
     HILO_DEVICE_ATTRIBUTES,
     HILO_LIST_ATTRIBUTES,
@@ -150,7 +152,7 @@ class HiloDevice:
         return next((True for k in self.supported_attributes if k.attr == attr), False)
 
     def get_value(
-        self, attribute: str, default: Union[str, int, float, None] = None
+        self, attribute: str, default: Union[str, int, float, None] = STATE_UNKNOWN
     ) -> Any:
         attr = self.get_attribute(attribute)
         return attr.value if attr else default

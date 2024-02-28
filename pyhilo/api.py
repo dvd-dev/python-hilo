@@ -20,6 +20,7 @@ from pyhilo.const import (
     ANDROID_CLIENT_HOSTNAME,
     ANDROID_CLIENT_POST,
     API_AUTOMATION_ENDPOINT,
+    API_CHALLENGE_ENDPOINT,
     API_EVENTS_ENDPOINT,
     API_GD_SERVICE_ENDPOINT,
     API_HOSTNAME,
@@ -252,6 +253,7 @@ class API:
         gd: bool = False,
         drms: bool = False,
         events: bool = False,
+        challenge: bool = False,
     ) -> str:
         """Generate a path to the requested endpoint.
 
@@ -263,6 +265,8 @@ class API:
         :type gd: bool, optional
         :param drms: Whether or not we should prepend the path with DRMS path, defaults to False
         :type drms: bool, optional
+        :param challenge: Whether or not we should prepend the path with challenge path, defaults to False
+        :type challenge: bool, optional
         :return: Path to the requested endpoint
         :rtype: str
         """
@@ -273,6 +277,8 @@ class API:
             base += "/DRMS"
         if events:
             base = API_EVENTS_ENDPOINT + API_NOTIFICATIONS_ENDPOINT
+        if challenge:
+            base = API_CHALLENGE_ENDPOINT
         url = base + "/Locations/" + str(location_id)
         if endpoint:
             url += "/" + str(endpoint)
@@ -590,7 +596,7 @@ class API:
 
     async def get_seasons(self, location_id: int) -> dict[str, Any]:
         """This will return the rewards and current season total
-        https://apim.hiloenergie.com/Automation/v1/api/DRMS/Locations/XXXX/Seasons
+        https://api.hiloenergie.com/challenge/v1/api/Locations/XXXX/Seasons
         [
           {
             "season": 2021,
@@ -607,7 +613,7 @@ class API:
           }
         ]
         """
-        url = self._get_url("Seasons", location_id, drms=True)
+        url = self._get_url("Seasons", location_id, challenge=True)
         return cast(dict[str, Any], await self.async_request("get", url))
 
     async def get_gateway(self, location_id: int) -> dict[str, Any]:
