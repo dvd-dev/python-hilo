@@ -82,7 +82,7 @@ asynctest = "^0.13.0"
 pre-commit = "^3.2.2"
 pytest = "^8.0.0"
 pytest-aiohttp = "^1.0.4"
-pytest-cov = "^4.0.0"
+pytest-cov = "^5.0.0"
 sphinx-rtd-theme = "^2.0.0"
 types-pytz = "^2024.1.0"
 
