@@ -660,4 +660,5 @@ class API:
         ]
         """
         url = self._get_url("Weather", location_id)
+        LOG.debug(f"URL is{url}")
         return cast(dict[str, Any], await self.async_request("get", url))
