@@ -662,4 +662,6 @@ class API:
         """
         url = self._get_url("Weather", location_id)
         LOG.debug(f"Weather URL is {url}")
+        response = await self.async_request("get", url)
+        LOG.debug(f"Weather API response: {response}")
         return cast(dict[str, Any], await self.async_request("get", url))
