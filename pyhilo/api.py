@@ -614,6 +614,7 @@ class API:
         ]
         """
         url = self._get_url("Seasons", location_id, challenge=True)
+        LOG.debug(f"Seasons URL is {url}")
         return cast(dict[str, Any], await self.async_request("get", url))
 
     async def get_gateway(self, location_id: int) -> dict[str, Any]:
@@ -660,5 +661,5 @@ class API:
         ]
         """
         url = self._get_url("Weather", location_id)
-        LOG.debug(f"URL is{url}")
+        LOG.debug(f"Weather URL is {url}")
         return cast(dict[str, Any], await self.async_request("get", url))
