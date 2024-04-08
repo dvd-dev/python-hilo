@@ -130,3 +130,6 @@ dmypy.json
 
 # OS X specific metadata
 .DS_Store
+
+# Pycharm stuff
+*.idea

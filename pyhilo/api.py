@@ -614,6 +614,7 @@ class API:
         ]
         """
         url = self._get_url("Seasons", location_id, challenge=True)
+        LOG.debug(f"Seasons URL is {url}")
         return cast(dict[str, Any], await self.async_request("get", url))
 
     async def get_gateway(self, location_id: int) -> dict[str, Any]:
@@ -645,3 +646,22 @@ class API:
         for attr in saved_attrs:
             gw[attr] = {"value": req[0].get(attr)}
         return gw
+
+    async def get_weather(self, location_id: int) -> dict[str, Any]:
+        """This will return the current weather like in the app
+        https://api.hiloenergie.com/Automation/v1/api/Locations/XXXX/Weather
+        [
+          {
+            "temperature": -9.0,
+            "time":"0001-01-01T00:00:00Z",
+            "condition":"Foggy",
+            "icon":0,
+            "humidity":92.0
+          }
+        ]
+        """
+        url = self._get_url("Weather", location_id)
+        LOG.debug(f"Weather URL is {url}")
+        response = await self.async_request("get", url)
+        LOG.debug(f"Weather API response: {response}")
+        return cast(dict[str, Any], await self.async_request("get", url))
