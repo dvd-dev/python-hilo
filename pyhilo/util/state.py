@@ -2,6 +2,7 @@ from datetime import datetime
 from os.path import isfile
 from typing import Any, Optional, Type, TypedDict, TypeVar, Union
 
+import aiofiles
 import ruyaml as yaml
 
 from pyhilo.const import LOG
@@ -71,7 +72,7 @@ def __get_defaults__(cls: Type[T]) -> dict[str, Any]:
     return new_dict  # type: ignore
 
 
-def get_state(state_yaml: str) -> StateDict:
+async def get_state(state_yaml: str) -> StateDict:
     """Read in state yaml.
     :param state_yaml: filename where to read the state
     :type state_yaml: ``str``
@@ -79,13 +80,14 @@ def get_state(state_yaml: str) -> StateDict:
     """
     if not isfile(state_yaml):
         return __get_defaults__(StateDict)  # type: ignore
-    with open(state_yaml) as yaml_file:
+    async with aiofiles.open(state_yaml, mode='r') as yaml_file:
         LOG.debug("Loading state from yaml")
-        state_yaml_payload: StateDict = yaml.load(yaml_file, Loader=yaml.Loader)
+        content = await yaml_file.read()
+        state_yaml_payload: StateDict = yaml.safe_load(content)
     return state_yaml_payload
 
 
-def set_state(
+async def set_state(
     state_yaml: str,
     key: str,
     state: Union[
@@ -101,9 +103,10 @@ def set_state(
     :type state: ``StateDict``
     :rtype: ``StateDict``
     """
-    current_state = get_state(state_yaml) or {}
+    current_state = await get_state(state_yaml) or {}
     merged_state: dict[str, Any] = {key: {**current_state.get(key, {}), **state}}  # type: ignore
     new_state: dict[str, Any] = {**current_state, **merged_state}
-    with open(state_yaml, "w") as yaml_file:
+    async with aiofiles.open(state_yaml, mode='w') as yaml_file:
         LOG.debug("Saving state to yaml file")
-        yaml.dump(new_state, yaml_file, Dumper=yaml.RoundTripDumper)
+        content = yaml.dump(new_state)
+        await yaml_file.write(content)
