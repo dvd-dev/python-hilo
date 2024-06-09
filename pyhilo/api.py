@@ -6,7 +6,7 @@ import json
 import random
 import string
 import sys
-from typing import Any, Callable, Union, cast
+from typing import Any, Callable, Dict, Union, cast
 from urllib import parse
 
 from aiohttp import ClientSession
@@ -75,7 +75,7 @@ class API:
         self._backoff_refresh_lock_ws = asyncio.Lock()
         self._request_retries = request_retries
         self._state_yaml: str = DEFAULT_STATE_FILE
-        self.state = {}
+        self.state: Dict[str, Any] = {}
         self.async_request = self._wrap_request_method(self._request_retries)
         self.device_attributes = get_device_attributes()
         self.session: ClientSession = session
