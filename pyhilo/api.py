@@ -45,6 +45,7 @@ from pyhilo.const import (
 from pyhilo.device import DeviceAttribute, HiloDevice, get_device_attributes
 from pyhilo.exceptions import InvalidCredentialsError, RequestError
 from pyhilo.util.state import (
+    StateDict,
     WebsocketDict,
     WebsocketTransportsDict,
     get_state,
@@ -75,7 +76,7 @@ class API:
         self._backoff_refresh_lock_ws = asyncio.Lock()
         self._request_retries = request_retries
         self._state_yaml: str = DEFAULT_STATE_FILE
-        self.state = get_state(self._state_yaml)
+        self.state: StateDict = {}
         self.async_request = self._wrap_request_method(self._request_retries)
         self.device_attributes = get_device_attributes()
         self.session: ClientSession = session
@@ -152,14 +153,14 @@ class API:
             else attribute,
         )
 
-    def _get_fid_state(self) -> bool:
+    async def _get_fid_state(self) -> bool:
         """Looks up the cached state to define the firebase attributes
         on the API instances.
 
         :return: Whether or not we have cached firebase state
         :rtype: bool
         """
-        self.state = get_state(self._state_yaml)
+        self.state = await get_state(self._state_yaml)
         fb_state = self.state.get("firebase", {})
         if fb_fid := fb_state.get("fid"):
             self._fb_fid = fb_fid
@@ -171,14 +172,14 @@ class API:
             return True
         return False
 
-    def _get_android_state(self) -> bool:
+    async def _get_android_state(self) -> bool:
         """Looks up the cached state to define the android device token
         on the API instances.
 
         :return: Whether or not we have cached android state
         :rtype: bool
         """
-        self.state = get_state(self._state_yaml)
+        self.state = await get_state(self._state_yaml)
         android_state = self.state.get("android", {})
         if token := android_state.get("token"):
             self._device_token = token
@@ -187,18 +188,18 @@ class API:
 
     async def _get_device_token(self) -> None:
         """Retrieves the android token if it's not cached."""
-        if not self._get_android_state():
+        if not await self._get_android_state():
             await self.android_register()
 
     async def _get_fid(self) -> None:
         """Retrieves the firebase state if it's not cached."""
-        if not self._get_fid_state():
+        if not await self._get_fid_state():
             self._fb_id = "".join(
                 random.SystemRandom().choice(string.ascii_letters + string.digits)
                 for _ in range(FB_ID_LEN)
             )
             await self.fb_install(self._fb_id)
-            self._get_fid_state()
+            await self._get_fid_state()
 
     async def _async_request(
         self, method: str, endpoint: str, host: str = API_HOSTNAME, **kwargs: Any
@@ -366,7 +367,7 @@ class API:
         resp = await self.async_request("post", url)
         ws_url = resp.get("url")
         ws_token = resp.get("accessToken")
-        set_state(
+        await set_state(
             self._state_yaml,
             "websocket",
             {
@@ -397,7 +398,7 @@ class API:
             "available_transports": transport_dict,
             "full_ws_url": self.full_ws_url,
         }
-        set_state(self._state_yaml, "websocket", websocket_dict)
+        await set_state(self._state_yaml, "websocket", websocket_dict)
 
     async def fb_install(self, fb_id: str) -> None:
         LOG.debug("Posting firebase install")
@@ -422,7 +423,7 @@ class API:
             raise RequestError(err) from err
         LOG.debug(f"FB Install data: {resp}")
         auth_token = resp.get("authToken", {})
-        set_state(
+        await set_state(
             self._state_yaml,
             "firebase",
             {
@@ -463,7 +464,7 @@ class API:
             LOG.error(f"Android registration error: {msg}")
             raise RequestError
         token = msg.split("=")[-1]
-        set_state(
+        await set_state(
             self._state_yaml,
             "android",
             {
