@@ -22,11 +22,11 @@ class Climate(HiloDevice):
 
     @property
     def max_temp(self) -> float:
-        return cast(float, self.get_value("max_temp_setpoint", 0))
+        return cast(float, self.get_value("max_temp_setpoint", 30))
 
     @property
     def min_temp(self) -> float:
-        return cast(float, self.get_value("min_temp_setpoint", 0))
+        return cast(float, self.get_value("min_temp_setpoint", 5))
 
     @property
     def hvac_action(self) -> str:
