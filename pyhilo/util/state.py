@@ -1,14 +1,15 @@
+import asyncio
 from datetime import datetime
 from os.path import isfile
 from typing import Any, Optional, Type, TypedDict, TypeVar, Union
 
 import aiofiles
-import asyncio
 import ruyaml as yaml
 
 from pyhilo.const import LOG
 
 lock = asyncio.Lock()
+
 
 class TokenDict(TypedDict):
     access: Optional[str]
@@ -105,7 +106,7 @@ async def set_state(
     :type state: ``StateDict``
     :rtype: ``StateDict``
     """
-    async with lock: #note ic-dev21: on lock le fichier pour être sûr de finir la job
+    async with lock:  # note ic-dev21: on lock le fichier pour être sûr de finir la job
         current_state = await get_state(state_yaml) or {}
         merged_state: dict[str, Any] = {key: {**current_state.get(key, {}), **state}}  # type: ignore
         new_state: dict[str, Any] = {**current_state, **merged_state}
