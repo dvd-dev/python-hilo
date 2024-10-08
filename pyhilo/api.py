@@ -399,6 +399,7 @@ class API:
             "available_transports": transport_dict,
             "full_ws_url": self.full_ws_url,
         }
+        LOG.debug("Calling set_state")
         await set_state(self._state_yaml, "websocket", websocket_dict)
 
     async def fb_install(self, fb_id: str) -> None:
@@ -424,6 +425,7 @@ class API:
             raise RequestError(err) from err
         LOG.debug(f"FB Install data: {resp}")
         auth_token = resp.get("authToken", {})
+        LOG.debug("Calling set_state")
         await set_state(
             self._state_yaml,
             "firebase",
@@ -465,6 +467,7 @@ class API:
             LOG.error(f"Android registration error: {msg}")
             raise RequestError
         token = msg.split("=")[-1]
+        LOG.debug("Calling set_state")
         await set_state(
             self._state_yaml,
             "android",
