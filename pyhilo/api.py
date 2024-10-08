@@ -367,6 +367,7 @@ class API:
         resp = await self.async_request("post", url)
         ws_url = resp.get("url")
         ws_token = resp.get("accessToken")
+        LOG.debug("Calling set_state")
         await set_state(
             self._state_yaml,
             "websocket",
