@@ -1,3 +1,4 @@
+import asyncio
 from datetime import datetime
 from os.path import isfile
 from typing import Any, Optional, Type, TypedDict, TypeVar, Union
@@ -6,6 +7,8 @@ import aiofiles
 import ruyaml as yaml
 
 from pyhilo.const import LOG
+
+lock = asyncio.Lock()
 
 
 class TokenDict(TypedDict):
@@ -103,10 +106,11 @@ async def set_state(
     :type state: ``StateDict``
     :rtype: ``StateDict``
     """
-    current_state = await get_state(state_yaml) or {}
-    merged_state: dict[str, Any] = {key: {**current_state.get(key, {}), **state}}  # type: ignore
-    new_state: dict[str, Any] = {**current_state, **merged_state}
-    async with aiofiles.open(state_yaml, mode="w") as yaml_file:
-        LOG.debug("Saving state to yaml file")
-        content = yaml.dump(new_state)
-        await yaml_file.write(content)
+    async with lock:  # note ic-dev21: on lock le fichier pour être sûr de finir la job
+        current_state = await get_state(state_yaml) or {}
+        merged_state: dict[str, Any] = {key: {**current_state.get(key, {}), **state}}  # type: ignore
+        new_state: dict[str, Any] = {**current_state, **merged_state}
+        async with aiofiles.open(state_yaml, mode="w") as yaml_file:
+            LOG.debug("Saving state to yaml file")
+            content = yaml.dump(new_state)
+            await yaml_file.write(content)
