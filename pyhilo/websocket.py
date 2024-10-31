@@ -281,7 +281,7 @@ class WebsocketClient:
         try:
             self._client = await self._api.session.ws_connect(
                 URL(
-                    self._api.full_ws_url, #self._api.full_ws_url.replace("/DeviceHub", "%2FDeviceHub")
+                    self._api.full_ws_url,
                     encoded=True,
                 ),
                 heartbeat=55,
