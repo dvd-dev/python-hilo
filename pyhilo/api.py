@@ -364,10 +364,11 @@ class API:
     async def post_devicehub_negociate(self) -> tuple[str, str]:
         LOG.debug("Getting websocket url")
         url = f"{AUTOMATION_DEVICEHUB_ENDPOINT}/negotiate"
+        LOG.debug(f"devicehub URL is {url}")
         resp = await self.async_request("post", url)
         ws_url = resp.get("url")
         ws_token = resp.get("accessToken")
-        LOG.debug("Calling set_state")
+        LOG.debug("Calling set_state devicehub_negotiate")
         await set_state(
             self._state_yaml,
             "websocket",
@@ -381,6 +382,7 @@ class API:
     async def get_websocket_params(self) -> None:
         uri = parse.urlparse(self.ws_url)
         LOG.debug("Getting websocket params")
+        LOG.debug(f"Getting uri {uri}")
         resp: dict[str, Any] = await self.async_request(
             "post",
             f"{uri.path}negotiate?{uri.query}",
@@ -391,6 +393,7 @@ class API:
         )
         conn_id: str = resp.get("connectionId", "")
         self.full_ws_url = f"{self.ws_url}&id={conn_id}&access_token={self.ws_token}"
+        LOG.debug(f"Getting full ws URL {self.full_ws_url}")
         transport_dict: list[WebsocketTransportsDict] = resp.get(
             "availableTransports", []
         )
@@ -399,7 +402,7 @@ class API:
             "available_transports": transport_dict,
             "full_ws_url": self.full_ws_url,
         }
-        LOG.debug("Calling set_state")
+        LOG.debug("Calling set_state websocket_params")
         await set_state(self._state_yaml, "websocket", websocket_dict)
 
     async def fb_install(self, fb_id: str) -> None:
@@ -425,7 +428,7 @@ class API:
             raise RequestError(err) from err
         LOG.debug(f"FB Install data: {resp}")
         auth_token = resp.get("authToken", {})
-        LOG.debug("Calling set_state")
+        LOG.debug("Calling set_state fb_install")
         await set_state(
             self._state_yaml,
             "firebase",
@@ -467,7 +470,7 @@ class API:
             LOG.error(f"Android registration error: {msg}")
             raise RequestError
         token = msg.split("=")[-1]
-        LOG.debug("Calling set_state")
+        LOG.debug("Calling set_state android_register")
         await set_state(
             self._state_yaml,
             "android",
@@ -478,12 +481,14 @@ class API:
 
     async def get_location_id(self) -> int:
         url = f"{API_AUTOMATION_ENDPOINT}/Locations"
+        LOG.debug(f"LocationId URL is {url}")
         req: list[dict[str, Any]] = await self.async_request("get", url)
         return int(req[0]["id"])
 
     async def get_devices(self, location_id: int) -> list[dict[str, Any]]:
         """Get list of all devices"""
         url = self._get_url("Devices", location_id)
+        LOG.debug(f"Devices URL is {url}")
         devices: list[dict[str, Any]] = await self.async_request("get", url)
         devices.append(await self.get_gateway(location_id))
         # Now it's time to add devices coming from external sources like hass
@@ -499,6 +504,7 @@ class API:
         value: Union[str, float, int, None],
     ) -> None:
         url = self._get_url(f"Devices/{device.id}/Attributes", device.location_id)
+        LOG.debug(f"Device Attribute URL is {url}")
         await self.async_request("put", url, json={key.hilo_attribute: value})
 
     async def get_event_notifications(self, location_id: int) -> dict[str, Any]:
@@ -526,6 +532,7 @@ class API:
           "viewed": false
         }"""
         url = self._get_url(None, location_id, events=True)
+        LOG.debug(f"Event Notifications URL is {url}")
         return cast(dict[str, Any], await self.async_request("get", url))
 
     async def get_gd_events(
@@ -597,6 +604,8 @@ class API:
             url += "?active=true"
         else:
             url += f"/{event_id}"
+
+        LOG.debug(f"get_gd_events URL is {url}")
         return cast(dict[str, Any], await self.async_request("get", url))
 
     async def get_seasons(self, location_id: int) -> dict[str, Any]:
@@ -624,6 +633,7 @@ class API:
 
     async def get_gateway(self, location_id: int) -> dict[str, Any]:
         url = self._get_url("Gateways/Info", location_id)
+        LOG.debug(f"Gateway URL is {url}")
         req = await self.async_request("get", url)
         saved_attrs = [
             "zigBeePairingActivated",
