@@ -28,6 +28,7 @@ from pyhilo.const import (
     API_REGISTRATION_ENDPOINT,
     API_REGISTRATION_HEADERS,
     AUTOMATION_DEVICEHUB_ENDPOINT,
+    AUTOMATION_CHALLENGE_ENDPOINT,
     DEFAULT_STATE_FILE,
     DEFAULT_USER_AGENT,
     FB_APP_ID,
@@ -82,7 +83,8 @@ class API:
         self.session: ClientSession = session
         self._oauth_session = oauth_session
         self.websocket: WebsocketClient
-        self.log_traces = log_traces
+        self.websocket2: WebsocketClient
+        self.log_traces = False
         self._get_device_callbacks: list[Callable[..., Any]] = []
 
     @classmethod
@@ -227,6 +229,10 @@ class API:
             kwargs["headers"]["authorization"] = f"Bearer {access_token}"
         kwargs["headers"]["Host"] = host
 
+        if endpoint.startswith(AUTOMATION_CHALLENGE_ENDPOINT):
+            # remove Ocp-Apim-Subscription-Key header to avoid 401 error
+            kwargs["headers"].pop("Ocp-Apim-Subscription-Key", None)
+
         data: dict[str, Any] = {}
         url = parse.urljoin(f"https://{host}", endpoint)
         if self.log_traces:
@@ -356,10 +362,17 @@ class API:
         await self._get_device_token()
         await self.refresh_ws_token()
         self.websocket = WebsocketClient(self)
+        LOG.debug("Websocket2 postinit")
+        await self._get_fid()
+        await self._get_device_token()
+        await self.refresh_ws2_token()
+        self.websocket2 = WebsocketClient(self)
+
 
     async def refresh_ws_token(self) -> None:
         (self.ws_url, self.ws_token) = await self.post_devicehub_negociate()
         await self.get_websocket_params()
+
 
     async def post_devicehub_negociate(self) -> tuple[str, str]:
         LOG.debug("Getting websocket url")
@@ -372,6 +385,28 @@ class API:
         await set_state(
             self._state_yaml,
             "websocket",
+            {
+                "url": ws_url,
+                "token": ws_token,
+            },
+        )
+        return (ws_url, ws_token)
+    
+    async def refresh_ws2_token(self) -> None:
+        (self.ws2_url, self.ws2_token) = await self.post_challengehub_negociate()
+        await self.get_websocket2_params()
+
+    async def post_challengehub_negociate(self) -> tuple[str, str]:
+        LOG.debug("Getting websocket2 url")
+        url = f"{AUTOMATION_CHALLENGE_ENDPOINT}/negotiate"
+        LOG.debug(f"challengehub URL is {url}")
+        resp = await self.async_request("post", url)
+        ws_url = resp.get("url")
+        ws_token = resp.get("accessToken")
+        LOG.debug("Calling set_state challengehub_negotiate")
+        await set_state(
+            self._state_yaml,
+            "websocket2",
             {
                 "url": ws_url,
                 "token": ws_token,
@@ -404,6 +439,32 @@ class API:
         }
         LOG.debug("Calling set_state websocket_params")
         await set_state(self._state_yaml, "websocket", websocket_dict)
+
+    async def get_websocket2_params(self) -> None:
+        uri = parse.urlparse(self.ws2_url)
+        LOG.debug("Getting websocket2 params")
+        LOG.debug(f"Getting uri {uri}")
+        resp: dict[str, Any] = await self.async_request(
+            "post",
+            f"{uri.path}negotiate?{uri.query}",
+            host=uri.netloc,
+            headers={
+                "authorization": f"Bearer {self.ws2_token}",
+            },
+        )
+        conn_id: str = resp.get("connectionId", "")
+        self.full_ws2_url = f"{self.ws2_url}&id={conn_id}&access_token={self.ws2_token}"
+        LOG.debug(f"Getting full ws2 URL {self.full_ws2_url}")
+        transport_dict: list[WebsocketTransportsDict] = resp.get(
+            "availableTransports", []
+        )
+        websocket_dict: WebsocketDict = {
+            "connection_id": conn_id,
+            "available_transports": transport_dict,
+            "full_ws_url": self.full_ws2_url,
+        }
+        LOG.debug("Calling set_state websocket2_params")
+        await set_state(self._state_yaml, "websocket2", websocket_dict)
 
     async def fb_install(self, fb_id: str) -> None:
         LOG.debug("Posting firebase install")
