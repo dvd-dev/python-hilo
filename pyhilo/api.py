@@ -84,7 +84,7 @@ class API:
         self._oauth_session = oauth_session
         self.websocket: WebsocketClient
         self.websocket2: WebsocketClient
-        self.log_traces = False
+        self.log_traces = log_traces
         self._get_device_callbacks: list[Callable[..., Any]] = []
 
     @classmethod
