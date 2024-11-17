@@ -42,6 +42,8 @@ API_REGISTRATION_HEADERS: Final = {
 
 # Automation server constant
 AUTOMATION_DEVICEHUB_ENDPOINT: Final = "/DeviceHub"
+AUTOMATION_CHALLENGE_ENDPOINT: Final = "/ChallengeHub"
+
 
 # Request constants
 DEFAULT_USER_AGENT: Final = f"PyHilo/{PYHILO_VERSION} HomeAssistant/{homeassistant.core.__version__} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
