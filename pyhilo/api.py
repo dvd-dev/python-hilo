@@ -27,8 +27,8 @@ from pyhilo.const import (
     API_NOTIFICATIONS_ENDPOINT,
     API_REGISTRATION_ENDPOINT,
     API_REGISTRATION_HEADERS,
-    AUTOMATION_DEVICEHUB_ENDPOINT,
     AUTOMATION_CHALLENGE_ENDPOINT,
+    AUTOMATION_DEVICEHUB_ENDPOINT,
     DEFAULT_STATE_FILE,
     DEFAULT_USER_AGENT,
     FB_APP_ID,
@@ -368,11 +368,9 @@ class API:
         await self.refresh_ws2_token()
         self.websocket2 = WebsocketClient(self)
 
-
     async def refresh_ws_token(self) -> None:
         (self.ws_url, self.ws_token) = await self.post_devicehub_negociate()
         await self.get_websocket_params()
-
 
     async def post_devicehub_negociate(self) -> tuple[str, str]:
         LOG.debug("Getting websocket url")
@@ -391,7 +389,7 @@ class API:
             },
         )
         return (ws_url, ws_token)
-    
+
     async def refresh_ws2_token(self) -> None:
         (self.ws2_url, self.ws2_token) = await self.post_challengehub_negociate()
         await self.get_websocket2_params()
