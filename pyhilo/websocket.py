@@ -19,12 +19,11 @@ from aiohttp.client_exceptions import (
 from yarl import URL
 
 from pyhilo.const import (
-    DEFAULT_USER_AGENT,
-    LOG, 
     AUTOMATION_CHALLENGE_ENDPOINT,
     AUTOMATION_DEVICEHUB_ENDPOINT,
+    DEFAULT_USER_AGENT,
+    LOG,
 )
-
 from pyhilo.exceptions import (
     CannotConnectError,
     ConnectionClosedError,
@@ -388,6 +387,7 @@ class WebsocketClient:
 @dataclass
 class WebsocketConfig:
     """Configuration for a websocket connection"""
+
     endpoint: str
     url: Optional[str] = None
     token: Optional[str] = None
@@ -399,11 +399,7 @@ class WebsocketManager:
     """Manages multiple websocket connections for the Hilo API"""
 
     def __init__(
-            self,
-            session: ClientSession,
-            async_request,
-            state_yaml: str,
-            set_state_callback
+        self, session: ClientSession, async_request, state_yaml: str, set_state_callback
     ) -> None:
         """Initialize the websocket manager.
 
@@ -417,7 +413,7 @@ class WebsocketManager:
         self.async_request = async_request
         self._state_yaml = state_yaml
         self._set_state = set_state_callback
-        self._shared_token = None #ic-dev21 need to share the token
+        self._shared_token = None  # ic-dev21 need to share the token
 
         # Initialize websocket configurations
         self.devicehub = WebsocketConfig(endpoint=AUTOMATION_DEVICEHUB_ENDPOINT)
@@ -430,7 +426,9 @@ class WebsocketManager:
         # ic-dev21 reuse it for challenge hub
         await self.refresh_token(self.challengehub, get_new_token=False)
 
-    async def refresh_token(self, config: WebsocketConfig, get_new_token: bool = True) -> None:
+    async def refresh_token(
+        self, config: WebsocketConfig, get_new_token: bool = True
+    ) -> None:
         """Refresh token for a specific websocket configuration.
 
         Args:
@@ -443,7 +441,7 @@ class WebsocketManager:
             # ic-dev21 reuse existing token but get new URL
             config.url, _ = await self._negotiate(config)
             config.token = self._shared_token
-            
+
         await self._get_websocket_params(config)
 
     async def _negotiate(self, config: WebsocketConfig) -> Tuple[str, str]:
@@ -461,10 +459,18 @@ class WebsocketManager:
 
         resp = await self.async_request("post", url)
         ws_url = resp.get("url")
-        ws_token = resp.get("accessToken") if self._shared_token is None else self._shared_token
+        ws_token = (
+            resp.get("accessToken")
+            if self._shared_token is None
+            else self._shared_token
+        )
 
         # Save state
-        state_key = "websocket" if config.endpoint == "AUTOMATION_DEVICEHUB_ENDPOINT" else "websocket2"
+        state_key = (
+            "websocket"
+            if config.endpoint == "AUTOMATION_DEVICEHUB_ENDPOINT"
+            else "websocket2"
+        )
         await self._set_state(
             self._state_yaml,
             state_key,
@@ -496,7 +502,9 @@ class WebsocketManager:
         )
 
         config.connection_id = resp.get("connectionId", "")
-        config.full_url = f"{config.url}&id={config.connection_id}&access_token={config.token}"
+        config.full_url = (
+            f"{config.url}&id={config.connection_id}&access_token={config.token}"
+        )
         LOG.debug(f"Getting full ws URL {config.full_url}")
 
         transport_dict = resp.get("availableTransports", [])
@@ -507,6 +515,10 @@ class WebsocketManager:
         }
 
         # Save state
-        state_key = "websocket" if config.endpoint == "AUTOMATION_DEVICEHUB_ENDPOINT" else "websocket2"
+        state_key = (
+            "websocket"
+            if config.endpoint == "AUTOMATION_DEVICEHUB_ENDPOINT"
+            else "websocket2"
+        )
         LOG.debug(f"Calling set_state {state_key}_params")
         await self._set_state(self._state_yaml, state_key, websocket_dict)
