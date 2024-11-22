@@ -8,8 +8,9 @@ from enum import IntEnum
 import json
 from os import environ
 from typing import TYPE_CHECKING, Any, Callable, Dict
+from urllib import parse
 
-from aiohttp import ClientWebSocketResponse, WSMsgType
+from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
 from aiohttp.client_exceptions import (
     ClientError,
     ServerDisconnectedError,
@@ -17,7 +18,13 @@ from aiohttp.client_exceptions import (
 )
 from yarl import URL
 
-from pyhilo.const import DEFAULT_USER_AGENT, LOG
+from pyhilo.const import (
+    DEFAULT_USER_AGENT,
+    LOG, 
+    AUTOMATION_CHALLENGE_ENDPOINT,
+    AUTOMATION_DEVICEHUB_ENDPOINT,
+)
+
 from pyhilo.exceptions import (
     CannotConnectError,
     ConnectionClosedError,
@@ -376,3 +383,130 @@ class WebsocketClient:
                 "type": inv_type,
             }
         )
+
+
+@dataclass
+class WebsocketConfig:
+    """Configuration for a websocket connection"""
+    endpoint: str
+    url: Optional[str] = None
+    token: Optional[str] = None
+    connection_id: Optional[str] = None
+    full_url: Optional[str] = None
+
+
+class WebsocketManager:
+    """Manages multiple websocket connections for the Hilo API"""
+
+    def __init__(
+            self,
+            session: ClientSession,
+            async_request,
+            state_yaml: str,
+            set_state_callback
+    ) -> None:
+        """Initialize the websocket manager.
+
+        Args:
+            session: The aiohttp client session
+            async_request: The async request method from the API class
+            state_yaml: Path to the state file
+            set_state_callback: Callback to save state
+        """
+        self.session = session
+        self.async_request = async_request
+        self._state_yaml = state_yaml
+        self._set_state = set_state_callback
+        self._shared_token = None #ic-dev21 need to share the token
+
+        # Initialize websocket configurations
+        self.devicehub = WebsocketConfig(endpoint=AUTOMATION_DEVICEHUB_ENDPOINT)
+        self.challengehub = WebsocketConfig(endpoint=AUTOMATION_CHALLENGE_ENDPOINT)
+
+    async def initialize_websockets(self) -> None:
+        """Initialize both websocket connections"""
+        # ic-dev21 get token from device hub
+        await self.refresh_token(self.devicehub, get_new_token=True)
+        # ic-dev21 reuse it for challenge hub
+        await self.refresh_token(self.challengehub, get_new_token=False)
+
+    async def refresh_token(self, config: WebsocketConfig, get_new_token: bool = True) -> None:
+        """Refresh token for a specific websocket configuration.
+
+        Args:
+            config: The websocket configuration to refresh
+        """
+        if get_new_token:
+            config.url, self._shared_token = await self._negotiate(config)
+            config.token = self._shared_token
+        else:
+            # ic-dev21 reuse existing token but get new URL
+            config.url, _ = await self._negotiate(config)
+            config.token = self._shared_token
+            
+        await self._get_websocket_params(config)
+
+    async def _negotiate(self, config: WebsocketConfig) -> Tuple[str, str]:
+        """Negotiate websocket connection and get URL and token.
+
+        Args:
+            config: The websocket configuration to negotiate
+
+        Returns:
+            Tuple containing the websocket URL and access token
+        """
+        LOG.debug(f"Getting websocket url for {config.endpoint}")
+        url = f"{config.endpoint}/negotiate"
+        LOG.debug(f"Negotiate URL is {url}")
+
+        resp = await self.async_request("post", url)
+        ws_url = resp.get("url")
+        ws_token = resp.get("accessToken") if self._shared_token is None else self._shared_token
+
+        # Save state
+        state_key = "websocket" if config.endpoint == "AUTOMATION_DEVICEHUB_ENDPOINT" else "websocket2"
+        await self._set_state(
+            self._state_yaml,
+            state_key,
+            {
+                "url": ws_url,
+                "token": ws_token,
+            },
+        )
+
+        return ws_url, ws_token
+
+    async def _get_websocket_params(self, config: WebsocketConfig) -> None:
+        """Get websocket parameters including connection ID.
+
+        Args:
+            config: The websocket configuration to get parameters for
+        """
+        uri = parse.urlparse(config.url)
+        LOG.debug(f"Getting websocket params for {config.endpoint}")
+        LOG.debug(f"Getting uri {uri}")
+
+        resp = await self.async_request(
+            "post",
+            f"{uri.path}negotiate?{uri.query}",
+            host=uri.netloc,
+            headers={
+                "authorization": f"Bearer {config.token}",
+            },
+        )
+
+        config.connection_id = resp.get("connectionId", "")
+        config.full_url = f"{config.url}&id={config.connection_id}&access_token={config.token}"
+        LOG.debug(f"Getting full ws URL {config.full_url}")
+
+        transport_dict = resp.get("availableTransports", [])
+        websocket_dict = {
+            "connection_id": config.connection_id,
+            "available_transports": transport_dict,
+            "full_ws_url": config.full_url,
+        }
+
+        # Save state
+        state_key = "websocket" if config.endpoint == "AUTOMATION_DEVICEHUB_ENDPOINT" else "websocket2"
+        LOG.debug(f"Calling set_state {state_key}_params")
+        await self._set_state(self._state_yaml, state_key, websocket_dict)
