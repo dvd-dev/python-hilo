@@ -356,18 +356,15 @@ class API:
         await self._get_fid()
         await self._get_device_token()
         await self.refresh_ws_token()
-        #self.websocket = WebsocketClient(self)
+        # self.websocket = WebsocketClient(self)
 
-        #Initialize WebsocketManager ic-dev21
+        # Initialize WebsocketManager ic-dev21
         self.websocket_manager = WebsocketManager(
-            self.session,
-            self.async_request,
-            self._state_yaml,
-            set_state
+            self.session, self.async_request, self._state_yaml, set_state
         )
         await self.websocket_manager.initialize_websockets()
 
-        #Create both websocket clients
+        # Create both websocket clients
         self.websocket = WebsocketClient(self, self.websocket_manager.devicehub)
         self.websocket2 = WebsocketClient(self, self.websocket_manager.challengehub)
 
