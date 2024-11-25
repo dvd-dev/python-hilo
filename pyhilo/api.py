@@ -217,6 +217,8 @@ class API:
         :rtype: dict[str, Any]
         """
         kwargs.setdefault("headers", self.headers)
+        access_token = await self.async_get_access_token()
+
         if endpoint.startswith(API_REGISTRATION_ENDPOINT):
             kwargs["headers"] = {**kwargs["headers"], **API_REGISTRATION_HEADERS}
         if endpoint.startswith(FB_INSTALL_ENDPOINT):
@@ -224,9 +226,15 @@ class API:
         if endpoint.startswith(ANDROID_CLIENT_ENDPOINT):
             kwargs["headers"] = {**kwargs["headers"], **ANDROID_CLIENT_HEADERS}
         if host == API_HOSTNAME:
-            access_token = await self.async_get_access_token()
             kwargs["headers"]["authorization"] = f"Bearer {access_token}"
         kwargs["headers"]["Host"] = host
+
+        # ic-dev21 trying Leicas suggestion
+        if endpoint.startswith(AUTOMATION_CHALLENGE_ENDPOINT):
+            # remove Ocp-Apim-Subscription-Key header to avoid 401 error
+            kwargs["headers"].pop("Ocp-Apim-Subscription-Key", None)
+            kwargs["headers"]["authorization"] = f"Bearer {access_token}"
+
 
         data: dict[str, Any] = {}
         url = parse.urljoin(f"https://{host}", endpoint)
