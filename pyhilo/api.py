@@ -235,7 +235,6 @@ class API:
             kwargs["headers"].pop("Ocp-Apim-Subscription-Key", None)
             kwargs["headers"]["authorization"] = f"Bearer {access_token}"
 
-
         data: dict[str, Any] = {}
         url = parse.urljoin(f"https://{host}", endpoint)
         if self.log_traces:
