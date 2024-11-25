@@ -373,8 +373,8 @@ class API:
         await self.websocket_manager.initialize_websockets()
 
         # Create both websocket clients
-        self.websocket = WebsocketClient(self, self.websocket_manager.devicehub)
-        self.websocket2 = WebsocketClient(self, self.websocket_manager.challengehub)
+        self.websocket = WebsocketClient(self.websocket_manager.devicehub)
+        self.websocket2 = WebsocketClient(self.websocket_manager.challengehub)
 
     async def refresh_ws_token(self) -> None:
         """Refresh the websocket token."""
