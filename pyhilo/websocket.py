@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 from enum import IntEnum
 import json
 from os import environ
-from typing import TYPE_CHECKING, Any, Callable, Dict
+from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 from urllib import parse
 
 from aiohttp import ClientSession, ClientWebSocketResponse, WSMsgType
