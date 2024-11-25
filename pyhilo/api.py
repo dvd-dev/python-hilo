@@ -311,8 +311,9 @@ class API:
                 LOG.info(
                     "401 detected on websocket, refreshing websocket token. Old url: {self.ws_url} Old Token: {self.ws_token}"
                 )
+                LOG.info(f"401 detected on {err.request_info.url}")
                 async with self._backoff_refresh_lock_ws:
-                    (self.ws_url, self.ws_token) = await self.post_devicehub_negociate()
+                    await self.refresh_ws_token()
                     await self.get_websocket_params()
                 return
 
@@ -362,7 +363,7 @@ class API:
         LOG.debug("Websocket postinit")
         await self._get_fid()
         await self._get_device_token()
-        await self.refresh_ws_token()
+        # await self.refresh_ws_token()
         # self.websocket = WebsocketClient(self)
 
         # Initialize WebsocketManager ic-dev21
@@ -376,8 +377,9 @@ class API:
         self.websocket2 = WebsocketClient(self, self.websocket_manager.challengehub)
 
     async def refresh_ws_token(self) -> None:
-        (self.ws_url, self.ws_token) = await self.post_devicehub_negociate()
-        await self.get_websocket_params()
+        """Refresh the websocket token."""
+        await self.websocket_manager.refresh_token(self.websocket_manager.devicehub)
+        await self.websocket_manager.refresh_token(self.websocket_manager.challengehub)
 
     async def post_devicehub_negociate(self) -> tuple[str, str]:
         LOG.debug("Getting websocket url")
