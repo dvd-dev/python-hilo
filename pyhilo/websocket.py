@@ -424,7 +424,7 @@ class WebsocketManager:
         # ic-dev21 get token from device hub
         await self.refresh_token(self.devicehub, get_new_token=True)
         # ic-dev21 reuse it for challenge hub
-        await self.refresh_token(self.challengehub, get_new_token=False)
+        await self.refresh_token(self.challengehub, get_new_token=True)
 
     async def refresh_token(
         self, config: WebsocketConfig, get_new_token: bool = True
@@ -459,11 +459,8 @@ class WebsocketManager:
 
         resp = await self.async_request("post", url)
         ws_url = resp.get("url")
-        ws_token = (
-            resp.get("accessToken")
-            if self._shared_token is None
-            else self._shared_token
-        )
+        ws_token =   resp.get("accessToken")
+          
 
         # Save state
         state_key = (
