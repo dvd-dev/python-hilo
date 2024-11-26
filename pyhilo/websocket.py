@@ -214,7 +214,7 @@ class WebsocketClient:
 
         if self._api.log_traces:
             LOG.debug(
-                f"[TRACE] Sending data to websocket server: {json.dumps(payload)}"
+                f"[TRACE] Sending data to websocket {self._api.endpoint} : {json.dumps(payload)}"
             )
         # Hilo added a control character (chr(30)) at the end of each payload they send.
         # They also expect this char to be there at the end of every payload we send them.
@@ -269,7 +269,7 @@ class WebsocketClient:
 
         LOG.info("Websocket: Connecting to server")
         if self._api.log_traces:
-            LOG.debug(f"[TRACE] Websocket URL: {self._api.full_ws_url}")
+            LOG.debug(f"[TRACE] Websocket URL: {self._api.full_url}")
         headers = {
             "Sec-WebSocket-Extensions": "permessage-deflate; client_max_window_bits",
             "Pragma": "no-cache",
@@ -287,7 +287,7 @@ class WebsocketClient:
         try:
             self._client = await self._api.session.ws_connect(
                 URL(
-                    self._api.full_ws_url,
+                    self._api.full_url,
                     encoded=True,
                 ),
                 heartbeat=55,
@@ -393,6 +393,8 @@ class WebsocketConfig:
     token: Optional[str] = None
     connection_id: Optional[str] = None
     full_url: Optional[str] = None
+    log_traces: bool = True
+    session: ClientSession | None = None
 
 
 class WebsocketManager:
@@ -416,8 +418,8 @@ class WebsocketManager:
         self._shared_token = None  # ic-dev21 need to share the token
 
         # Initialize websocket configurations
-        self.devicehub = WebsocketConfig(endpoint=AUTOMATION_DEVICEHUB_ENDPOINT)
-        self.challengehub = WebsocketConfig(endpoint=AUTOMATION_CHALLENGE_ENDPOINT)
+        self.devicehub = WebsocketConfig(endpoint=AUTOMATION_DEVICEHUB_ENDPOINT, session=session)
+        self.challengehub = WebsocketConfig(endpoint=AUTOMATION_CHALLENGE_ENDPOINT, session=session)
 
     async def initialize_websockets(self) -> None:
         """Initialize both websocket connections"""
@@ -508,7 +510,7 @@ class WebsocketManager:
         websocket_dict = {
             "connection_id": config.connection_id,
             "available_transports": transport_dict,
-            "full_ws_url": config.full_url,
+            "full_url": config.full_url,
         }
 
         # Save state
