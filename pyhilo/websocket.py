@@ -223,7 +223,7 @@ class WebsocketClient:
     def _parse_message(self, msg: dict[str, Any]) -> None:
         """Parse an incoming message."""
         if self._api.log_traces:
-            LOG.debug(f"[TRACE] Received message from websocket: {msg}")
+            LOG.debug(f"[TRACE] Received message on websocket {self._api.endpoint}: {msg}")
         if msg.get("type") == SignalRMsgType.PING:
             schedule_callback(self._async_pong)
             return
@@ -267,7 +267,7 @@ class WebsocketClient:
             LOG.debug("Websocket: async_connect() called but already connected")
             return
 
-        LOG.info("Websocket: Connecting to server")
+        LOG.info("Websocket: Connecting to server %s", self._api.endpoint)
         if self._api.log_traces:
             LOG.debug(f"[TRACE] Websocket URL: {self._api.full_ws_url}")
         headers = {
@@ -302,7 +302,7 @@ class WebsocketClient:
             LOG.error(f"Unable to connect to WS server {err}")
             raise CannotConnectError(err) from err
 
-        LOG.info("Connected to websocket server")
+        LOG.info(f"Connected to websocket server {self._api.endpoint}")
         self._watchdog.trigger()
         for callback in self._connect_callbacks:
             schedule_callback(callback)
