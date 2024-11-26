@@ -52,7 +52,7 @@ from pyhilo.util.state import (
     get_state,
     set_state,
 )
-from pyhilo.websocket import WebsocketClient, WebsocketConfig, WebsocketManager
+from pyhilo.websocket import WebsocketClient, WebsocketManager
 
 
 class API:

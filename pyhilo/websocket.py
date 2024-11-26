@@ -418,8 +418,12 @@ class WebsocketManager:
         self._shared_token = None  # ic-dev21 need to share the token
 
         # Initialize websocket configurations
-        self.devicehub = WebsocketConfig(endpoint=AUTOMATION_DEVICEHUB_ENDPOINT, session=session)
-        self.challengehub = WebsocketConfig(endpoint=AUTOMATION_CHALLENGE_ENDPOINT, session=session)
+        self.devicehub = WebsocketConfig(
+            endpoint=AUTOMATION_DEVICEHUB_ENDPOINT, session=session
+        )
+        self.challengehub = WebsocketConfig(
+            endpoint=AUTOMATION_CHALLENGE_ENDPOINT, session=session
+        )
 
     async def initialize_websockets(self) -> None:
         """Initialize both websocket connections"""
@@ -461,8 +465,7 @@ class WebsocketManager:
 
         resp = await self.async_request("post", url)
         ws_url = resp.get("url")
-        ws_token =   resp.get("accessToken")
-          
+        ws_token = resp.get("accessToken")
 
         # Save state
         state_key = (
