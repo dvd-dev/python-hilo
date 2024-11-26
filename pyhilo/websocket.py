@@ -269,7 +269,7 @@ class WebsocketClient:
 
         LOG.info("Websocket: Connecting to server")
         if self._api.log_traces:
-            LOG.debug(f"[TRACE] Websocket URL: {self._api.full_url}")
+            LOG.debug(f"[TRACE] Websocket URL: {self._api.full_ws_url}")
         headers = {
             "Sec-WebSocket-Extensions": "permessage-deflate; client_max_window_bits",
             "Pragma": "no-cache",
@@ -287,7 +287,7 @@ class WebsocketClient:
         try:
             self._client = await self._api.session.ws_connect(
                 URL(
-                    self._api.full_url,
+                    self._api.full_ws_url,
                     encoded=True,
                 ),
                 heartbeat=55,
