@@ -223,7 +223,9 @@ class WebsocketClient:
     def _parse_message(self, msg: dict[str, Any]) -> None:
         """Parse an incoming message."""
         if self._api.log_traces:
-            LOG.debug(f"[TRACE] Received message on websocket {self._api.endpoint}: {msg}")
+            LOG.debug(
+                f"[TRACE] Received message on websocket {self._api.endpoint}: {msg}"
+            )
         if msg.get("type") == SignalRMsgType.PING:
             schedule_callback(self._async_pong)
             return
@@ -269,7 +271,7 @@ class WebsocketClient:
 
         LOG.info("Websocket: Connecting to server %s", self._api.endpoint)
         if self._api.log_traces:
-            LOG.debug(f"[TRACE] Websocket URL: {self._api.full_url}")
+            LOG.debug(f"[TRACE] Websocket URL: {self._api.full_ws_url}")
         headers = {
             "Sec-WebSocket-Extensions": "permessage-deflate; client_max_window_bits",
             "Pragma": "no-cache",
@@ -287,7 +289,7 @@ class WebsocketClient:
         try:
             self._client = await self._api.session.ws_connect(
                 URL(
-                    self._api.full_url,
+                    self._api.full_ws_url,
                     encoded=True,
                 ),
                 heartbeat=55,
@@ -392,7 +394,7 @@ class WebsocketConfig:
     url: Optional[str] = None
     token: Optional[str] = None
     connection_id: Optional[str] = None
-    full_url: Optional[str] = None
+    full_ws_url: Optional[str] = None
     log_traces: bool = True
     session: ClientSession | None = None
 
@@ -504,16 +506,16 @@ class WebsocketManager:
         )
 
         config.connection_id = resp.get("connectionId", "")
-        config.full_url = (
+        config.full_ws_url = (
             f"{config.url}&id={config.connection_id}&access_token={config.token}"
         )
-        LOG.debug(f"Getting full ws URL {config.full_url}")
+        LOG.debug(f"Getting full ws URL {config.full_ws_url}")
 
         transport_dict = resp.get("availableTransports", [])
         websocket_dict = {
             "connection_id": config.connection_id,
             "available_transports": transport_dict,
-            "full_url": config.full_url,
+            "full_url": config.full_ws_url,
         }
 
         # Save state
