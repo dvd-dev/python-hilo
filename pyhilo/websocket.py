@@ -417,9 +417,9 @@ class WebsocketManager:
         self.async_request = async_request
         self._state_yaml = state_yaml
         self._set_state = set_state_callback
-        self._shared_token = None  # ic-dev21 need to share the token
+        self._shared_token = None
 
-        # Initialize websocket configurations
+        # Initialize websocket configurations, more can be added here
         self.devicehub = WebsocketConfig(
             endpoint=AUTOMATION_DEVICEHUB_ENDPOINT, session=session
         )
@@ -431,7 +431,7 @@ class WebsocketManager:
         """Initialize both websocket connections"""
         # ic-dev21 get token from device hub
         await self.refresh_token(self.devicehub, get_new_token=True)
-        # ic-dev21 reuse it for challenge hub
+        # ic-dev21 get token from challenge hub
         await self.refresh_token(self.challengehub, get_new_token=True)
 
     async def refresh_token(
@@ -446,7 +446,6 @@ class WebsocketManager:
             config.url, self._shared_token = await self._negotiate(config)
             config.token = self._shared_token
         else:
-            # ic-dev21 reuse existing token but get new URL
             config.url, _ = await self._negotiate(config)
             config.token = self._shared_token
 
@@ -472,7 +471,7 @@ class WebsocketManager:
         # Save state
         state_key = (
             "websocket"
-            if config.endpoint == "AUTOMATION_DEVICEHUB_ENDPOINT"
+            if config.endpoint == AUTOMATION_DEVICEHUB_ENDPOINT
             else "websocket2"
         )
         await self._set_state(
@@ -521,7 +520,7 @@ class WebsocketManager:
         # Save state
         state_key = (
             "websocket"
-            if config.endpoint == "AUTOMATION_DEVICEHUB_ENDPOINT"
+            if config.endpoint == AUTOMATION_DEVICEHUB_ENDPOINT
             else "websocket2"
         )
         LOG.debug(f"Calling set_state {state_key}_params")

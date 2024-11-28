@@ -363,8 +363,6 @@ class API:
         LOG.debug("Websocket postinit")
         await self._get_fid()
         await self._get_device_token()
-        # await self.refresh_ws_token()
-        # self.websocket = WebsocketClient(self)
 
         # Initialize WebsocketManager ic-dev21
         self.websocket_manager = WebsocketManager(
@@ -373,6 +371,8 @@ class API:
         await self.websocket_manager.initialize_websockets()
 
         # Create both websocket clients
+        # ic-dev21 need to work on this as it can't lint as is, may need to
+        # instanciate differently
         self.websocket = WebsocketClient(self.websocket_manager.devicehub)
         self.websocket2 = WebsocketClient(self.websocket_manager.challengehub)
 
@@ -381,6 +381,8 @@ class API:
         await self.websocket_manager.refresh_token(self.websocket_manager.devicehub)
         await self.websocket_manager.refresh_token(self.websocket_manager.challengehub)
 
+
+    # ic-dev21 not sure this is still needed? See websocket.py _async_negotiate
     async def post_devicehub_negociate(self) -> tuple[str, str]:
         LOG.debug("Getting websocket url")
         url = f"{AUTOMATION_DEVICEHUB_ENDPOINT}/negotiate"
