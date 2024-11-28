@@ -372,7 +372,7 @@ class API:
 
         # Create both websocket clients
         # ic-dev21 need to work on this as it can't lint as is, may need to
-        # instanciate differently
+        # instantiate differently
         self.websocket = WebsocketClient(self.websocket_manager.devicehub)
         self.websocket2 = WebsocketClient(self.websocket_manager.challengehub)
 
@@ -380,26 +380,6 @@ class API:
         """Refresh the websocket token."""
         await self.websocket_manager.refresh_token(self.websocket_manager.devicehub)
         await self.websocket_manager.refresh_token(self.websocket_manager.challengehub)
-
-
-    # ic-dev21 not sure this is still needed? See websocket.py _async_negotiate
-    async def post_devicehub_negociate(self) -> tuple[str, str]:
-        LOG.debug("Getting websocket url")
-        url = f"{AUTOMATION_DEVICEHUB_ENDPOINT}/negotiate"
-        LOG.debug(f"devicehub URL is {url}")
-        resp = await self.async_request("post", url)
-        ws_url = resp.get("url")
-        ws_token = resp.get("accessToken")
-        LOG.debug("Calling set_state devicehub_negotiate")
-        await set_state(
-            self._state_yaml,
-            "websocket",
-            {
-                "url": ws_url,
-                "token": ws_token,
-            },
-        )
-        return (ws_url, ws_token)
 
     async def get_websocket_params(self) -> None:
         uri = parse.urlparse(self.ws_url)
