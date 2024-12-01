@@ -403,7 +403,11 @@ class WebsocketManager:
     """Manages multiple websocket connections for the Hilo API"""
 
     def __init__(
-        self, session: ClientSession, async_request, state_yaml: str, set_state_callback
+        self,
+        session: ClientSession,
+        async_request: Callable[..., Any],
+        state_yaml: str,
+        set_state_callback: Callable[..., Any],
     ) -> None:
         """Initialize the websocket manager.
 
@@ -497,7 +501,7 @@ class WebsocketManager:
 
         resp = await self.async_request(
             "post",
-            f"{uri.path}negotiate?{uri.query}",
+            f"{uri.path}negotiate?{uri.query}",  # type: ignore
             host=uri.netloc,
             headers={
                 "authorization": f"Bearer {config.token}",
