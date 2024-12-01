@@ -84,6 +84,9 @@ class API:
         self.websocket: WebsocketClient
         self.log_traces = log_traces
         self._get_device_callbacks: list[Callable[..., Any]] = []
+        self.ws_url: str = ""
+        self.ws_token: str = ""
+        self.endpoint: str = ""
 
     @classmethod
     async def async_create(
