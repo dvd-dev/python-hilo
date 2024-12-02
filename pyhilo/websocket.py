@@ -255,7 +255,7 @@ class WebsocketClient:
         return self._add_callback(self._disconnect_callbacks, callback)
 
     def add_event_callback(self, callback: Callable[..., Any]) -> Callable[..., None]:
-        """Add a callback callback to be called upon receiving an event.
+        """Add a callback to be called upon receiving an event.
         Note that callbacks should expect to receive a WebsocketEvent object as a
         parameter.
         :param callback: The method to call after receiving an event.
@@ -421,8 +421,7 @@ class WebsocketManager:
         self.async_request = async_request
         self._state_yaml = state_yaml
         self._set_state = set_state_callback
-        self._shared_token = None
-
+        self._shared_token: Optional[str] = None
         # Initialize websocket configurations, more can be added here
         self.devicehub = WebsocketConfig(
             endpoint=AUTOMATION_DEVICEHUB_ENDPOINT, session=session
@@ -442,7 +441,6 @@ class WebsocketManager:
         self, config: WebsocketConfig, get_new_token: bool = True
     ) -> None:
         """Refresh token for a specific websocket configuration.
-
         Args:
             config: The websocket configuration to refresh
         """
@@ -457,10 +455,8 @@ class WebsocketManager:
 
     async def _negotiate(self, config: WebsocketConfig) -> Tuple[str, str]:
         """Negotiate websocket connection and get URL and token.
-
         Args:
             config: The websocket configuration to negotiate
-
         Returns:
             Tuple containing the websocket URL and access token
         """
