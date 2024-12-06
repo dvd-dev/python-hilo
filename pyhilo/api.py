@@ -82,6 +82,7 @@ class API:
         self.session: ClientSession = session
         self._oauth_session = oauth_session
         self.websocket_devices: WebsocketClient
+        self.websocket_challenges: WebsocketClient
         self.log_traces = log_traces
         self._get_device_callbacks: list[Callable[..., Any]] = []
         self.ws_url: str = ""
