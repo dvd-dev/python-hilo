@@ -81,7 +81,7 @@ class API:
         self.device_attributes = get_device_attributes()
         self.session: ClientSession = session
         self._oauth_session = oauth_session
-        self.websocket: WebsocketClient
+        self.websocket_devices: WebsocketClient
         self.log_traces = log_traces
         self._get_device_callbacks: list[Callable[..., Any]] = []
         self.ws_url: str = ""
@@ -375,8 +375,8 @@ class API:
         # Create both websocket clients
         # ic-dev21 need to work on this as it can't lint as is, may need to
         # instantiate differently
-        self.websocket = WebsocketClient(self.websocket_manager.devicehub)
-        self.websocket2 = WebsocketClient(self.websocket_manager.challengehub)
+        self.websocket_devices = WebsocketClient(self.websocket_manager.devicehub)
+        self.websocket_challenges = WebsocketClient(self.websocket_manager.challengehub)
 
     async def refresh_ws_token(self) -> None:
         """Refresh the websocket token."""
