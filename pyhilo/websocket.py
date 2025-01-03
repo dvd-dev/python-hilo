@@ -470,9 +470,9 @@ class WebsocketManager:
 
         # Save state
         state_key = (
-            "websocket"
+            "websocketDevices"
             if config.endpoint == AUTOMATION_DEVICEHUB_ENDPOINT
-            else "websocket2"
+            else "websocketChallenges"
         )
         await self._set_state(
             self._state_yaml,
@@ -519,9 +519,9 @@ class WebsocketManager:
 
         # Save state
         state_key = (
-            "websocket"
+            "websocketDevices"
             if config.endpoint == AUTOMATION_DEVICEHUB_ENDPOINT
-            else "websocket2"
+            else "websocketChallenges"
         )
         LOG.debug(f"Calling set_state {state_key}_params")
         await self._set_state(self._state_yaml, state_key, websocket_dict)
