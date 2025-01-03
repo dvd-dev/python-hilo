@@ -256,6 +256,7 @@ class API:
             if self.log_traces:
                 LOG.debug("[TRACE] Data received from /%s: %s", endpoint, data)
             resp.raise_for_status()
+        LOG.debug(f"ic-dev21 Data is {data}")
         return data
 
     def _get_url(
