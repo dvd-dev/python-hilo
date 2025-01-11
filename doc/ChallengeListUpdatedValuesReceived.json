@@ -1,0 +1,15 @@
+{
+  "type": 1,
+  "target": "ChallengeListUpdatedValuesReceived",
+  "arguments": [
+    [
+      {
+        "id": 274,
+        "progress": "scheduled",
+        "isParticipating": "None",
+        "isConfigurable": "False",
+        "currentPhase": "None"
+      }
+    ]
+  ]
+}
