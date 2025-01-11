@@ -1,0 +1,25 @@
+{
+    "type": 1,
+    "target": "ChallengeAdded",
+    "arguments": [
+      {
+        "progress": "scheduled",
+        "isParticipating": "True",
+        "isConfigurable": "True",
+        "currentPhase": "None",
+        "id": "275",
+        "period": "am",
+        "phases": {
+          "planPublicationStartUtc": "2025-01-06T05:15:00Z",
+          "baselinePublicationStartUtc": "2025-01-06T09:00:00Z",
+          "settingsDeadlineUtc": "2025-01-06T05:00:00Z",
+          "preheatStartDateUTC": "2025-01-06T09:00:00Z",
+          "preheatEndDateUTC": "2025-01-06T11:00:00Z",
+          "reductionStartDateUTC": "2025-01-06T11:00:00Z",
+          "reductionEndDateUTC": "2025-01-06T15:00:00Z",
+          "recoveryStartDateUTC": "2025-01-06T15:00:00Z",
+          "recoveryEndDateUTC": "2025-01-06T16:00:00Z"
+        }
+      }
+    ]
+  }

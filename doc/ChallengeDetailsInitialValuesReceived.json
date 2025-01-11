@@ -1,0 +1,173 @@
+{
+    "type": 1,
+    "target": "ChallengeDetailsInitialValuesReceived",
+    "arguments": [
+      {
+        "currentPhase": "None",
+        "parameters": {
+          "mode": "extreme",
+          "devices": [
+            {
+              "id": 454741,
+              "deviceUid": "BC33ACFFFE2BABDD",
+              "name": "Thermostat Cuisine",
+              "roomName": "Salon/Cuisine",
+              "optOut": "False",
+              "preheat": "True",
+              "deviceType": "Thermostat"
+            },
+            {
+              "id": 454744,
+              "deviceUid": "BC33ACFFFE21C79A",
+              "name": "Thermostat chambre des maîtres",
+              "roomName": "Chambre des maîtres ",
+              "optOut": "False",
+              "preheat": "True",
+              "deviceType": "Thermostat"
+            },
+            {
+              "id": 454747,
+              "deviceUid": "5C0272FFFE823394",
+              "name": "Thermostat salle de bain",
+              "roomName": "Salle de bain en haut",
+              "optOut": "True",
+              "preheat": "False",
+              "deviceType": "Thermostat"
+            },
+            {
+              "id": 454750,
+              "deviceUid": "BC33ACFFFE296648",
+              "name": "Thermostat chambre XXXXXX",
+              "roomName": "Chambre XXXXXX",
+              "optOut": "False",
+              "preheat": "True",
+              "deviceType": "Thermostat"
+            },
+            {
+              "id": 454756,
+              "deviceUid": "BC33ACFFFE2BAD65",
+              "name": "Thermostat salle de jeux",
+              "roomName": "Salle de jeux",
+              "optOut": "False",
+              "preheat": "True",
+              "deviceType": "Thermostat"
+            },
+            {
+              "id": 454761,
+              "deviceUid": "5C0272FFFE8233C9",
+              "name": "thermostat salle de bain en bas",
+              "roomName": "Salle de bain en bas",
+              "optOut": "False",
+              "preheat": "True",
+              "deviceType": "Thermostat"
+            },
+            {
+              "id": 454764,
+              "deviceUid": "BC33ACFFFE295E81",
+              "name": "Thermostat bureau",
+              "roomName": "Bureau",
+              "optOut": "True",
+              "preheat": "False",
+              "deviceType": "Thermostat"
+            },
+            {
+              "id": 454766,
+              "deviceUid": "BC33ACFFFE2B042D",
+              "name": "Thermostat chambre invité",
+              "roomName": "Chambre d'invités",
+              "optOut": "True",
+              "preheat": "False",
+              "deviceType": "Thermostat"
+            }
+          ]
+        },
+        "consumption": {
+          "currentWh": 4312.33349609375,
+          "baselineWh": 44751.55859375,
+          "estimatedReward": "None",
+          "generatedTimeUTC": "2025-01-04T19:29:33.3715759+00:00",
+          "cumulativeBaselinePoints": [
+            {
+              "timeUTC": "2024-12-23T11:00:00+00:00",
+              "wh": 0
+            },
+            {
+              "timeUTC": "2024-12-23T12:00:00+00:00",
+              "wh": 14398.015625
+            },
+            {
+              "timeUTC": "2024-12-23T13:00:00+00:00",
+              "wh": 24935.7646484375
+            },
+            {
+              "timeUTC": "2024-12-23T14:00:00+00:00",
+              "wh": 34843.7255859375
+            },
+            {
+              "timeUTC": "2024-12-23T15:00:00+00:00",
+              "wh": 44751.5576171875
+            }
+          ],
+          "cumulativeConsumptionPoints": []
+        },
+        "isPreSeason": "False",
+        "report": {
+          "status": "Success",
+          "reward": 22.24,
+          "energySavingsWh": 40439.22509765625,
+          "calculatedReward": 22.24,
+          "isMissingBaseline": "False",
+          "isMissingConsumption": "False",
+          "adjustments": []
+        },
+        "generatedTimeUTC": "2025-01-04T19:29:33.3715759Z",
+        "optOutDevices": [
+          {
+            "id": 454741,
+            "eventDateUtc": "2024-12-23T11:00:00.6549104Z",
+            "triggerTypeId": 3,
+            "triggerApplicationId": 1
+          },
+          {
+            "id": 454744,
+            "eventDateUtc": "2024-12-23T11:00:00.6593181Z",
+            "triggerTypeId": 3,
+            "triggerApplicationId": 1
+          },
+          {
+            "id": 454750,
+            "eventDateUtc": "2024-12-23T11:00:00.6460736Z",
+            "triggerTypeId": 3,
+            "triggerApplicationId": 1
+          },
+          {
+            "id": 454756,
+            "eventDateUtc": "2024-12-23T11:00:00.650514Z",
+            "triggerTypeId": 3,
+            "triggerApplicationId": 1
+          },
+          {
+            "id": 454761,
+            "eventDateUtc": "2024-12-23T11:00:00.6612074Z",
+            "triggerTypeId": 3,
+            "triggerApplicationId": 1
+          }
+        ],
+        "isEligibleForReward": "True",
+        "progress": "completed",
+        "isParticipating": "True",
+        "isConfigurable": "False",
+        "id": 273,
+        "period": "am",
+        "phases": {
+          "settingsDeadlineUtc": "2024-12-23T05:00:00Z",
+          "preheatStartDateUTC": "2024-12-23T09:00:00Z",
+          "preheatEndDateUTC": "2024-12-23T11:00:00Z",
+          "reductionStartDateUTC": "2024-12-23T11:00:00Z",
+          "reductionEndDateUTC": "2024-12-23T15:00:00Z",
+          "recoveryStartDateUTC": "2024-12-23T15:00:00Z",
+          "recoveryEndDateUTC": "2024-12-23T16:00:00Z"
+        }
+      }
+    ]
+  }
