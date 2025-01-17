@@ -135,6 +135,9 @@ class API:
         """Return a valid access token."""
         if not self._oauth_session.valid_token:
             await self._oauth_session.async_ensure_token_valid()
+        
+        access_token = str(self._oauth_session.token["access_token"])
+        LOG.debug(f"ic-dev21 access token is {access_token}")
 
         return str(self._oauth_session.token["access_token"])
 
@@ -256,7 +259,6 @@ class API:
             if self.log_traces:
                 LOG.debug("[TRACE] Data received from /%s: %s", endpoint, data)
             resp.raise_for_status()
-        LOG.debug(f"ic-dev21 Data is {data}")
         return data
 
     def _get_url(

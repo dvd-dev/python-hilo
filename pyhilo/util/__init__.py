@@ -3,6 +3,9 @@ import asyncio
 from datetime import datetime, timedelta
 import re
 from typing import Any, Callable
+import logging
+
+LOG = logging.getLogger(__package__)
 
 from dateutil import tz
 from dateutil.parser import parse
@@ -35,8 +38,12 @@ def snake_to_camel(string: str) -> str:
 def from_utc_timestamp(date_string: str) -> datetime:
     from_zone = tz.tzutc()
     to_zone = tz.tzlocal()
-    return parse(date_string).replace(tzinfo=from_zone).astimezone(to_zone)
-
+    dt = parse(date_string)
+    if dt.tzinfo is None:  # Only replace tzinfo if not already set
+        dt = dt.replace(tzinfo=from_zone)
+    output = dt.astimezone(to_zone)
+    LOG.debug(f"ic-dev21 output: {output}")
+    return output
 
 def time_diff(ts1: datetime, ts2: datetime) -> timedelta:
     to_zone = tz.tzlocal()
