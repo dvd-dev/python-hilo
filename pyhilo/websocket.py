@@ -218,13 +218,14 @@ class WebsocketClient:
             )
         # Hilo added a control character (chr(30)) at the end of each payload they send.
         # They also expect this char to be there at the end of every payload we send them.
+        LOG.debug(f"ic-dev21 send_json {payload}")
         await self._client.send_str(json.dumps(payload) + chr(30))
 
     def _parse_message(self, msg: dict[str, Any]) -> None:
         """Parse an incoming message."""
         if self._api.log_traces:
             LOG.debug(
-                f"[TRACE] Received message on websocket {self._api.endpoint}: {msg}"
+                f"[TRACE] Received message on websocket(_parse_message) {self._api.endpoint}: {msg}"
             )
         if msg.get("type") == SignalRMsgType.PING:
             schedule_callback(self._async_pong)
@@ -376,6 +377,7 @@ class WebsocketClient:
             except asyncio.TimeoutError:
                 return
             self._ready_event.clear()
+        LOG.debug(f"ic-dev21 invoke argument: {arg}, invocationId: {inv_id}, target: {target}, type: {type}")
         await self._async_send_json(
             {
                 "arguments": arg,
