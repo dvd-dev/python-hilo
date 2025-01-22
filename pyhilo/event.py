@@ -265,6 +265,7 @@ class EventWebsocket:
             "end": getattr(self, phase_end),
         }
 
+
     @property
     def state(self) -> str:
         now = datetime.now(self.preheat_start.tzinfo)
@@ -290,3 +291,4 @@ class EventWebsocket:
 
         else:
             return "unknown"
+

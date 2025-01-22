@@ -42,7 +42,6 @@ def from_utc_timestamp(date_string: str) -> datetime:
     if dt.tzinfo is None:  # Only replace tzinfo if not already set
         dt = dt.replace(tzinfo=from_zone)
     output = dt.astimezone(to_zone)
-    LOG.debug(f"ic-dev21 output: {output}")
     return output
 
 def time_diff(ts1: datetime, ts2: datetime) -> timedelta:
