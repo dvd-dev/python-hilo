@@ -377,7 +377,9 @@ class WebsocketClient:
             except asyncio.TimeoutError:
                 return
             self._ready_event.clear()
-        LOG.debug(f"ic-dev21 invoke argument: {arg}, invocationId: {inv_id}, target: {target}, type: {type}")
+        LOG.debug(
+            f"ic-dev21 invoke argument: {arg}, invocationId: {inv_id}, target: {target}, type: {type}"
+        )
         await self._async_send_json(
             {
                 "arguments": arg,

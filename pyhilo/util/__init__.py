@@ -1,16 +1,17 @@
 """Define utility modules."""
 import asyncio
 from datetime import datetime, timedelta
+import logging
 import re
 from typing import Any, Callable
-import logging
-
-LOG = logging.getLogger(__package__)
 
 from dateutil import tz
 from dateutil.parser import parse
 
 from pyhilo.const import LOG  # noqa: F401
+
+LOG = logging.getLogger(__package__)
+
 
 CAMEL_REX_1 = re.compile("(.)([A-Z][a-z]+)")
 CAMEL_REX_2 = re.compile("([a-z0-9])([A-Z])")
@@ -43,6 +44,7 @@ def from_utc_timestamp(date_string: str) -> datetime:
         dt = dt.replace(tzinfo=from_zone)
     output = dt.astimezone(to_zone)
     return output
+
 
 def time_diff(ts1: datetime, ts2: datetime) -> timedelta:
     to_zone = tz.tzlocal()
