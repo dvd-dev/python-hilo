@@ -1,9 +1,12 @@
 """Event object """
 from datetime import datetime, timedelta, timezone
+import logging
 import re
 from typing import Any, cast
 
 from pyhilo.util import camel_to_snake, from_utc_timestamp
+
+LOG = logging.getLogger(__package__)
 
 
 class Event:
@@ -126,9 +129,12 @@ class Event:
     @property
     def state(self) -> str:
         now = datetime.now(self.preheat_start.tzinfo)
-        if self.pre_cold_start <= now < self.pre_cold_end:
+        if self.pre_cold_start and self.pre_cold_start <= now < self.pre_cold_end:
             return "pre_cold"
-        elif self.appreciation_start <= now < self.appreciation_end:
+        elif (
+            self.appreciation_start
+            and self.appreciation_start <= now < self.appreciation_end
+        ):
             return "appreciation"
         elif self.preheat_start > now:
             return "scheduled"
@@ -138,9 +144,12 @@ class Event:
             return "reduction"
         elif self.recovery_start <= now < self.recovery_end:
             return "recovery"
+        elif now >= self.recovery_end + timedelta(minutes=5):
+            return "off"
         elif now >= self.recovery_end:
             return "completed"
         elif self.progress:
             return self.progress
+
         else:
             return "unknown"
