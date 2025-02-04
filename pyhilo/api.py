@@ -27,7 +27,7 @@ from pyhilo.const import (
     API_NOTIFICATIONS_ENDPOINT,
     API_REGISTRATION_ENDPOINT,
     API_REGISTRATION_HEADERS,
-    AUTOMATION_DEVICEHUB_ENDPOINT,
+    AUTOMATION_CHALLENGE_ENDPOINT,
     DEFAULT_STATE_FILE,
     DEFAULT_USER_AGENT,
     FB_APP_ID,
@@ -51,7 +51,7 @@ from pyhilo.util.state import (
     get_state,
     set_state,
 )
-from pyhilo.websocket import WebsocketClient
+from pyhilo.websocket import WebsocketClient, WebsocketManager
 
 
 class API:
@@ -81,9 +81,17 @@ class API:
         self.device_attributes = get_device_attributes()
         self.session: ClientSession = session
         self._oauth_session = oauth_session
+        self.websocket_devices: WebsocketClient
+        # Backward compatibility during transition to websocket for challenges. Currently the HA Hilo integration
+        # uses the .websocket attribute. Re-added this attribute and point to the same object as websocket_devices.
+        # Should be removed once the transition to the challenge websocket is completed everywhere.
         self.websocket: WebsocketClient
+        self.websocket_challenges: WebsocketClient
         self.log_traces = log_traces
         self._get_device_callbacks: list[Callable[..., Any]] = []
+        self.ws_url: str = ""
+        self.ws_token: str = ""
+        self.endpoint: str = ""
 
     @classmethod
     async def async_create(
@@ -131,6 +139,9 @@ class API:
         """Return a valid access token."""
         if not self._oauth_session.valid_token:
             await self._oauth_session.async_ensure_token_valid()
+
+        access_token = str(self._oauth_session.token["access_token"])
+        LOG.debug(f"ic-dev21 access token is {access_token}")
 
         return str(self._oauth_session.token["access_token"])
 
@@ -216,6 +227,8 @@ class API:
         :rtype: dict[str, Any]
         """
         kwargs.setdefault("headers", self.headers)
+        access_token = await self.async_get_access_token()
+
         if endpoint.startswith(API_REGISTRATION_ENDPOINT):
             kwargs["headers"] = {**kwargs["headers"], **API_REGISTRATION_HEADERS}
         if endpoint.startswith(FB_INSTALL_ENDPOINT):
@@ -223,9 +236,14 @@ class API:
         if endpoint.startswith(ANDROID_CLIENT_ENDPOINT):
             kwargs["headers"] = {**kwargs["headers"], **ANDROID_CLIENT_HEADERS}
         if host == API_HOSTNAME:
-            access_token = await self.async_get_access_token()
             kwargs["headers"]["authorization"] = f"Bearer {access_token}"
         kwargs["headers"]["Host"] = host
+
+        # ic-dev21 trying Leicas suggestion
+        if endpoint.startswith(AUTOMATION_CHALLENGE_ENDPOINT):
+            # remove Ocp-Apim-Subscription-Key header to avoid 401 error
+            kwargs["headers"].pop("Ocp-Apim-Subscription-Key", None)
+            kwargs["headers"]["authorization"] = f"Bearer {access_token}"
 
         data: dict[str, Any] = {}
         url = parse.urljoin(f"https://{host}", endpoint)
@@ -303,8 +321,9 @@ class API:
                 LOG.info(
                     "401 detected on websocket, refreshing websocket token. Old url: {self.ws_url} Old Token: {self.ws_token}"
                 )
+                LOG.info(f"401 detected on {err.request_info.url}")
                 async with self._backoff_refresh_lock_ws:
-                    (self.ws_url, self.ws_token) = await self.post_devicehub_negociate()
+                    await self.refresh_ws_token()
                     await self.get_websocket_params()
                 return
 
@@ -354,30 +373,26 @@ class API:
         LOG.debug("Websocket postinit")
         await self._get_fid()
         await self._get_device_token()
-        await self.refresh_ws_token()
-        self.websocket = WebsocketClient(self)
+
+        # Initialize WebsocketManager ic-dev21
+        self.websocket_manager = WebsocketManager(
+            self.session, self.async_request, self._state_yaml, set_state
+        )
+        await self.websocket_manager.initialize_websockets()
+
+        # Create both websocket clients
+        # ic-dev21 need to work on this as it can't lint as is, may need to
+        # instantiate differently
+        self.websocket_devices = WebsocketClient(self.websocket_manager.devicehub)
+
+        # For backward compatibility during the transition to challengehub websocket 
+        self.websocket = self.websocket_devices
+        self.websocket_challenges = WebsocketClient(self.websocket_manager.challengehub)
 
     async def refresh_ws_token(self) -> None:
-        (self.ws_url, self.ws_token) = await self.post_devicehub_negociate()
-        await self.get_websocket_params()
-
-    async def post_devicehub_negociate(self) -> tuple[str, str]:
-        LOG.debug("Getting websocket url")
-        url = f"{AUTOMATION_DEVICEHUB_ENDPOINT}/negotiate"
-        LOG.debug(f"devicehub URL is {url}")
-        resp = await self.async_request("post", url)
-        ws_url = resp.get("url")
-        ws_token = resp.get("accessToken")
-        LOG.debug("Calling set_state devicehub_negotiate")
-        await set_state(
-            self._state_yaml,
-            "websocket",
-            {
-                "url": ws_url,
-                "token": ws_token,
-            },
-        )
-        return (ws_url, ws_token)
+        """Refresh the websocket token."""
+        await self.websocket_manager.refresh_token(self.websocket_manager.devicehub)
+        await self.websocket_manager.refresh_token(self.websocket_manager.challengehub)
 
     async def get_websocket_params(self) -> None:
         uri = parse.urlparse(self.ws_url)
