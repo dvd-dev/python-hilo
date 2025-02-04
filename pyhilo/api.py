@@ -82,6 +82,10 @@ class API:
         self.session: ClientSession = session
         self._oauth_session = oauth_session
         self.websocket_devices: WebsocketClient
+        # Backward compatibility during transition to websocket for challenges. Currently the HA Hilo integration
+        # uses the .websocket attribute. Re-added this attribute and point to the same object as websocket_devices.
+        # Should be removed once the transition to the challenge websocket is completed everywhere.
+        self.websocket: WebsocketClient
         self.websocket_challenges: WebsocketClient
         self.log_traces = log_traces
         self._get_device_callbacks: list[Callable[..., Any]] = []
@@ -380,6 +384,9 @@ class API:
         # ic-dev21 need to work on this as it can't lint as is, may need to
         # instantiate differently
         self.websocket_devices = WebsocketClient(self.websocket_manager.devicehub)
+
+        # For backward compatibility during the transition to challengehub websocket 
+        self.websocket = self.websocket_devices
         self.websocket_challenges = WebsocketClient(self.websocket_manager.challengehub)
 
     async def refresh_ws_token(self) -> None:
