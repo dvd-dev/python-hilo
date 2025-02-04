@@ -12,7 +12,6 @@ from urllib import parse
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientResponseError
 import backoff
-from homeassistant.helpers import config_entry_oauth2_flow
 
 from pyhilo.const import (
     ANDROID_CLIENT_ENDPOINT,
@@ -67,7 +66,7 @@ class API:
         self,
         *,
         session: ClientSession,
-        oauth_session: config_entry_oauth2_flow.OAuth2Session,
+        oauth_session,
         request_retries: int = REQUEST_RETRY,
         log_traces: bool = False,
     ) -> None:
@@ -98,7 +97,7 @@ class API:
         cls,
         *,
         session: ClientSession,
-        oauth_session: config_entry_oauth2_flow.OAuth2Session,
+        oauth_session,
         request_retries: int = REQUEST_RETRY,
         log_traces: bool = False,
     ) -> API:
