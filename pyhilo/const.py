@@ -8,7 +8,7 @@ import homeassistant.core
 LOG: Final = logging.getLogger(__package__)
 DEFAULT_STATE_FILE: Final = "hilo_state.yaml"
 REQUEST_RETRY: Final = 9
-PYHILO_VERSION: Final = "2024.10.02"
+PYHILO_VERSION: Final = "2025.2.01"
 # TODO: Find a way to keep previous line in sync with pyproject.toml automatically
 
 CONTENT_TYPE_FORM: Final = "application/x-www-form-urlencoded"
