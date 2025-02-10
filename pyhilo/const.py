@@ -3,7 +3,6 @@ import platform
 from typing import Final
 
 import aiohttp
-import homeassistant.core
 
 LOG: Final = logging.getLogger(__package__)
 DEFAULT_STATE_FILE: Final = "hilo_state.yaml"
@@ -46,7 +45,7 @@ AUTOMATION_CHALLENGE_ENDPOINT: Final = "/ChallengeHub"
 
 
 # Request constants
-DEFAULT_USER_AGENT: Final = f"PyHilo/{PYHILO_VERSION} HomeAssistant/{homeassistant.core.__version__} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
+DEFAULT_USER_AGENT: Final = f"PyHilo/{PYHILO_VERSION} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
 
 
 # NOTE(dvd): Not sure how to get new ones so I'm using the ones from my emulator
