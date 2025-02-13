@@ -3,12 +3,11 @@ import platform
 from typing import Final
 
 import aiohttp
-import homeassistant.core
 
 LOG: Final = logging.getLogger(__package__)
 DEFAULT_STATE_FILE: Final = "hilo_state.yaml"
 REQUEST_RETRY: Final = 9
-PYHILO_VERSION: Final = "2025.2.01"
+PYHILO_VERSION: Final = "2025.2.02"
 # TODO: Find a way to keep previous line in sync with pyproject.toml automatically
 
 CONTENT_TYPE_FORM: Final = "application/x-www-form-urlencoded"
@@ -46,7 +45,7 @@ AUTOMATION_CHALLENGE_ENDPOINT: Final = "/ChallengeHub"
 
 
 # Request constants
-DEFAULT_USER_AGENT: Final = f"PyHilo/{PYHILO_VERSION} HomeAssistant/{homeassistant.core.__version__} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
+DEFAULT_USER_AGENT: Final = f"PyHilo/{PYHILO_VERSION} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
 
 
 # NOTE(dvd): Not sure how to get new ones so I'm using the ones from my emulator
