@@ -62,6 +62,12 @@ class Event:
             "last_update",
         ]
 
+    def update_wh(self, used_wH):
+        LOG.debug(f"Updating WH: {used_wH}")
+        self.used_kWh: float = round(used_wH / 1000, 2)
+        self.last_update = datetime.now(timezone.utc).astimezone()
+
+
     def as_dict(self) -> dict[str, Any]:
         rep = {k: getattr(self, k) for k in self.dict_items}
         rep["phases"] = {k: getattr(self, k) for k in self.phases_list}
