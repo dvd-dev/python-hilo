@@ -67,6 +67,11 @@ class Event:
         self.used_kWh: float = round(used_wH / 1000, 2)
         self.last_update = datetime.now(timezone.utc).astimezone()
 
+    def should_check_for_allowed_wh(self):
+        now = datetime.now(self.preheat_start.tzinfo)
+        time_since_preheat_start = (self.preheat_start - now).total_seconds()
+        already_has_allowed_wh = self.allowed_kWh > 0
+        return 1800 <= time_since_preheat_start <= 2700 and not already_has_allowed_wh
 
     def as_dict(self) -> dict[str, Any]:
         rep = {k: getattr(self, k) for k in self.dict_items}
