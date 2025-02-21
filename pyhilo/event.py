@@ -10,6 +10,7 @@ LOG = logging.getLogger(__package__)
 
 
 class Event:
+    """This class is used to populate the data of a Hilo Challenge Event, contains datetime info and consumption data"""
     setting_deadline: datetime
     pre_cold_start: datetime
     pre_cold_end: datetime
@@ -63,11 +64,14 @@ class Event:
         ]
 
     def update_wh(self, used_Wh: float) -> None:
+        """This function is used to update the used_kWh attribute during a Hilo Challenge Event"""
         LOG.debug(f"Updating Wh: {used_Wh}")
-        self.used_kWh: float = round(used_Wh / 1000, 2)
+        self.used_kWh = round(used_Wh / 1000, 2)
         self.last_update = datetime.now(timezone.utc).astimezone()
 
-    def should_check_for_allowed_wh(self):
+    def should_check_for_allowed_wh(self) -> bool:
+        """This function is used to authorize subscribing to a specific event in Hilo to receive the allowed_kWh
+        that is made available in the pre_heat phase"""
         now = datetime.now(self.preheat_start.tzinfo)
         time_since_preheat_start = (self.preheat_start - now).total_seconds()
         already_has_allowed_wh = self.allowed_kWh > 0
