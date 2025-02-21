@@ -1,7 +1,6 @@
 """Define utility modules."""
 import asyncio
 from datetime import datetime, timedelta
-import logging
 import re
 from typing import Any, Callable
 
@@ -9,9 +8,6 @@ from dateutil import tz
 from dateutil.parser import parse
 
 from pyhilo.const import LOG  # noqa: F401
-
-LOG = logging.getLogger(__package__)
-
 
 CAMEL_REX_1 = re.compile("(.)([A-Z][a-z]+)")
 CAMEL_REX_2 = re.compile("([a-z0-9])([A-Z])")

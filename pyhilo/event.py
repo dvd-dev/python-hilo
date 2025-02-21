@@ -10,6 +10,7 @@ LOG = logging.getLogger(__package__)
 
 
 class Event:
+    """This class is used to populate the data of a Hilo Challenge Event, contains datetime info and consumption data"""
     setting_deadline: datetime
     pre_cold_start: datetime
     pre_cold_end: datetime
@@ -62,6 +63,20 @@ class Event:
             "last_update",
         ]
 
+    def update_wh(self, used_wH: float) -> None:
+        """This function is used to update the used_kWh attribute during a Hilo Challenge Event"""
+        LOG.debug(f"Updating Wh: {used_wH}")
+        self.used_kWh = round(used_wH / 1000, 2)
+        self.last_update = datetime.now(timezone.utc).astimezone()
+
+    def should_check_for_allowed_wh(self) -> bool:
+        """This function is used to authorize subscribing to a specific event in Hilo to receive the allowed_kWh
+        that is made available in the pre_heat phase"""
+        now = datetime.now(self.preheat_start.tzinfo)
+        time_since_preheat_start = (self.preheat_start - now).total_seconds()
+        already_has_allowed_wh = self.allowed_kWh > 0
+        return 1800 <= time_since_preheat_start <= 2700 and not already_has_allowed_wh
+
     def as_dict(self) -> dict[str, Any]:
         rep = {k: getattr(self, k) for k in self.dict_items}
         rep["phases"] = {k: getattr(self, k) for k in self.phases_list}
@@ -69,6 +84,7 @@ class Event:
         return rep
 
     def _convert_phases(self, phases: dict[str, Any]) -> None:
+        """Formats phase times for later use"""
         self.phases_list = []
         for key, value in phases.items():
             phase_match = re.match(r"(.*)(DateUTC|Utc)", key)
@@ -89,6 +105,7 @@ class Event:
     def _create_phases(
         self, hours: int, phase_name: str, parent_phase: str
     ) -> datetime:
+        """Creates optional "appreciation" and "pre_cold" phases according to Hilo phases datetimes"""
         parent_start = getattr(self, f"{parent_phase}_start")
         phase_start = f"{phase_name}_start"
         phase_end = f"{phase_name}_end"
@@ -128,6 +145,7 @@ class Event:
 
     @property
     def state(self) -> str:
+        """Defines state in the next_event attribute"""
         now = datetime.now(self.preheat_start.tzinfo)
         if self.pre_cold_start and self.pre_cold_start <= now < self.pre_cold_end:
             return "pre_cold"
