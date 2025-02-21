@@ -84,6 +84,7 @@ class Event:
         return rep
 
     def _convert_phases(self, phases: dict[str, Any]) -> None:
+        """Formats phase times for later use"""
         self.phases_list = []
         for key, value in phases.items():
             phase_match = re.match(r"(.*)(DateUTC|Utc)", key)
@@ -104,6 +105,7 @@ class Event:
     def _create_phases(
         self, hours: int, phase_name: str, parent_phase: str
     ) -> datetime:
+        """Creates optional "appreciation" and "pre_cold" phases according to Hilo phases datetimes"""
         parent_start = getattr(self, f"{parent_phase}_start")
         phase_start = f"{phase_name}_start"
         phase_end = f"{phase_name}_end"
@@ -143,6 +145,7 @@ class Event:
 
     @property
     def state(self) -> str:
+        """Defines state in the next_event attribute"""
         now = datetime.now(self.preheat_start.tzinfo)
         if self.pre_cold_start and self.pre_cold_start <= now < self.pre_cold_end:
             return "pre_cold"
