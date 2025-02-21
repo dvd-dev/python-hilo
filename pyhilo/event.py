@@ -27,8 +27,8 @@ class Event:
         params: dict[str, Any] = event.get("parameters", {})
         devices: list[dict[str, Any]] = params.get("devices", [])
         consumption: dict[str, Any] = event.get("consumption", {})
-        allowed_wH: int = consumption.get("baselineWh", 0) or 0
-        used_wH: int = consumption.get("currentWh", 0) or 0
+        allowed_Wh: int = consumption.get("baselineWh", 0) or 0
+        used_Wh: int = consumption.get("currentWh", 0) or 0
         self.participating: bool = cast(bool, event.get("isParticipating", False))
         self.configurable: bool = cast(bool, event.get("isConfigurable", False))
         self.period: str = cast(str, event.get("period", ""))
@@ -38,12 +38,12 @@ class Event:
         self.pre_heat_devices: int = len([x for x in devices if x["preheat"]])
         self.progress: str = cast(str, event.get("progress", "unknown"))
         self.mode: str = cast(str, params.get("mode", "Unknown"))
-        self.allowed_kWh: float = round(allowed_wH / 1000, 2)
-        self.used_kWh: float = round(used_wH / 1000, 2)
+        self.allowed_kWh: float = round(allowed_Wh / 1000, 2)
+        self.used_kWh: float = round(used_Wh / 1000, 2)
         self.used_percentage: float = 0
         self.last_update = datetime.now(timezone.utc).astimezone()
-        if allowed_wH > 0:
-            self.used_percentage = round(used_wH / allowed_wH * 100, 2)
+        if allowed_Wh > 0:
+            self.used_percentage = round(used_Wh / allowed_Wh * 100, 2)
         self._phase_time_mapping = {
             "pre_heat": "preheat",
         }
@@ -62,9 +62,9 @@ class Event:
             "last_update",
         ]
 
-    def update_wh(self, used_wH):
-        LOG.debug(f"Updating WH: {used_wH}")
-        self.used_kWh: float = round(used_wH / 1000, 2)
+    def update_wh(self, used_Wh: float) -> None:
+        LOG.debug(f"Updating Wh: {used_Wh}")
+        self.used_kWh: float = round(used_Wh / 1000, 2)
         self.last_update = datetime.now(timezone.utc).astimezone()
 
     def should_check_for_allowed_wh(self):

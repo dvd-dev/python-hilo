@@ -385,7 +385,7 @@ class API:
         # instantiate differently
         self.websocket_devices = WebsocketClient(self.websocket_manager.devicehub)
 
-        # For backward compatibility during the transition to challengehub websocket 
+        # For backward compatibility during the transition to challengehub websocket
         self.websocket = self.websocket_devices
         self.websocket_challenges = WebsocketClient(self.websocket_manager.challengehub)
 
