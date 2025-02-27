@@ -1,0 +1,14 @@
+{
+  "name": "python-hilo",
+  "version": "2025.2.2",
+  "private": true,
+  "description": "A Python3, async interface to the Hilo API",
+  "scripts": {
+    "prettier": "prettier --write **/*.{json,js,md,yml,yaml} *.{json,js,md,yml,yaml}"
+  },
+  "author": "David Vallee Delisle <me@dvd.dev>",
+  "license": "MIT",
+  "devDependencies": {
+    "prettier": "3.5.1"
+  }
+}

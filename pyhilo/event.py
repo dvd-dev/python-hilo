@@ -11,6 +11,7 @@ LOG = logging.getLogger(__package__)
 
 class Event:
     """This class is used to populate the data of a Hilo Challenge Event, contains datetime info and consumption data"""
+
     setting_deadline: datetime
     pre_cold_start: datetime
     pre_cold_end: datetime
