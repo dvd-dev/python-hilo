@@ -76,7 +76,7 @@ python = "^3.9.0"
 voluptuous = ">=0.13.1"
 websockets = ">=8.1,<16.0"
 
-[tool.poetry.dev-dependencies]
+[poetry.group.dev.dependencies]
 Sphinx = "^7.1.2"
 aresponses = "^3.0.0"
 asynctest = "^0.13.0"
