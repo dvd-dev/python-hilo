@@ -10,7 +10,6 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.config_entry_oauth2_flow import LocalOAuth2Implementation
 
 from pyhilo.const import AUTH_AUTHORIZE, AUTH_CLIENT_ID, AUTH_TOKEN, DOMAIN
-
 from pyhilo.oauth2helper import OAuth2Helper
 
 

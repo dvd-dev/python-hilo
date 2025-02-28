@@ -4,7 +4,6 @@ import os
 import re
 from typing import Any, cast
 
-
 from pyhilo.const import (
     AUTH_AUTHORIZE,
     AUTH_CHALLENGE_METHOD,
@@ -36,7 +35,7 @@ class OAuth2Helper:
             "code_challenge": self._code_challenge,
             "code_challenge_method": AUTH_CHALLENGE_METHOD,
             "response_type": "code",
-            "client_id": AUTH_CLIENT_ID
+            "client_id": AUTH_CLIENT_ID,
         }
 
     def get_token_request_parameters(self, code, redirect_uri):
@@ -46,5 +45,3 @@ class OAuth2Helper:
             "redirect_uri": redirect_uri,
             "code_verifier": self._code_verifier,
         }
-
-
