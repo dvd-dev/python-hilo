@@ -74,11 +74,11 @@ check [the contributor's page][contributors].
 
 
 
-[build-shield]: https://github.com/Moustachauve/pytechnove/actions/workflows/tests.yaml/badge.svg
-[build]: https://github.com/Moustachauve/pytechnove/actions/workflows/tests.yaml
+[build-shield]: https://github.com/dvd-dev/python-hilo/actions/workflows/tests.yaml/badge.svg
+[build]: https://github.com/dvd-dev/python-hilo/actions/workflows/tests.yaml
 [releases-shield]: https://img.shields.io/github/release/dvd-dev/python-hilo.svg
 [releases]: https://github.com/dvd-dev/python-hilo/releases
-[license-shield]: https://img.shields.io/github/license/Moustachauve/pytechnove.svg
+[license-shield]: https://img.shields.io/github/license/dvd-dev/python-hilo.svg
 [devcontainer-shield]: https://img.shields.io/static/v1?label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode
 [devcontainer]: https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/dvd-dev/python-hilo
 [poetry-install]: https://python-poetry.org/docs/#installation
