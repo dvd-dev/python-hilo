@@ -1,4 +1,4 @@
-"""Light object """
+"""Light object"""
 
 from typing import Union
 

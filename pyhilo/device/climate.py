@@ -1,4 +1,4 @@
-"""Climate object """
+"""Climate object"""
 
 from typing import Union, cast
 

@@ -1,4 +1,4 @@
-"""Switch object """
+"""Switch object"""
 
 from typing import Union
 

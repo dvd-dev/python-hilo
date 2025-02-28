@@ -1,17 +1,17 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import datetime, timedelta
 import json
 import random
 import string
 import sys
+from datetime import datetime, timedelta
 from typing import Any, Callable, Union, cast
 from urllib import parse
 
+import backoff
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientResponseError
-import backoff
 from homeassistant.helpers import config_entry_oauth2_flow
 
 from pyhilo.const import (
@@ -129,10 +129,8 @@ class API:
         }
         return {
             **headers,
-            **{
-                "Content-Type": "application/json; charset=utf-8",
-                "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
-            },
+            "Content-Type": "application/json; charset=utf-8",
+            "Ocp-Apim-Subscription-Key": SUBSCRIPTION_KEY,
         }
 
     async def async_get_access_token(self) -> str:
@@ -516,7 +514,7 @@ class API:
         self,
         device: HiloDevice,
         key: DeviceAttribute,
-        value: Union[str, float, int, None],
+        value: Union[str, float, None],
     ) -> None:
         url = self._get_url(f"Devices/{device.id}/Attributes", device.location_id)
         LOG.debug(f"Device Attribute URL is {url}")
@@ -545,7 +543,8 @@ class API:
           "homePageNotificationBody": "Test manuel de l’alarme détecté.",
           "notificationDataJSON": "{\"NotificationType\":null,\"Title\":\"\",\"SubTitle\":null,\"Body\":\"Test manuel de l’alarme détecté.\",\"Badge\":0,\"Sound\":null,\"Data\":null,\"Tags\":null,\"Type\":\"TestDetected\",\"DeviceId\":324236,\"LocationId\":4051}",
           "viewed": false
-        }"""
+        }
+        """
         url = self._get_url(None, location_id, events=True)
         LOG.debug(f"Event Notifications URL is {url}")
         return cast(dict[str, Any], await self.async_request("get", url))
@@ -613,7 +612,6 @@ class API:
           }
         }
         """
-
         url = self._get_url("Events", location_id, True)
         if not event_id:
             url += "?active=true"

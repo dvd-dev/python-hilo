@@ -1,4 +1,5 @@
 """Custom OAuth2 implementation."""
+
 import base64
 import hashlib
 import os

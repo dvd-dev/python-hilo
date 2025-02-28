@@ -1,7 +1,8 @@
-"""Event object """
-from datetime import datetime, timedelta, timezone
+"""Event object"""
+
 import logging
 import re
+from datetime import datetime, timedelta, timezone
 from typing import Any, cast
 
 from pyhilo.util import camel_to_snake, from_utc_timestamp
@@ -72,7 +73,8 @@ class Event:
 
     def should_check_for_allowed_wh(self) -> bool:
         """This function is used to authorize subscribing to a specific event in Hilo to receive the allowed_kWh
-        that is made available in the pre_heat phase"""
+        that is made available in the pre_heat phase
+        """
         now = datetime.now(self.preheat_start.tzinfo)
         time_since_preheat_start = (self.preheat_start - now).total_seconds()
         already_has_allowed_wh = self.allowed_kWh > 0
@@ -150,25 +152,24 @@ class Event:
         now = datetime.now(self.preheat_start.tzinfo)
         if self.pre_cold_start and self.pre_cold_start <= now < self.pre_cold_end:
             return "pre_cold"
-        elif (
+        if (
             self.appreciation_start
             and self.appreciation_start <= now < self.appreciation_end
         ):
             return "appreciation"
-        elif self.preheat_start > now:
+        if self.preheat_start > now:
             return "scheduled"
-        elif self.preheat_start <= now < self.preheat_end:
+        if self.preheat_start <= now < self.preheat_end:
             return "pre_heat"
-        elif self.reduction_start <= now < self.reduction_end:
+        if self.reduction_start <= now < self.reduction_end:
             return "reduction"
-        elif self.recovery_start <= now < self.recovery_end:
+        if self.recovery_start <= now < self.recovery_end:
             return "recovery"
-        elif now >= self.recovery_end + timedelta(minutes=5):
+        if now >= self.recovery_end + timedelta(minutes=5):
             return "off"
-        elif now >= self.recovery_end:
+        if now >= self.recovery_end:
             return "completed"
-        elif self.progress:
+        if self.progress:
             return self.progress
 
-        else:
-            return "unknown"
+        return "unknown"

@@ -1,11 +1,12 @@
 """Define devices"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Union, cast
 
-from homeassistant.const import STATE_UNKNOWN
+from pyhilo.const import STATE_UNKNOWN
 
 from pyhilo.const import (
     HILO_DEVICE_ATTRIBUTES,
@@ -70,7 +71,7 @@ class HiloDevice:
             if att not in HILO_DEVICE_ATTRIBUTES:
                 LOG.warning(f"Unknown device attribute {att}: {val}")
                 continue
-            elif att in HILO_LIST_ATTRIBUTES:
+            if att in HILO_LIST_ATTRIBUTES:
                 # This is where we generated the supported_attributes and settable_attributes
                 # list using the DeviceAttribute object.
                 new_val: list[DeviceAttribute] = [
@@ -85,7 +86,8 @@ class HiloDevice:
                     new_val.append(DeviceAttribute("Disconnected", "null"))
             elif att == "provider":
                 att = "manufacturer"
-                new_val = HILO_PROVIDERS.get(int(val), f"Unknown ({val})")  # type: ignore
+                new_val = HILO_PROVIDERS.get(
+                    int(val), f"Unknown ({val})")  # type: ignore
             else:
                 if att == "serial":
                     att = "identifier"
@@ -122,17 +124,16 @@ class HiloDevice:
             # succeed and we will get a reading back form signalR. This avoids ui flickering.
             self.update_readings(
                 DeviceReading(
-                    **{
-                        "deviceId": self.id,
-                        "locationId": self.location_id,
-                        "timeStampUTC": datetime.utcnow().isoformat(),
-                        "value": value,
-                        "device_attribute": attribute,
-                    }  # type: ignore
+                    deviceId=self.id,
+                    locationId=self.location_id,
+                    timeStampUTC=datetime.utcnow().isoformat(),
+                    value=value,
+                    device_attribute=attribute,  # type: ignore
                 )
             )
         else:
-            LOG.warning(f"{self._tag} Invalid attribute {attribute} for device")
+            LOG.warning(
+                f"{self._tag} Invalid attribute {attribute} for device")
 
     def get_attribute(self, attribute: str) -> Union[DeviceReading, None]:
         if dev_attribute := cast(DeviceAttribute, self._api.dev_atts(attribute)):
@@ -152,7 +153,7 @@ class HiloDevice:
         return next((True for k in self.supported_attributes if k.attr == attr), False)
 
     def get_value(
-        self, attribute: str, default: Union[str, int, float, None] = STATE_UNKNOWN
+        self, attribute: str, default: Union[str, float, None] = STATE_UNKNOWN
     ) -> Any:
         attr = self.get_attribute(attribute)
         return attr.value if attr else default
@@ -230,7 +231,8 @@ class DeviceReading:
         #       attr='intensity',
         #       value_type='%')
         # }
-        kwargs["timeStamp"] = from_utc_timestamp(kwargs.pop("timeStampUTC", ""))  # type: ignore
+        kwargs["timeStamp"] = from_utc_timestamp(
+            kwargs.pop("timeStampUTC", ""))  # type: ignore
         self.id = 0
         self.value: Union[int, bool, str] = 0
         self.device_id = 0
@@ -242,7 +244,8 @@ class DeviceReading:
             else ""
         )
         if not self.device_attribute:
-            LOG.warning(f"Received invalid reading for {self.device_id}: {kwargs}")
+            LOG.warning(
+                f"Received invalid reading for {self.device_id}: {kwargs}")
 
     def __repr__(self) -> str:
         return f"<Reading {self.device_attribute.attr} {self.value}{self.unit_of_measurement}>"
