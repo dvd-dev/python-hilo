@@ -218,7 +218,7 @@ class WebsocketClient:
             )
         # Hilo added a control character (chr(30)) at the end of each payload they send.
         # They also expect this char to be there at the end of every payload we send them.
-        LOG.debug(f"ic-dev21 send_json {payload}")
+        LOG.debug(f"WebsocketClient _async_send_json payload: {payload}")
         await self._client.send_str(json.dumps(payload) + chr(30))
 
     def _parse_message(self, msg: dict[str, Any]) -> None:
@@ -378,7 +378,7 @@ class WebsocketClient:
                 return
             self._ready_event.clear()
         LOG.debug(
-            f"ic-dev21 invoke argument: {arg}, invocationId: {inv_id}, target: {target}, type: {type}"
+            f"async_invoke invoke argument: {arg}, invocationId: {inv_id}, target: {target}, type: {type}"
         )
         await self._async_send_json(
             {
@@ -436,9 +436,7 @@ class WebsocketManager:
 
     async def initialize_websockets(self) -> None:
         """Initialize both websocket connections"""
-        # ic-dev21 get token from device hub
         await self.refresh_token(self.devicehub, get_new_token=True)
-        # ic-dev21 get token from challenge hub
         await self.refresh_token(self.challengehub, get_new_token=True)
 
     async def refresh_token(

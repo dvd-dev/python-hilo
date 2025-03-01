@@ -12,6 +12,7 @@ from pyhilo.const import (
     AUTH_TOKEN,
 )
 
+
 class OAuth2Helper:
     """Custom OAuth2 implementation."""
 
