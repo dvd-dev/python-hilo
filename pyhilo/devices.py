@@ -14,6 +14,7 @@ class Devices:
         self._api = api
         self.devices: list[HiloDevice] = []
         self.location_id: int = 0
+        self.location_hilo_id: str = ""
 
     @property
     def all(self) -> list[HiloDevice]:
@@ -108,5 +109,8 @@ class Devices:
     async def async_init(self) -> None:
         """Initialize the Hilo "manager" class."""
         LOG.info("Initialising after websocket is connected")
-        self.location_id = await self._api.get_location_id()
+        location_ids = await self._api.get_location_ids()
+        self.location_id = location_ids[0]
+        self.location_hilo_id = location_ids[1]
         await self.update()
+        await self._api.call_get_location_query(self.location_hilo_id)

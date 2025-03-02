@@ -12,6 +12,8 @@ from urllib import parse
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientResponseError
 import backoff
+from gql import gql, Client
+from gql.transport.aiohttp import AIOHTTPTransport
 
 from pyhilo.const import (
     ANDROID_CLIENT_ENDPOINT,
@@ -492,11 +494,11 @@ class API:
             },
         )
 
-    async def get_location_id(self) -> int:
+    async def get_location_ids(self) -> tuple[int, str]:
         url = f"{API_AUTOMATION_ENDPOINT}/Locations"
         LOG.debug(f"LocationId URL is {url}")
         req: list[dict[str, Any]] = await self.async_request("get", url)
-        return int(req[0]["id"])
+        return (int(req[0]["id"]), string(req[0]["locationHiloId"]))
 
     async def get_devices(self, location_id: int) -> list[dict[str, Any]]:
         """Get list of all devices"""
@@ -509,6 +511,34 @@ class API:
         for callback in self._get_device_callbacks:
             devices.append(callback())
         return devices
+        
+    async def call_get_location_query(self, location_hilo_id: string) -> None:
+        access_token = await self.async_get_access_token()
+        transport = AIOHTTPTransport(
+            url="https://platform.hiloenergie.com/api/digital-twin/v3/graphql",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        client = Client(transport=transport, fetch_schema_from_transport=True)
+        query = gql("""
+            query getLocation($locationHiloId: String!) {
+                getLocation(id:$locationHiloId) {
+                    hiloId
+                    lastUpdate
+                    lastUpdateVersion
+                    devices {
+                        hiloId
+                        deviceType
+                        physicalAddress
+                    }
+                }
+            }
+            """)
+        async with client as session:
+            result = await session.execute(
+                query, variable_values={"locationHiloId": location_hilo_id}
+            )
+            LOG.info(result)
+            return result
 
     async def _set_device_attribute(
         self,
