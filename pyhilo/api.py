@@ -498,7 +498,7 @@ class API:
         url = f"{API_AUTOMATION_ENDPOINT}/Locations"
         LOG.debug(f"LocationId URL is {url}")
         req: list[dict[str, Any]] = await self.async_request("get", url)
-        return (int(req[0]["id"]), string(req[0]["locationHiloId"]))
+        return (req[0]["id"], req[0]["locationHiloId"])
 
     async def get_devices(self, location_id: int) -> list[dict[str, Any]]:
         """Get list of all devices"""
@@ -511,14 +511,9 @@ class API:
         for callback in self._get_device_callbacks:
             devices.append(callback())
         return devices
-        
+
     async def call_get_location_query(self, location_hilo_id: string) -> None:
-        access_token = await self.async_get_access_token()
-        transport = AIOHTTPTransport(
-            url="https://platform.hiloenergie.com/api/digital-twin/v3/graphql",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-        client = Client(transport=transport, fetch_schema_from_transport=True)
+        client = self._get_graphql_client()
         query = gql("""
             query getLocation($locationHiloId: String!) {
                 getLocation(id:$locationHiloId) {
@@ -526,9 +521,28 @@ class API:
                     lastUpdate
                     lastUpdateVersion
                     devices {
-                        hiloId
-                        deviceType
-                        physicalAddress
+                         ... on BasicThermostat {
+                            deviceType
+                            hiloId
+                            physicalAddress
+                            connectionStatus
+                            ambientHumidity
+                            gDState
+                            version
+                            zigbeeVersion
+                            ambientTemperature { 
+                                value
+                                kind
+                            }
+                            ambientTempSetpoint { 
+                                value
+                                kind
+                            }
+                            power {
+                                value
+                                kind
+                            }
+                        }
                     }
                 }
             }
@@ -539,6 +553,14 @@ class API:
             )
             LOG.info(result)
             return result
+
+    async def _get_graphql_client(self) -> Client:
+        access_token = await self.async_get_access_token()
+        transport = AIOHTTPTransport(
+            url="https://platform.hiloenergie.com/api/digital-twin/v3/graphql",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        return Client(transport=transport, fetch_schema_from_transport=True)
 
     async def _set_device_attribute(
         self,
