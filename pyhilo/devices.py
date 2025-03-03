@@ -4,6 +4,7 @@ from pyhilo import API
 from pyhilo.const import HILO_DEVICE_TYPES, LOG
 from pyhilo.device import DeviceReading, HiloDevice
 from pyhilo.device.climate import Climate  # noqa
+from pyhilo.device.graphql_value_mapper import GraphqlValueMapper
 from pyhilo.device.light import Light  # noqa
 from pyhilo.device.sensor import Sensor  # noqa
 from pyhilo.device.switch import Switch  # noqa
@@ -61,8 +62,11 @@ class Devices:
                 )
         return updated_devices
 
-    def find_device(self, id: int) -> HiloDevice:
-        return next((d for d in self.devices if d.id == id), None)  # type: ignore
+    def find_device(self, identifier: Union[int, str]) -> HiloDevice:
+        if isinstance(identifier, int):
+            return next((d for d in self.devices if d.id == identifier), None)  # type: ignore
+        elif isinstance(identifier, str):
+            return next((d for d in self.devices if d.hilo_id == identifier), None)  # type: ignore
 
     def generate_device(self, device: dict) -> HiloDevice:
         device["location_id"] = self.location_id
@@ -113,4 +117,6 @@ class Devices:
         self.location_id = location_ids[0]
         self.location_hilo_id = location_ids[1]
         await self.update()
-        await self._api.call_get_location_query(self.location_hilo_id)
+        values = await self._api.call_get_location_query(self.location_hilo_id)
+        mapper = GraphqlValueMapper()
+        mapper.map_values(values)
