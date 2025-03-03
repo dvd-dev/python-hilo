@@ -6,7 +6,7 @@ import json
 import random
 import string
 import sys
-from typing import Any, Callable, Union, cast
+from typing import Any, Callable, Dict, Union, cast
 from urllib import parse
 
 from aiohttp import ClientSession
@@ -512,8 +512,13 @@ class API:
             devices.append(callback())
         return devices
 
-    async def call_get_location_query(self, location_hilo_id: string) -> None:
-        client = self._get_graphql_client()
+    async def call_get_location_query(self, location_hilo_id: string) -> Dict[str, Any]:
+        access_token = await self.async_get_access_token()
+        transport = AIOHTTPTransport(
+            url="https://platform.hiloenergie.com/api/digital-twin/v3/graphql",
+            headers={"Authorization": f"Bearer {access_token}"},
+        )
+        client = Client(transport=transport, fetch_schema_from_transport=True)
         query = gql("""
             query getLocation($locationHiloId: String!) {
                 getLocation(id:$locationHiloId) {
@@ -547,21 +552,14 @@ class API:
                 }
             }
             """)
+        
         async with client as session:
             result = await session.execute(
                 query, variable_values={"locationHiloId": location_hilo_id}
             )
-            LOG.info(result)
-            return result
-
-    async def _get_graphql_client(self) -> Client:
-        access_token = await self.async_get_access_token()
-        transport = AIOHTTPTransport(
-            url="https://platform.hiloenergie.com/api/digital-twin/v3/graphql",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-        return Client(transport=transport, fetch_schema_from_transport=True)
-
+        LOG.info(result)
+        return result
+    
     async def _set_device_attribute(
         self,
         device: HiloDevice,
