@@ -62,11 +62,8 @@ class Devices:
                 )
         return updated_devices
 
-    def find_device(self, identifier: Union[int, str]) -> HiloDevice:
-        if isinstance(identifier, int):
-            return next((d for d in self.devices if d.id == identifier), None)  # type: ignore
-        elif isinstance(identifier, str):
-            return next((d for d in self.devices if d.hilo_id == identifier), None)  # type: ignore
+    def find_device(self, id: int) -> HiloDevice:
+        return next((d for d in self.devices if d.id == id), None)  # type: ignore
 
     def generate_device(self, device: dict) -> HiloDevice:
         device["location_id"] = self.location_id
