@@ -1,4 +1,5 @@
 """Define devices"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -36,6 +37,7 @@ class HiloDevice:
     ) -> None:
         self._api = api
         self.id = 0
+        self.hilo_id: str = ""
         self.location_id = 0
         self.type = "Unknown"
         self.name = "Unknown"
@@ -59,6 +61,7 @@ class HiloDevice:
                     value = val.get("value")
                 reading = {
                     "deviceId": self.id,
+                    "hiloId": self.hilo_id,
                     "locationId": self.location_id,
                     "timeStampUTC": datetime.utcnow().isoformat(),
                     "value": value,
@@ -234,6 +237,7 @@ class DeviceReading:
         self.id = 0
         self.value: Union[int, bool, str] = 0
         self.device_id = 0
+        self.hilo_id: str = ""
         self.device_attribute: DeviceAttribute
         self.__dict__.update({camel_to_snake(k): v for k, v in kwargs.items()})
         self.unit_of_measurement = (
