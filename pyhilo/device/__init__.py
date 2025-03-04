@@ -32,7 +32,7 @@ def get_device_attributes() -> list[DeviceAttribute]:
 
 class HiloDevice:
     def __init__(
-        self, api: API, **kwargs: Dict[str, Union[str, int, Dict[Any, Any]]]
+        self, api: API, **kwargs: Dict[str, str | int | Dict[Any, Any]]
     ) -> None:
         self._api = api
         self.id = 0
@@ -85,7 +85,8 @@ class HiloDevice:
                     new_val.append(DeviceAttribute("Disconnected", "null"))
             elif att == "provider":
                 att = "manufacturer"
-                new_val = HILO_PROVIDERS.get(int(val), f"Unknown ({val})")  # type: ignore
+                new_val = HILO_PROVIDERS.get(
+                    int(val), f"Unknown ({val})")  # type: ignore
             else:
                 if att == "serial":
                     att = "identifier"
@@ -230,7 +231,8 @@ class DeviceReading:
         #       attr='intensity',
         #       value_type='%')
         # }
-        kwargs["timeStamp"] = from_utc_timestamp(kwargs.pop("timeStampUTC", ""))  # type: ignore
+        kwargs["timeStamp"] = from_utc_timestamp(
+            kwargs.pop("timeStampUTC", ""))  # type: ignore
         self.id = 0
         self.value: Union[int, bool, str] = 0
         self.device_id = 0
@@ -242,7 +244,8 @@ class DeviceReading:
             else ""
         )
         if not self.device_attribute:
-            LOG.warning(f"Received invalid reading for {self.device_id}: {kwargs}")
+            LOG.warning(
+                f"Received invalid reading for {self.device_id}: {kwargs}")
 
     def __repr__(self) -> str:
         return f"<Reading {self.device_attribute.attr} {self.value}{self.unit_of_measurement}>"
