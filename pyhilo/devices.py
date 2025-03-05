@@ -51,7 +51,10 @@ class Devices:
     ) -> list[HiloDevice]:
         updated_devices = []
         for reading in readings:
-            if device := self.find_device(reading.device_id):
+            device_identifier = reading.device_id
+            if device_identifier is None:
+                device_identifier = reading.hilo_id
+            if device := self.find_device(device_identifier):
                 device.update_readings(reading)
                 LOG.debug(f"{device} Received {reading}")
                 if device not in updated_devices:
@@ -62,8 +65,10 @@ class Devices:
                 )
         return updated_devices
 
-    def find_device(self, id: int) -> HiloDevice:
-        return next((d for d in self.devices if d.id == id), None)  # type: ignore
+    def find_device(self, device_identifier: int | str) -> HiloDevice:
+        if isinstance(device_identifier, int):
+            return next((d for d in self.devices if d.id == device_identifier), None)
+        return next((d for d in self.devices if d.hilo_id == device_identifier), None)
 
     def generate_device(self, device: dict) -> HiloDevice:
         device["location_id"] = self.location_id
@@ -114,6 +119,8 @@ class Devices:
         self.location_id = location_ids[0]
         self.location_hilo_id = location_ids[1]
         await self.update()
+        #TODO AA - trouver ou placer ça pour que ça fasse du sens, pas sûre que c'est ici
         values = await self._api.call_get_location_query(self.location_hilo_id)
-        mapper = GraphqlValueMapper()
-        mapper.map_values(values)
+        mapper = GraphqlValueMapper(self._api)
+        readings = mapper.map_values(values)
+        self._map_readings_to_devices(readings)

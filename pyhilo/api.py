@@ -535,11 +535,11 @@ class API:
                             gDState
                             version
                             zigbeeVersion
-                            ambientTemperature { 
+                            ambientTemperature {
                                 value
                                 kind
                             }
-                            ambientTempSetpoint { 
+                            ambientTempSetpoint {
                                 value
                                 kind
                             }
@@ -547,19 +547,22 @@ class API:
                                 value
                                 kind
                             }
+                            heatDemand
+                            allowedModes
+                            mode
                         }
                     }
                 }
             }
             """)
-        
+
         async with client as session:
             result = await session.execute(
                 query, variable_values={"locationHiloId": location_hilo_id}
             )
         LOG.info(result)
         return result
-    
+
     async def _set_device_attribute(
         self,
         device: HiloDevice,
