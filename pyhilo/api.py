@@ -12,7 +12,6 @@ from urllib import parse
 import backoff
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientResponseError
-from homeassistant.helpers import config_entry_oauth2_flow
 
 from pyhilo.const import (
     ANDROID_CLIENT_ENDPOINT,
@@ -67,7 +66,7 @@ class API:
         self,
         *,
         session: ClientSession,
-        oauth_session: config_entry_oauth2_flow.OAuth2Session,
+        oauth_session,
         request_retries: int = REQUEST_RETRY,
         log_traces: bool = False,
     ) -> None:
@@ -98,7 +97,7 @@ class API:
         cls,
         *,
         session: ClientSession,
-        oauth_session: config_entry_oauth2_flow.OAuth2Session,
+        oauth_session,
         request_retries: int = REQUEST_RETRY,
         log_traces: bool = False,
     ) -> API:
@@ -139,7 +138,7 @@ class API:
             await self._oauth_session.async_ensure_token_valid()
 
         access_token = str(self._oauth_session.token["access_token"])
-        LOG.debug(f"ic-dev21 access token is {access_token}")
+        LOG.debug(f"Websocket access token is {access_token}")
 
         return str(self._oauth_session.token["access_token"])
 
@@ -237,9 +236,8 @@ class API:
             kwargs["headers"]["authorization"] = f"Bearer {access_token}"
         kwargs["headers"]["Host"] = host
 
-        # ic-dev21 trying Leicas suggestion
         if endpoint.startswith(AUTOMATION_CHALLENGE_ENDPOINT):
-            # remove Ocp-Apim-Subscription-Key header to avoid 401 error
+            # remove Ocp-Apim-Subscription-Key header to avoid 401 error (Thanks Leicas)
             kwargs["headers"].pop("Ocp-Apim-Subscription-Key", None)
             kwargs["headers"]["authorization"] = f"Bearer {access_token}"
 
@@ -368,7 +366,7 @@ class API:
 
     async def _async_post_init(self) -> None:
         """Perform some post-init actions."""
-        LOG.debug("Websocket postinit")
+        LOG.debug("Websocket _async_post_init running")
         await self._get_fid()
         await self._get_device_token()
 

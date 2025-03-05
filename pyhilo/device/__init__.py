@@ -33,7 +33,7 @@ def get_device_attributes() -> list[DeviceAttribute]:
 
 class HiloDevice:
     def __init__(
-        self, api: API, **kwargs: Dict[str, Union[str, int, Dict[Any, Any]]]
+        self, api: API, **kwargs: Dict[str, str | int | Dict[Any, Any]]
     ) -> None:
         self._api = api
         self.id = 0
