@@ -195,7 +195,7 @@ HILO_DEVICE_TYPES: Final = {
 }
 
 HILO_UNIT_CONVERSION: Final = {
-    "Celcius": "°C",
+    "Celsius": "°C",
     "DB": "dB",
     "Integer": "dB",
     "Mbar": "mbar",
@@ -208,7 +208,7 @@ HILO_READING_TYPES: Final = {
     "BatteryPercent": "Percentage",
     "Co2": "PPM",
     "ColorTemperature": "Integer",
-    "CurrentTemperature": "Celcius",
+    "CurrentTemperature": "Celsius",
     "Disconnected": "null",
     "DrmsState": "OnOff",
     "firmwareVersion": "null",
@@ -216,8 +216,8 @@ HILO_READING_TYPES: Final = {
     "Hue": "Integer",
     "Humidity": "Percentage",
     "Intensity": "Percentage",
-    "MaxTempSetpoint": "Celcius",
-    "MinTempSetpoint": "Celcius",
+    "MaxTempSetpoint": "Celsius",
+    "MinTempSetpoint": "Celsius",
     "Noise": "DB",
     "onlineStatus": "null",
     "OnOff": "OnOff",
@@ -225,7 +225,7 @@ HILO_READING_TYPES: Final = {
     "Pressure": "Mbar",
     "Saturation": "Integer",
     "Status": "OnOff",
-    "TargetTemperature": "Celcius",
+    "TargetTemperature": "Celsius",
     "Unpaired": "null",
     "WifiStatus": "Integer",
     "zigBeePairingActivated": "OnOff",
