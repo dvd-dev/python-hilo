@@ -6,8 +6,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Union, cast
 
-from pyhilo.const import STATE_UNKNOWN
-
 from pyhilo.const import (
     HILO_DEVICE_ATTRIBUTES,
     HILO_LIST_ATTRIBUTES,
@@ -17,6 +15,7 @@ from pyhilo.const import (
     JASCO_MODELS,
     JASCO_OUTLETS,
     LOG,
+    STATE_UNKNOWN,
 )
 from pyhilo.util import camel_to_snake, from_utc_timestamp
 
@@ -86,8 +85,7 @@ class HiloDevice:
                     new_val.append(DeviceAttribute("Disconnected", "null"))
             elif att == "provider":
                 att = "manufacturer"
-                new_val = HILO_PROVIDERS.get(
-                    int(val), f"Unknown ({val})")  # type: ignore
+                new_val = HILO_PROVIDERS.get(int(val), f"Unknown ({val})")  # type: ignore
             else:
                 if att == "serial":
                     att = "identifier"
@@ -132,8 +130,7 @@ class HiloDevice:
                 )
             )
         else:
-            LOG.warning(
-                f"{self._tag} Invalid attribute {attribute} for device")
+            LOG.warning(f"{self._tag} Invalid attribute {attribute} for device")
 
     def get_attribute(self, attribute: str) -> Union[DeviceReading, None]:
         if dev_attribute := cast(DeviceAttribute, self._api.dev_atts(attribute)):
@@ -231,8 +228,7 @@ class DeviceReading:
         #       attr='intensity',
         #       value_type='%')
         # }
-        kwargs["timeStamp"] = from_utc_timestamp(
-            kwargs.pop("timeStampUTC", ""))  # type: ignore
+        kwargs["timeStamp"] = from_utc_timestamp(kwargs.pop("timeStampUTC", ""))  # type: ignore
         self.id = 0
         self.value: Union[int, bool, str] = 0
         self.device_id = 0
@@ -244,8 +240,7 @@ class DeviceReading:
             else ""
         )
         if not self.device_attribute:
-            LOG.warning(
-                f"Received invalid reading for {self.device_id}: {kwargs}")
+            LOG.warning(f"Received invalid reading for {self.device_id}: {kwargs}")
 
     def __repr__(self) -> str:
         return f"<Reading {self.device_attribute.attr} {self.value}{self.unit_of_measurement}>"

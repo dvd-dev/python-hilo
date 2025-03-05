@@ -1,6 +1,5 @@
 """Custom OAuth2 implementation."""
 
-
 from typing import Any, cast
 
 from homeassistant.core import HomeAssistant

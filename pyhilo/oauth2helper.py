@@ -26,11 +26,11 @@ class OAuth2Helper:
         return code.replace("=", "")
 
     def get_authorize_parameters(self) -> dict[str, str]:
-        """
-        Returns the parameters required for the authorization request.
+        """Returns the parameters required for the authorization request.
 
         Returns:
             dict[str, str]: A dictionary containing the authorization parameters.
+
         """
         return {
             "scope": AUTH_SCOPE,
@@ -43,8 +43,7 @@ class OAuth2Helper:
     def get_token_request_parameters(
         self, code: str, redirect_uri: str
     ) -> dict[str, str]:
-        """
-        Returns the parameters required for the token request.
+        """Returns the parameters required for the token request.
 
         This method prepares the payload for the request to exchange an authorization
         code for an access token. It includes the necessary parameters for the
@@ -56,6 +55,7 @@ class OAuth2Helper:
 
         Returns:
             dict[str, str]: A dictionary containing the token request parameters.
+
         """
         return {
             "grant_type": "authorization_code",
