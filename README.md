@@ -74,8 +74,8 @@ check [the contributor's page][contributors].
 
 
 
-[build-shield]: https://github.com/dvd-dev/python-hilo/actions/workflows/tests.yaml/badge.svg
-[build]: https://github.com/dvd-dev/python-hilo/actions/workflows/tests.yaml
+[build-shield]: https://github.com/dvd-dev/python-hilo/actions/workflows/linting.yaml/badge.svg
+[build]: https://github.com/dvd-dev/python-hilo/actions/workflows/linting.yaml
 [releases-shield]: https://img.shields.io/github/release/dvd-dev/python-hilo.svg
 [releases]: https://github.com/dvd-dev/python-hilo/releases
 [license-shield]: https://img.shields.io/github/license/dvd-dev/python-hilo.svg

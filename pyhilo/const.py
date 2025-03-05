@@ -14,7 +14,7 @@ CONTENT_TYPE_FORM: Final = "application/x-www-form-urlencoded"
 ANDROID_PKG_NAME: Final = "com.hiloenergie.hilo"
 DOMAIN: Final = "hilo"
 # Auth constants
-AUTH_HOSTNAME: Final = "connexion.hiloenergie.com"
+AUTH_HOSTNAME: Final = "connexion.hiloenergie.com"  # codespell:ignore
 AUTH_ENDPOINT: Final = "/HiloDirectoryB2C.onmicrosoft.com/B2C_1A_SIGN_IN/oauth2/v2.0/"
 AUTH_AUTHORIZE: Final = f"https://{AUTH_HOSTNAME}{AUTH_ENDPOINT}authorize"
 AUTH_TOKEN: Final = f"https://{AUTH_HOSTNAME}{AUTH_ENDPOINT}token"
@@ -268,3 +268,6 @@ UNMONITORED_DEVICES: Final = [
     "43094",
     "43100",
 ]
+
+# Should be kept in sync with homeassistant.const.STATE_UNKNOWN
+STATE_UNKNOWN: Final = "unknown"

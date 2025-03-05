@@ -83,7 +83,7 @@ async def get_state(state_yaml: str) -> StateDict:
     """
     if not isfile(state_yaml):
         return __get_defaults__(StateDict)  # type: ignore
-    async with aiofiles.open(state_yaml, mode="r") as yaml_file:
+    async with aiofiles.open(state_yaml) as yaml_file:
         LOG.debug("Loading state from yaml")
         content = await yaml_file.read()
         state_yaml_payload: StateDict = yaml.safe_load(content)

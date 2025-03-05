@@ -1,11 +1,12 @@
 """Define a connection to the Hilo websocket."""
+
 from __future__ import annotations
 
 import asyncio
+import json
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 from enum import IntEnum
-import json
 from os import environ
 from typing import TYPE_CHECKING, Any, Callable, Dict, Optional, Tuple
 from urllib import parse
@@ -338,10 +339,8 @@ class WebsocketClient:
         except ConnectionClosedError as err:
             LOG.error(f"Websocket: Closed while listening: {err}")
             LOG.exception(err)
-            pass
         except InvalidMessageError as err:
             LOG.warning(f"Websocket: Received invalid json : {err}")
-            pass
         finally:
             LOG.info("Websocket: Listen completed; cleaning up")
             self._watchdog.cancel()
@@ -420,6 +419,7 @@ class WebsocketManager:
             async_request: The async request method from the API class
             state_yaml: Path to the state file
             set_state_callback: Callback to save state
+
         """
         self.session = session
         self.async_request = async_request
@@ -443,8 +443,10 @@ class WebsocketManager:
         self, config: WebsocketConfig, get_new_token: bool = True
     ) -> None:
         """Refresh token for a specific websocket configuration.
+
         Args:
             config: The websocket configuration to refresh
+
         """
         if get_new_token:
             config.url, self._shared_token = await self._negotiate(config)
@@ -457,10 +459,12 @@ class WebsocketManager:
 
     async def _negotiate(self, config: WebsocketConfig) -> Tuple[str, str]:
         """Negotiate websocket connection and get URL and token.
+
         Args:
             config: The websocket configuration to negotiate
         Returns:
             Tuple containing the websocket URL and access token
+
         """
         LOG.debug(f"Getting websocket url for {config.endpoint}")
         url = f"{config.endpoint}/negotiate"
@@ -492,6 +496,7 @@ class WebsocketManager:
 
         Args:
             config: The websocket configuration to get parameters for
+
         """
         uri = parse.urlparse(config.url)
         LOG.debug(f"Getting websocket params for {config.endpoint}")
