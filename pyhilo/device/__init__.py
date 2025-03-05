@@ -5,8 +5,6 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Dict, Union, cast
 
-from homeassistant.const import STATE_UNKNOWN
-
 from pyhilo.const import (
     HILO_DEVICE_ATTRIBUTES,
     HILO_LIST_ATTRIBUTES,
@@ -16,6 +14,7 @@ from pyhilo.const import (
     JASCO_MODELS,
     JASCO_OUTLETS,
     LOG,
+    STATE_UNKNOWN,
 )
 from pyhilo.util import camel_to_snake, from_utc_timestamp
 
