@@ -1,4 +1,4 @@
-from typing import Any, Dict, Union
+from typing import Any, Dict, Generator, Union
 from pyhilo.device import DeviceReading
 from datetime import datetime, timezone
 
@@ -21,10 +21,25 @@ class GraphqlValueMapper:
         return readings
 
     def _map_devices_values(self, device: Dict[str, Any]) -> list[DeviceReading]:
+        attributes: list[Dict[str, Any]] = self._map_basic_device(device)
         match device["deviceType"]:
             case "Tstat":
-                attributes = self._map_thermostats(device)
+                attributes.extend(self._build_thermostat(device))
                 return self._map_to_device_reading(attributes)
+            # case "CCE":  # Water Heater
+            #     attributes.extend(self._build_water_heater(device))
+            #     return self._map_to_device_reading(attributes)
+            # case "CCR":  # ChargeController
+            #     attributes.extend(self._build_charge_controller(device))
+            #     return self._map_to_device_reading(attributes)
+            # case "HeatingFloor":
+            # case "LowVoltageTstat":
+            # case "ChargingPoint":
+            # case "Meter":
+            # case "Hub": # Gateway
+            # case "ColorBulb":
+            # case "Dimmer":
+            # case "Switch":
             case _:
                 # Add the default logic here if needed
                 pass
@@ -34,87 +49,111 @@ class GraphqlValueMapper:
     ) -> list[DeviceReading]:
         return [DeviceReading(**attr) for attr in attributes]
 
-    def _map_thermostats(self, thermostat: Dict[str, Any]) -> list[Dict[str, Any]]:
+    def _build_thermostat(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
         return [
-            {
-                "hilo_id": thermostat["hiloId"],
-                "device_attribute": self._api.dev_atts("Disconnected", "null"),
-                "value": thermostat["connectionStatus"] == "Disconnected",
-                "timeStampUTC": datetime.now(timezone.utc).isoformat(),
-            },
-            {
-                "hilo_id": thermostat["hiloId"],
-                "device_attribute": self._api.dev_atts("Unpaired", "null"),
-                "value": False,
-                "timeStampUTC": datetime.now(timezone.utc).isoformat(),
-            },
-            {
-                "hilo_id": thermostat["hiloId"],
-                "device_attribute": self._api.dev_atts("CurrentTemperature", "null"),
-                "value": thermostat["ambientTemperature"]["value"],
-                "timeStampUTC": datetime.now(timezone.utc).isoformat(),
-            },
-            {
-                "hilo_id": thermostat["hiloId"],
-                "device_attribute": self._api.dev_atts("TargetTemperature", "null"),
-                "value": thermostat["ambientTempSetpoint"]["value"],
-                "timeStampUTC": datetime.now(timezone.utc).isoformat(),
-            },
-            {
-                "hilo_id": thermostat["hiloId"],
-                "device_attribute": self._api.dev_atts("HeatDemand", "null"),
-                "value": thermostat["heatDemand"],
-                "timeStampUTC": datetime.now(timezone.utc).isoformat(),
-            },
-            {
-                "hilo_id": thermostat["hiloId"],
-                "device_attribute": self._api.dev_atts("Heating", "null"),
-                "value": thermostat["power"]["value"] != "0"
-                or thermostat["power"]["value"] is not None,
-                "timeStampUTC": datetime.now(timezone.utc).isoformat(),
-            },
-            {
-                "hilo_id": thermostat["hiloId"],
-                "device_attribute": self._api.dev_atts("Power", "null"),
-                "value": thermostat["power"]["value"],
-                "timeStampUTC": datetime.now(timezone.utc).isoformat(),
-            },
-            {
-                "hilo_id": thermostat["hiloId"],
-                "device_attribute": self._api.dev_atts("GdState", "null"),
-                "value": thermostat["gDState"] == "Active",
-                "timeStampUTC": datetime.now(timezone.utc).isoformat(),
-            },
-            {
-                "hilo_id": thermostat["hiloId"],
-                "device_attribute": self._api.dev_atts("Version", "null"),
-                "value": thermostat["version"],
-                "timeStampUTC": datetime.now(timezone.utc).isoformat(),
-            },
-            {
-                "hilo_id": thermostat["hiloId"],
-                "device_attribute": self._api.dev_atts("ZigbeeVersion", "null"),
-                "value": thermostat["zigbeeVersion"],
-                "timeStampUTC": datetime.now(timezone.utc).isoformat(),
-            },
-            {
-                "hilo_id": thermostat["hiloId"],
-                "device_attribute": self._api.dev_atts("Humidity", "null"),
-                "value": thermostat["ambientHumidity"],
-                "timeStampUTC": datetime.now(timezone.utc).isoformat(),
-            },
-            {
-                "hilo_id": thermostat["hiloId"],
-                "device_attribute": self._api.dev_atts(
-                    "ThermostatAllowedModes", "null"
-                ),
-                "value": thermostat["allowedModes"],
-                "timeStampUTC": datetime.now(timezone.utc).isoformat(),
-            },
-            {
-                "hilo_id": thermostat["hiloId"],
-                "device_attribute": self._api.dev_atts("ThermostatMode", "null"),
-                "value": thermostat["mode"],
-                "timeStampUTC": datetime.now(timezone.utc).isoformat(),
-            },
+            self.build_attribute(
+                device["hiloId"],
+                "CurrentTemperature",
+                device["ambientTemperature"]["value"],
+            ),
+            self.build_attribute(
+                device["hiloId"],
+                "TargetTemperature",
+                device["ambientTempSetpoint"]["value"],
+            ),
+            self.build_attribute(device["hiloId"], "HeatDemand", device["heatDemand"]),
+            self.build_attribute(
+                device["hiloId"],
+                "Heating",
+                device["power"]["value"] != "0" or device["power"]["value"] is not None,
+            ),
+            self.build_attribute(device["hiloId"], "Power", device["power"]["value"]),
+            self.build_attribute(device["hiloId"], "Version", device["version"]),
+            self.build_attribute(
+                device["hiloId"], "ZigbeeVersion", device["zigbeeVersion"]
+            ),
+            self.build_attribute(
+                device["hiloId"], "Humidity", device["ambientHumidity"]
+            ),
+            self.build_attribute(
+                device["hiloId"], "ThermostatAllowedModes", device["allowedModes"]
+            ),
+            self.build_attribute(device["hiloId"], "ThermostatMode", device["mode"]),
+            self._map_gd_state(device),
         ]
+
+    def _build_water_heater(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
+        attributes = self._build_charge_controller(device)
+        attributes.extend(
+            [
+                self.build_attribute(
+                    device["hiloId"], "Power", device["power"]["value"]
+                ),
+                self.build_attribute(
+                    device["hiloId"], "GdState", device["gDState"] == "Active"
+                ),
+                self.build_attribute(device["hiloId"], "Version", device["version"]),
+                self.build_attribute(
+                    device["hiloId"], "ZigbeeVersion", device["zigbeeVersion"]
+                ),
+                self.build_attribute(
+                    device["hiloId"], "Alerts", device["ambientHumidity"]
+                ),
+                self.build_attribute(
+                    device["hiloId"], "ThermostatAllowedModes", device["allowedModes"]
+                ),
+                self.build_attribute(
+                    device["hiloId"], "ThermostatMode", device["mode"]
+                ),
+                self.build_attribute(
+                    device["hiloId"],
+                    "Disconnected",
+                    device["connectionStatus"] == "Disconnected",
+                ),
+                self.build_attribute(device["hiloId"], "Unpaired", False),
+            ]
+        )
+
+    def _build_charge_controller(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
+        return [
+            self.build_attribute(device["hiloId"], "Power", device["power"]["value"]),
+            self.build_attribute(device["hiloId"], "Version", device["version"]),
+            self.build_attribute(
+                device["hiloId"], "ZigbeeVersion", device["zigbeeVersion"]
+            ),
+            self._map_gd_state(device),
+            self._map_drms_state(device),
+        ]
+
+    def _map_basic_device(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
+        return [
+            self.build_attribute(device["hiloId"], "Unpaired", False),
+            self.build_attribute(
+                device["hiloId"],
+                "Disconnected",
+                device["connectionStatus"] == "Disconnected",
+            ),
+        ]
+
+    def _map_gd_state(self, device: Dict[str, Any]) -> Dict[str, Any]:
+        return self.build_attribute(
+            device["hiloId"], "GdState", device["gDState"] == "Active"
+        )
+
+    # TODO - AA Map selon le GD STATE
+    def _map_drms_state(self, device: Dict[str, Any]) -> Dict[str, Any]:
+        return (
+            self.build_attribute(
+                device["hiloId"], "DrmsState", device["gDState"] == "Active"
+            ),
+        )
+
+    def build_attribute(
+        self, hilo_id: str, device_attribute: str, value: Any
+    ) -> dict[str, Any]:
+        return {
+            "hilo_id": hilo_id,
+            "device_attribute": self._api.dev_atts(device_attribute, "null"),
+            "value": value,
+            "timeStampUTC": datetime.now(timezone.utc).isoformat(),
+        }
