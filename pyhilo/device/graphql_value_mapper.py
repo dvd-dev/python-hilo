@@ -32,7 +32,7 @@ class GraphqlValueMapper:
             case "HeatingFloor":
                  attributes.extend(self._build_floor_thermostat(device))
             # case "LowVoltageTstat":
-            # case "ChargingPoint":
+            case "ChargingPoint":
             case "Meter":
                 attributes.extend(self._build_smart_meter(device))
             case "Hub": # Gateway
@@ -142,6 +142,19 @@ class GraphqlValueMapper:
             ),
         ]
 
+    def _build_charging_point(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
+        status = device["status"]
+        power_attribute: dict[str, Any] = {}
+        if status == 1 or status == 0: # is available (1) or OutOfService (0)  
+            power_attribute = self.build_attribute(device["hiloId"], "Power", 0)
+        else:
+            power_attribute = self._map_power(device),
+
+        return [
+            self.build_attribute(device["hiloId"], "Status", status),
+            power_attribute
+        ]
+
     def _build_switch(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
         return [
             self._map_power(device),
@@ -196,7 +209,7 @@ class GraphqlValueMapper:
             ),
 
     def _map_power(self, device: Dict[str, Any]) -> Dict[str, Any]:
-        return self.build_attribute( device["hiloId"],"Power", self._powerKwToW(device["power"]["value"], device["power"]["kind"]))
+        return self.build_attribute(device["hiloId"], "Power", self._powerKwToW(device["power"]["value"], device["power"]["kind"]))
 
     def _powerKwToW(self, power: float, power_kind: int) -> float:
         if power_kind == 12: # PowerKind.KW
