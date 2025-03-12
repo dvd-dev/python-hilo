@@ -1,16 +1,11 @@
+"""OAuth2 Helper for Hilo"""
+
 import base64
 import hashlib
 import os
 import re
-from typing import Any, cast
 
-from pyhilo.const import (
-    AUTH_AUTHORIZE,
-    AUTH_CHALLENGE_METHOD,
-    AUTH_CLIENT_ID,
-    AUTH_SCOPE,
-    AUTH_TOKEN,
-)
+from pyhilo.const import AUTH_CHALLENGE_METHOD, AUTH_CLIENT_ID, AUTH_SCOPE
 
 
 class OAuth2Helper:
@@ -30,7 +25,13 @@ class OAuth2Helper:
         code = base64.urlsafe_b64encode(sha_verifier).decode("utf-8")
         return code.replace("=", "")
 
-    def get_authorize_parameters(self):
+    def get_authorize_parameters(self) -> dict[str, str]:
+        """
+        Returns the parameters required for the authorization request.
+
+        Returns:
+            dict[str, str]: A dictionary containing the authorization parameters.
+        """
         return {
             "scope": AUTH_SCOPE,
             "code_challenge": self._code_challenge,
@@ -39,7 +40,23 @@ class OAuth2Helper:
             "client_id": AUTH_CLIENT_ID,
         }
 
-    def get_token_request_parameters(self, code, redirect_uri):
+    def get_token_request_parameters(
+        self, code: str, redirect_uri: str
+    ) -> dict[str, str]:
+        """
+        Returns the parameters required for the token request.
+
+        This method prepares the payload for the request to exchange an authorization
+        code for an access token. It includes the necessary parameters for the
+        authorization code grant type with PKCE.
+
+        Args:
+            code: The authorization code received from the authorization server.
+            redirect_uri: The redirect URI used in the authorization request.
+
+        Returns:
+            dict[str, str]: A dictionary containing the token request parameters.
+        """
         return {
             "grant_type": "authorization_code",
             "code": code,
