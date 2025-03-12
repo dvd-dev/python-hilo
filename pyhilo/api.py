@@ -45,6 +45,7 @@ from pyhilo.const import (
 )
 from pyhilo.device import DeviceAttribute, HiloDevice, get_device_attributes
 from pyhilo.exceptions import InvalidCredentialsError, RequestError
+from pyhilo.graphql import GraphQlHelper
 from pyhilo.util.state import (
     StateDict,
     WebsocketDict,
@@ -519,42 +520,7 @@ class API:
             headers={"Authorization": f"Bearer {access_token}"},
         )
         client = Client(transport=transport, fetch_schema_from_transport=True)
-        query = gql("""
-            query getLocation($locationHiloId: String!) {
-                getLocation(id:$locationHiloId) {
-                    hiloId
-                    lastUpdate
-                    lastUpdateVersion
-                    devices {
-                         ... on BasicThermostat {
-                            deviceType
-                            hiloId
-                            physicalAddress
-                            connectionStatus
-                            ambientHumidity
-                            gDState
-                            version
-                            zigbeeVersion
-                            ambientTemperature {
-                                value
-                                kind
-                            }
-                            ambientTempSetpoint {
-                                value
-                                kind
-                            }
-                            power {
-                                value
-                                kind
-                            }
-                            heatDemand
-                            allowedModes
-                            mode
-                        }
-                    }
-                }
-            }
-            """)
+        query = gql(GraphQlHelper.query_get_location())
 
         async with client as session:
             result = await session.execute(

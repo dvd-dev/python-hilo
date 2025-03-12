@@ -52,7 +52,7 @@ class Devices:
         updated_devices = []
         for reading in readings:
             device_identifier = reading.device_id
-            if device_identifier is None:
+            if device_identifier == 0:
                 device_identifier = reading.hilo_id
             if device := self.find_device(device_identifier):
                 device.update_readings(reading)
@@ -119,7 +119,7 @@ class Devices:
         self.location_id = location_ids[0]
         self.location_hilo_id = location_ids[1]
         await self.update()
-        #TODO AA - trouver ou placer ça pour que ça fasse du sens, pas sûre que c'est ici
+        # TODO AA - trouver ou placer ça pour que ça fasse du sens, pas sûre que c'est ici
         values = await self._api.call_get_location_query(self.location_hilo_id)
         mapper = GraphqlValueMapper(self._api)
         readings = mapper.map_values(values)
