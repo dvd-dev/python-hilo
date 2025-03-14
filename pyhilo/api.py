@@ -12,7 +12,7 @@ from urllib import parse
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientResponseError
 import backoff
-from gql import gql, Client
+from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
 
 from pyhilo.const import (

@@ -1,6 +1,5 @@
 class GraphQlHelper:
-
-    def query_get_location() -> str: 
+    def query_get_location() -> str:
         return """query getLocation($locationHiloId: String!) {
                 getLocation(id:$locationHiloId) {
                     hiloId
