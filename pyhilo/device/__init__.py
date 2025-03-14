@@ -1,4 +1,5 @@
 """Define devices"""
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -36,6 +37,7 @@ class HiloDevice:
     ) -> None:
         self._api = api
         self.id = 0
+        self.hilo_id: str = ""
         self.location_id = 0
         self.type = "Unknown"
         self.name = "Unknown"
@@ -59,6 +61,7 @@ class HiloDevice:
                     value = val.get("value")
                 reading = {
                     "deviceId": self.id,
+                    "hiloId": self.hilo_id,
                     "locationId": self.location_id,
                     "timeStampUTC": datetime.utcnow().isoformat(),
                     "value": value,
@@ -86,7 +89,8 @@ class HiloDevice:
             elif att == "provider":
                 att = "manufacturer"
                 new_val = HILO_PROVIDERS.get(
-                    int(val), f"Unknown ({val})")  # type: ignore
+                    int(val), f"Unknown ({val})"
+                )  # type: ignore
             else:
                 if att == "serial":
                     att = "identifier"
@@ -232,10 +236,12 @@ class DeviceReading:
         #       value_type='%')
         # }
         kwargs["timeStamp"] = from_utc_timestamp(
-            kwargs.pop("timeStampUTC", ""))  # type: ignore
+            kwargs.pop("timeStampUTC", "")
+        )  # type: ignore
         self.id = 0
         self.value: Union[int, bool, str] = 0
         self.device_id = 0
+        self.hilo_id: str = ""
         self.device_attribute: DeviceAttribute
         self.__dict__.update({camel_to_snake(k): v for k, v in kwargs.items()})
         self.unit_of_measurement = (
@@ -244,8 +250,7 @@ class DeviceReading:
             else ""
         )
         if not self.device_attribute:
-            LOG.warning(
-                f"Received invalid reading for {self.device_id}: {kwargs}")
+            LOG.warning(f"Received invalid reading for {self.device_id}: {kwargs}")
 
     def __repr__(self) -> str:
         return f"<Reading {self.device_attribute.attr} {self.value}{self.unit_of_measurement}>"

@@ -1,5 +1,6 @@
 """Climate object."""
 from __future__ import annotations
+
 from typing import Any, cast
 
 from pyhilo import API
@@ -15,12 +16,14 @@ class Climate(HiloDevice):
     devices such as thermostats.
     """
 
-    def __init__(self, api: API, **kwargs: dict[str, str | int | dict[Any, Any]]) -> None:
+    def __init__(
+        self, api: API, **kwargs: dict[str, str | int | dict[Any, Any]]
+    ) -> None:
         """Initialize the Climate object.
 
-            Args:
-                api: The Hilo API instance.
-                **kwargs: Keyword arguments containing device data.
+        Args:
+            api: The Hilo API instance.
+            **kwargs: Keyword arguments containing device data.
         """
         super().__init__(api, **kwargs)
         LOG.debug("Setting up Climate device: %s", self.name)
