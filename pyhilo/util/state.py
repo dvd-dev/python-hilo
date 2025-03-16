@@ -1,6 +1,5 @@
 """Utility functions for state management."""
 from __future__ import annotations
-
 import asyncio
 from datetime import datetime
 from pathlib import Path
@@ -18,7 +17,6 @@ lock = asyncio.Lock()
 
 class TokenDict(TypedDict):
     """Represents a dictionary containing token information."""
-
     access: str | None
     refresh: str | None
     expires_at: datetime
@@ -26,21 +24,18 @@ class TokenDict(TypedDict):
 
 class AndroidDeviceDict(TypedDict):
     """Represents a dictionary containing Android device information."""
-
     token: str
     device_id: int
 
 
 class WebsocketTransportsDict(TypedDict):
     """Represents a dictionary containing Websocket connection information."""
-
     transport: str
     transfer_formats: list[str]
 
 
 class WebsocketDict(TypedDict, total=False):
     """Represents a dictionary containing registration information."""
-
     token: str
     connection_id: str
     full_ws_url: str
@@ -50,14 +45,12 @@ class WebsocketDict(TypedDict, total=False):
 
 class RegistrationDict(TypedDict, total=False):
     """Represents a dictionary containing registration information."""
-
     reg_id: str
     expires_at: datetime
 
 
 class FirebaseDict(TypedDict):
     """Represents a dictionary containing Firebase information."""
-
     fid: str | None
     # "projects/18450192328/installations/d7N8yHopRWOiTYCrnYLi8a"
     name: str | None
@@ -66,7 +59,6 @@ class FirebaseDict(TypedDict):
 
 class StateDict(TypedDict, total=False):
     """Represents a dictionary containing the overall application state."""
-
     token: TokenDict
     registration: RegistrationDict
     firebase: FirebaseDict
@@ -102,7 +94,7 @@ async def get_state(state_yaml: str) -> StateDict:
     :type state_yaml: ``str``
     :rtype: ``StateDict``
     """
-    if not Path(state_yaml).is_file():
+    if not Path(state_yaml).is_file:
         return _get_defaults(StateDict)
     async with aiofiles.open(state_yaml, mode="r") as yaml_file:
         LOG.debug("Loading state from yaml")
@@ -114,11 +106,8 @@ async def get_state(state_yaml: str) -> StateDict:
 async def set_state(
     state_yaml: str,
     key: str,
-    state: TokenDict
-    | RegistrationDict
-    | FirebaseDict
-    | AndroidDeviceDict
-    | WebsocketDict,
+    state:
+        TokenDict | RegistrationDict | FirebaseDict | AndroidDeviceDict | WebsocketDict,
 ) -> None:
     """Save state yaml.
 
@@ -133,8 +122,7 @@ async def set_state(
     async with lock:  # note ic-dev21: on lock le fichier pour être sûr de finir la job
         current_state = await get_state(state_yaml) or {}
         merged_state: dict[str, Any] = {
-            key: {**current_state.get(key, {}), **state}
-        }  # type: ignore[dict-item]
+            key: {**current_state.get(key, {}), **state}}  # type: ignore[dict-item]
         new_state: dict[str, Any] = {**current_state, **merged_state}
         async with aiofiles.open(state_yaml, mode="w") as yaml_file:
             LOG.debug("Saving state to yaml file")
