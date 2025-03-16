@@ -268,3 +268,5 @@ UNMONITORED_DEVICES: Final = [
     "43094",
     "43100",
 ]
+
+STATE_UNKNOWN: Final = "unknown"
