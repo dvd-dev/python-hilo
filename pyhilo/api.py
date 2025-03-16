@@ -12,8 +12,6 @@ from urllib import parse
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientResponseError
 import backoff
-from gql import Client, gql
-from gql.transport.aiohttp import AIOHTTPTransport
 
 from pyhilo.const import (
     ANDROID_CLIENT_ENDPOINT,
@@ -45,7 +43,6 @@ from pyhilo.const import (
 )
 from pyhilo.device import DeviceAttribute, HiloDevice, get_device_attributes
 from pyhilo.exceptions import InvalidCredentialsError, RequestError
-from pyhilo.graphql import GraphQlHelper
 from pyhilo.util.state import (
     StateDict,
     WebsocketDict,
@@ -512,22 +509,6 @@ class API:
         for callback in self._get_device_callbacks:
             devices.append(callback())
         return devices
-
-    async def call_get_location_query(self, location_hilo_id: string) -> Dict[str, Any]:
-        access_token = await self.async_get_access_token()
-        transport = AIOHTTPTransport(
-            url="https://platform.hiloenergie.com/api/digital-twin/v3/graphql",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-        client = Client(transport=transport, fetch_schema_from_transport=True)
-        query = gql(GraphQlHelper.query_get_location())
-
-        async with client as session:
-            result = await session.execute(
-                query, variable_values={"locationHiloId": location_hilo_id}
-            )
-        LOG.info(result)
-        return result
 
     async def _set_device_attribute(
         self,

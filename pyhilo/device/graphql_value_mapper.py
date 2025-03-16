@@ -1,6 +1,4 @@
-from datetime import datetime, timezone
-from typing import Any, Dict, Generator, Union
-
+from typing import Any, Dict
 from pyhilo.device import DeviceReading
 
 
@@ -9,45 +7,50 @@ class GraphqlValueMapper:
     A class to map GraphQL values to DeviceReading instances.
     """
 
-    def __init__(self, api: Any):
-        self._api = api
-
-    def map_values(self, values: Dict[str, Any]) -> list[DeviceReading]:
-        devices_values: list[any] = values["getLocation"]["devices"]
-        readings: list[DeviceReading] = []
-        for device in devices_values:
+    def map_query_values(self, values: Dict[str, Any]) -> list[Dict[str, Any]]:
+        readings: list[Dict[str, Any]] = []
+        for device in values:
             if device.get("deviceType") is not None:
                 reading = self._map_devices_values(device)
                 readings.extend(reading)
         return readings
 
-    def _map_devices_values(self, device: Dict[str, Any]) -> list[DeviceReading]:
+    def map_subscription_values(
+        self, device: list[Dict[str, Any]]
+    ) -> list[Dict[str, Any]]:
+        readings: list[Dict[str, Any]] = []
+        if device.get("deviceType") is not None:
+            reading = self._map_devices_values(device)
+            readings.extend(reading)
+        return readings
+
+    def _map_devices_values(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
         attributes: list[Dict[str, Any]] = self._map_basic_device(device)
-        match device["deviceType"]:
-            case "Tstat":
+        match device["deviceType"].lower():
+            case "tstat":
                 attributes.extend(self._build_thermostat(device))
-            case "CCE":  # Water Heater
+            case "cce":  # Water Heater
                 attributes.extend(self._build_water_heater(device))
-            case "CCR":  # ChargeController
+            case "ccr":  # ChargeController
                 attributes.extend(self._build_charge_controller(device))
-            case "HeatingFloor":
+            case "heatingfloor":
                 attributes.extend(self._build_floor_thermostat(device))
-            # case "LowVoltageTstat":
-            case "ChargingPoint":
+            # case "lowvoltagetstat":
+            case "chargingpoint":
                 attributes.extend(self._build_charging_point(device))
-            case "Meter":
+            case "meter":
                 attributes.extend(self._build_smart_meter(device))
-            case "Hub":  # Gateway
+            case "hub":  # Gateway
                 attributes.extend(self._build_gateway(device))
-            case "ColorBulb":
+            case "colorbulb":
                 attributes.extend(self._build_light(device))
-            case "Dimmer":
+            case "dimmer":
                 attributes.extend(self._build_dimmer(device))
-            case "Switch":
+            case "switch":
                 attributes.extend(self._build_switch(device))
             case _:
                 pass
-        return self._map_to_device_reading(attributes)
+        return attributes
 
     def _map_to_device_reading(
         self, attributes: list[Dict[str, Any]]
@@ -398,7 +401,8 @@ class GraphqlValueMapper:
     ) -> Dict[str, Any]:
         return {
             "hilo_id": hilo_id,
-            "device_attribute": self._api.dev_atts(device_attribute, "null"),
+            "attribute": device_attribute,
+            "valueType": "null",
             "value": value,
             "timeStampUTC": datetime.now(timezone.utc).isoformat(),
         }
