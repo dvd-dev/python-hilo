@@ -4,6 +4,7 @@ from pyhilo import API
 from pyhilo.const import HILO_DEVICE_TYPES, LOG
 from pyhilo.device import DeviceReading, HiloDevice
 from pyhilo.device.climate import Climate  # noqa
+from pyhilo.device.graphql_value_mapper import GraphqlValueMapper
 from pyhilo.device.light import Light  # noqa
 from pyhilo.device.sensor import Sensor  # noqa
 from pyhilo.device.switch import Switch  # noqa
@@ -14,6 +15,7 @@ class Devices:
         self._api = api
         self.devices: list[HiloDevice] = []
         self.location_id: int = 0
+        self.location_hilo_id: str = ""
 
     @property
     def all(self) -> list[HiloDevice]:
@@ -49,7 +51,10 @@ class Devices:
     ) -> list[HiloDevice]:
         updated_devices = []
         for reading in readings:
-            if device := self.find_device(reading.device_id):
+            device_identifier = reading.device_id
+            if device_identifier == 0:
+                device_identifier = reading.hilo_id
+            if device := self.find_device(device_identifier):
                 device.update_readings(reading)
                 LOG.debug(f"{device} Received {reading}")
                 if device not in updated_devices:
@@ -60,8 +65,10 @@ class Devices:
                 )
         return updated_devices
 
-    def find_device(self, id: int) -> HiloDevice:
-        return next((d for d in self.devices if d.id == id), None)  # type: ignore
+    def find_device(self, device_identifier: int | str) -> HiloDevice:
+        if isinstance(device_identifier, int):
+            return next((d for d in self.devices if d.id == device_identifier), None)
+        return next((d for d in self.devices if d.hilo_id == device_identifier), None)
 
     def generate_device(self, device: dict) -> HiloDevice:
         device["location_id"] = self.location_id
@@ -108,5 +115,12 @@ class Devices:
     async def async_init(self) -> None:
         """Initialize the Hilo "manager" class."""
         LOG.info("Initialising after websocket is connected")
-        self.location_id = await self._api.get_location_id()
+        location_ids = await self._api.get_location_ids()
+        self.location_id = location_ids[0]
+        self.location_hilo_id = location_ids[1]
         await self.update()
+        # TODO AA - trouver ou placer ça pour que ça fasse du sens, pas sûre que c'est ici
+        values = await self._api.call_get_location_query(self.location_hilo_id)
+        mapper = GraphqlValueMapper(self._api)
+        readings = mapper.map_values(values)
+        self._map_readings_to_devices(readings)
