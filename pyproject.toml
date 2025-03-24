@@ -75,6 +75,7 @@ ruyaml = ">=0.91.0"
 python = "^3.9.0"
 voluptuous = ">=0.13.1"
 websockets = ">=8.1,<16.0"
+gql = "^3.5.2"
 
 [poetry.group.dev.dependencies]
 Sphinx = "^7.1.2"
