@@ -23,9 +23,6 @@ class GraphQlHelper:
     async def async_init(self) -> None:
         """Initialize the Hilo "GraphQlHelper" class."""
         self.access_token = await self._api.async_get_access_token()
-        self.subscriptions[0] = asyncio.create_task(
-            self._subscribe_to_device_updated(self._devices.location_hilo_id)
-        )
         await self.call_get_location_query(self._devices.location_hilo_id)
 
     QUERY_GET_LOCATION: str = """query getLocation($locationHiloId: String!) {
@@ -463,6 +460,32 @@ class GraphQlHelper:
     }
 }"""
 
+    SUBSCRIPTION_LOCATION_UPDATED: str = """subscription onAnyLocationUpdated($locationHiloId: String!){
+    onAnyLocationUpdated(locationHiloId: $locationHiloId) {
+        locationHiloId
+        deviceType
+        transmissionTime
+        operationId
+        location {
+            ...on Container {
+                hiloId
+                devices {
+                    deviceType
+                    hiloId
+                    physicalAddress
+                    connectionStatus
+               					... on BasicChargeController {
+               						connectionStatus
+               					}
+               					... on LowVoltageThermostat {
+               						connectionStatus
+               					}
+                }
+            }    
+        }
+    }
+}"""
+
     async def call_get_location_query(self, location_hilo_id: str) -> None:
         transport = AIOHTTPTransport(
             url="https://platform.hiloenergie.com/api/digital-twin/v3/graphql",
@@ -477,30 +500,65 @@ class GraphQlHelper:
             )
         self._handle_query_result(result)
 
-    async def _subscribe_to_device_updated(self, location_hilo_id: str) -> None:
+    async def subscribe_to_device_updated(
+        self, location_hilo_id: str, callback: callable = None
+    ) -> None:
         transport = WebsocketsTransport(
             url=f"wss://platform.hiloenergie.com/api/digital-twin/v3/graphql?access_token={self.access_token}"
         )
         client = Client(transport=transport, fetch_schema_from_transport=True)
         query = gql(self.SUBSCRIPTION_DEVICE_UPDATED)
-        print("Connected to device updated subscription")
         try:
             async with client as session:
                 async for result in session.subscribe(
                     query, variable_values={"locationHiloId": location_hilo_id}
                 ):
-                    self._handle_subscription_result(result)
+                    print(f"Received subscription result {result}")
+                    device_hilo_id = self._handle_subscription_result(result)
+                    callback(device_hilo_id)
         except asyncio.CancelledError:
             print("Subscription cancelled.")
             asyncio.sleep(1)
-            await self._subscribe_to_device_updated(location_hilo_id)
+            await self.subscribe_to_device_updated(location_hilo_id)
+
+    async def subscribe_to_location_updated(
+        self, location_hilo_id: str, callback: callable = None
+    ) -> None:
+        transport = WebsocketsTransport(
+            url=f"wss://platform.hiloenergie.com/api/digital-twin/v3/graphql?access_token={self.access_token}"
+        )
+        client = Client(transport=transport, fetch_schema_from_transport=True)
+        query = gql(self.SUBSCRIPTION_LOCATION_UPDATED)
+        try:
+            async with client as session:
+                async for result in session.subscribe(
+                    query, variable_values={"locationHiloId": location_hilo_id}
+                ):
+                    print(f"Received subscription result {result}")
+                    device_hilo_id = self._handle_location_subscription_result(result)
+                    callback(device_hilo_id)
+        except asyncio.CancelledError:
+            print("Subscription cancelled.")
+            asyncio.sleep(1)
+            await self.subscribe_to_location_updated(location_hilo_id)
 
     def _handle_query_result(self, result: Dict[str, Any]) -> None:
         devices_values: list[any] = result["getLocation"]["devices"]
         attributes = self.mapper.map_query_values(devices_values)
         self._devices.parse_values_received(attributes)
 
-    def _handle_subscription_result(self, result: Dict[str, Any]) -> None:
+    def _handle_subscription_result(self, result: Dict[str, Any]) -> str:
         devices_values: list[any] = result["onAnyDeviceUpdated"]["device"]
         attributes = self.mapper.map_subscription_values(devices_values)
-        self._devices.parse_values_received(attributes)
+        updated_device = self._devices.parse_values_received(attributes)
+        # callback to update the device in the UI
+        print(f"Device updated: {updated_device}")
+        return devices_values.get("hiloId")
+    
+    def _handle_location_subscription_result(self, result: Dict[str, Any]) -> str:
+        devices_values: list[any] = result["onAnyLocationUpdated"]["location"]
+        attributes = self.mapper.map_subscription_values(devices_values)
+        updated_device = self._devices.parse_values_received(attributes)
+        # callback to update the device in the UI
+        print(f"Device updated: {updated_device}")
+        return devices_values.get("hiloId")
