@@ -1,12 +1,13 @@
 import asyncio
-from typing import Any, Dict
-from gql import gql, Client
+from typing import Any, Dict, List, Optional
+
+from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
 from gql.transport.websockets import WebsocketsTransport
-from pyhilo.device.graphql_value_mapper import GraphqlValueMapper
+
 from pyhilo import API
+from pyhilo.device.graphql_value_mapper import GraphqlValueMapper
 from pyhilo.devices import Devices
-from typing import List, Optional
 
 
 class GraphQlHelper:
