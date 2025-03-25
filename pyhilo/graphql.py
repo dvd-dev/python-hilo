@@ -304,23 +304,23 @@ class GraphQlHelper:
                      value
                      kind
                   }
-	              minAmbientCoolSetPoint {
-	                value
+                minAmbientCoolSetPoint {
+                  value
                     kind
-	              }
+                }
                 maxAmbientTempSetpoint {
                     value
                     kind
                 }
-		            minAmbientTempSetpoint {
+                minAmbientTempSetpoint {
                     value
                     kind
-		            }
-		            allowedModes
-		            fanAllowedModes
+                }
+                allowedModes
+                fanAllowedModes
             }
             ... on BasicSwitch {
-   	            deviceType
+                deviceType
                 hiloId
                 physicalAddress
                 connectionStatus
@@ -417,7 +417,7 @@ class GraphQlHelper:
                 zigbeeVersion
                 state
                 ccrType
-	            alerts
+              alerts
                 power {
                     value
                     kind
@@ -475,14 +475,14 @@ class GraphQlHelper:
                     hiloId
                     physicalAddress
                     connectionStatus
-               					... on BasicChargeController {
-               						connectionStatus
-               					}
-               					... on LowVoltageThermostat {
-               						connectionStatus
-               					}
+                        ... on BasicChargeController {
+                            connectionStatus
+                        }
+                        ... on LowVoltageThermostat {
+                            connectionStatus
+                        }
                 }
-            }    
+            }
         }
     }
 }"""
