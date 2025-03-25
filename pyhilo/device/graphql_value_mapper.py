@@ -1,6 +1,8 @@
-from pyhilo.device import DeviceReading, HiloDevice
 from datetime import datetime, timezone
 from typing import Any, Dict, List
+
+from pyhilo.device import DeviceReading, HiloDevice
+
 
 class GraphqlValueMapper:
     """
@@ -23,7 +25,7 @@ class GraphqlValueMapper:
             reading = self._map_devices_values(device)
             readings.extend(reading)
         return readings
-    
+
     def map_location_subscription_values(
         self, values: Dict[str, Any]
     ) -> list[Dict[str, Any]]:
@@ -33,8 +35,10 @@ class GraphqlValueMapper:
                 reading = self._map_devices_values(device)
                 readings.extend(reading)
         return readings
-    
-    def _map_devices_values(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
+
+    def _map_devices_values(
+        self, device: Dict[str, Any], is_unpaired: bool
+    ) -> list[Dict[str, Any]]:
         attributes: list[Dict[str, Any]] = self._map_basic_device(device)
         match device["deviceType"].lower():
             case "tstat":
@@ -466,6 +470,7 @@ class GraphqlValueMapper:
             case _:
                 return ""
 
-    def _is_device_disconnected(self, device_hilo_id: str, devices: List[HiloDevice]) -> bool:
-        return next(
-            (False for d in devices if d.hilo_id == device_hilo_id), True)
+    def _is_device_disconnected(
+        self, device_hilo_id: str, devices: List[HiloDevice]
+    ) -> bool:
+        return next((False for d in devices if d.hilo_id == device_hilo_id), True)

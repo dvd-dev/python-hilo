@@ -6,7 +6,7 @@ from pyhilo.device import DeviceReading, HiloDevice
 from pyhilo.device.climate import Climate  # noqa
 from pyhilo.device.light import Light  # noqa
 from pyhilo.device.sensor import Sensor  # noqa
-from pyhilo.device.switch import Switch
+from pyhilo.device.switch import Switch  # noqa
 
 
 class Devices:

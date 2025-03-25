@@ -6,7 +6,7 @@ import json
 import random
 import string
 import sys
-from typing import Any, Callable, Dict, Union, cast
+from typing import Any, Callable, Union, cast
 from urllib import parse
 
 from aiohttp import ClientSession
