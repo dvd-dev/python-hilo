@@ -1,6 +1,6 @@
 from pyhilo.device import DeviceReading, HiloDevice
 from datetime import datetime, timezone
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 class GraphqlValueMapper:
     """
@@ -34,7 +34,7 @@ class GraphqlValueMapper:
                 readings.extend(reading)
         return readings
     
-    def _map_devices_values(self, device: Dict[str, Any], is_unpaired: bool) -> list[Dict[str, Any]]:
+    def _map_devices_values(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
         attributes: list[Dict[str, Any]] = self._map_basic_device(device)
         match device["deviceType"].lower():
             case "tstat":
