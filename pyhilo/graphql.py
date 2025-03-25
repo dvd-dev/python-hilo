@@ -555,7 +555,7 @@ class GraphQlHelper:
         # callback to update the device in the UI
         print(f"Device updated: {updated_device}")
         return devices_values.get("hiloId")
-    
+
     def _handle_location_subscription_result(self, result: Dict[str, Any]) -> str:
         devices_values: list[any] = result["onAnyLocationUpdated"]["location"]
         attributes = self.mapper.map_subscription_values(devices_values)
