@@ -515,7 +515,7 @@ class GraphQlHelper:
                     query, variable_values={"locationHiloId": location_hilo_id}
                 ):
                     print(f"Received subscription result {result}")
-                    device_hilo_id = self._handle_subscription_result(result)
+                    device_hilo_id = self._handle_device_subscription_result(result)
                     callback(device_hilo_id)
         except asyncio.CancelledError:
             print("Subscription cancelled.")
@@ -548,9 +548,9 @@ class GraphQlHelper:
         attributes = self.mapper.map_query_values(devices_values)
         self._devices.parse_values_received(attributes)
 
-    def _handle_subscription_result(self, result: Dict[str, Any]) -> str:
+    def _handle_device_subscription_result(self, result: Dict[str, Any]) -> str:
         devices_values: list[any] = result["onAnyDeviceUpdated"]["device"]
-        attributes = self.mapper.map_subscription_values(devices_values)
+        attributes = self.mapper.map_device_subscription_values(devices_values)
         updated_device = self._devices.parse_values_received(attributes)
         # callback to update the device in the UI
         print(f"Device updated: {updated_device}")
@@ -558,7 +558,7 @@ class GraphQlHelper:
 
     def _handle_location_subscription_result(self, result: Dict[str, Any]) -> str:
         devices_values: list[any] = result["onAnyLocationUpdated"]["location"]
-        attributes = self.mapper.map_subscription_values(devices_values)
+        attributes = self.mapper.map_location_subscription_values(devices_values)
         updated_device = self._devices.parse_values_received(attributes)
         # callback to update the device in the UI
         print(f"Device updated: {updated_device}")

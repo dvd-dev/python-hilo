@@ -37,7 +37,7 @@ class GraphqlValueMapper:
         return readings
 
     def _map_devices_values(
-        self, device: Dict[str, Any], is_unpaired: bool
+        self, device: Dict[str, Any]
     ) -> list[Dict[str, Any]]:
         attributes: list[Dict[str, Any]] = self._map_basic_device(device)
         match device["deviceType"].lower():
@@ -49,7 +49,8 @@ class GraphqlValueMapper:
                 attributes.extend(self._build_charge_controller(device))
             case "heatingfloor":
                 attributes.extend(self._build_floor_thermostat(device))
-            # case "lowvoltagetstat":
+            case "lowvoltagetstat":
+                attributes.extend(self._build_lowvoltage_thermostat(device))
             case "chargingpoint":
                 attributes.extend(self._build_charging_point(device))
             case "meter":
@@ -244,6 +245,75 @@ class GraphqlValueMapper:
                     device["hiloId"], "FloorLimit", device["floorLimit"]["value"]
                 )
             )
+        return attributes
+    
+    def _build_lowvoltage_thermostat(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
+        attributes = self._build_thermostat(device)
+        if device.get("coolTempSetpoint") is not None:
+            attributes.append(
+                self.build_attribute(
+                    device["hiloId"], "CoolTemperatureSet", device["coolTempSetpoint"]["value"]
+                )
+            )
+        if device.get("fanSpeed") is not None:
+            attributes.append(
+                self.build_attribute(
+                    device["hiloId"], "FanSpeed", device["fanSpeed"]
+                )
+            )
+        if device.get("minAmbientCoolSetPoint") is not None:
+            attributes.append(
+                self.build_attribute(
+                    device["hiloId"], "MinCoolSetpoint", device["minAmbientCoolSetPoint"]["value"]
+                )
+            )
+        if device.get("maxAmbientCoolSetPoint") is not None:
+            attributes.append(
+                self.build_attribute(
+                    device["hiloId"], "MaxCoolSetpoint", device["maxAmbientCoolSetPoint"]["value"]
+                )
+            )
+        if device.get("minAmbientTempSetpoint") is not None:
+            attributes.append(
+                self.build_attribute(
+                    device["hiloId"], "MinTempSetpoint", device["minAmbientTempSetpoint"]["value"]
+                )
+            )
+        if device.get("maxAmbientTempSetpoint") is not None:
+            attributes.append(
+                self.build_attribute(
+                    device["hiloId"], "MaxTempSetpoint", device["maxAmbientTempSetpoint"]["value"]
+                )
+            )
+        attributes.extend(
+            [
+                self.build_attribute(
+                    device["allowedModes"],
+                    "Thermostat24VAllowedMode",
+                    self._map_to_floor_mode(device["allowedModes"]),
+                ),
+                self.build_attribute(
+                    device["fanAllowedModes"],
+                    "Thermostat24VAllowedFanMode",
+                    self._map_to_thermostat_mode(device["fanAllowedModes"]),
+                ),
+                 self.build_attribute(
+                    device["fanMode"],
+                    "FanMode",
+                    self._map_to_thermostat_mode(device["fanMode"]),
+                ),
+                 self.build_attribute(
+                    device["mode"],
+                    "Thermostat24VMode",
+                    self._map_to_thermostat_mode(device["mode"]),
+                ),
+                 self.build_attribute(
+                    device["currentState"],
+                    "CurrentState",
+                    self._map_to_thermostat_mode(device["currentState"]),
+                ),
+            ]
+        )
         return attributes
 
     def _build_water_heater(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
@@ -469,8 +539,3 @@ class GraphqlValueMapper:
                 return "Manual"
             case _:
                 return ""
-
-    def _is_device_disconnected(
-        self, device_hilo_id: str, devices: List[HiloDevice]
-    ) -> bool:
-        return next((False for d in devices if d.hilo_id == device_hilo_id), True)
