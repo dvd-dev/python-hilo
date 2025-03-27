@@ -236,10 +236,29 @@ class GraphQlHelper:
                                 value
                                 kind
                             }
+                            maxAmbientTempSetpoint {
+                                value
+                                kind
+                            }
+                            minAmbientTempSetpoint {
+                                value
+                                kind
+                            }
+                            maxAmbientTempSetpointLimit {
+                                value
+                                kind
+                            }
+                            minAmbientTempSetpointLimit {
+                                value
+                                kind
+                            }
+                            heatDemand
                             power {
                                 value
                                 kind
                             }
+                            mode
+                            allowedModes
                         }
                     }
                 }
@@ -456,10 +475,29 @@ class GraphQlHelper:
                     value
                     kind
                 }
+                maxAmbientTempSetpoint {
+                    value
+                    kind
+                }
+                minAmbientTempSetpoint {
+                    value
+                    kind
+                }
+                maxAmbientTempSetpointLimit {
+                    value
+                    kind
+                }
+                minAmbientTempSetpointLimit {
+                    value
+                    kind
+                }
+                heatDemand
                 power {
                     value
                     kind
                 }
+                mode
+                allowedModes
             }
         }
     }

@@ -51,7 +51,7 @@ class GraphqlValueMapper:
                 attributes.extend(self._build_lowvoltage_thermostat(device))
             case "chargingpoint":
                 attributes.extend(self._build_charging_point(device))
-            case "meter":
+            case "meter":  # Smart Meter
                 attributes.extend(self._build_smart_meter(device))
             case "hub":  # Gateway
                 attributes.extend(self._build_gateway(device))
@@ -189,42 +189,43 @@ class GraphqlValueMapper:
             self.build_attribute(
                 device["hiloId"],
                 "ThermostatMode",
-                self._map_to_thermostat_mode(device.get("mode")),
+                device.get("mode"),
             )
         )
         attributes.append(self._map_gd_state(device))
-        if withDefaultMinMaxTemp:
-            attributes.extend(
-                [
-                    self.build_attribute(device["hiloId"], "MaxTempSetpoint", 30),
-                    self.build_attribute(device["hiloId"], "MinTempSetpoint", 5),
-                ]
-            )
-        else:
-            if device.get("maxAmbientTempSetpoint") is not None:
+
+        if device.get("maxAmbientTempSetpoint") is not None:
+            attributes.append(
                 self.build_attribute(
-                    device["maxAmbientTempSetpoint"],
+                    device["hiloId"],
                     "MaxTempSetpoint",
                     device["maxAmbientTempSetpoint"]["value"],
                 )
-            if device.get("minAmbientTempSetpoint") is not None:
+            )
+        if device.get("minAmbientTempSetpoint") is not None:
+            attributes.append(
                 self.build_attribute(
                     device["hiloId"],
                     "MinTempSetpoint",
                     device["minAmbientTempSetpoint"]["value"],
                 )
+            )
 
         if device.get("maxAmbientTempSetpointLimit") is not None:
-            self.build_attribute(
-                device["hiloId"],
-                "MaxTempSetpointLimit",
-                device["maxAmbientTempSetpointLimit"]["value"],
+            attributes.append(
+                self.build_attribute(
+                    device["hiloId"],
+                    "MaxTempSetpointLimit",
+                    device["maxAmbientTempSetpointLimit"]["value"],
+                )
             )
         if device.get("minAmbientTempSetpointLimit") is not None:
-            self.build_attribute(
-                device["hiloId"],
-                "MinTempSetpointLimit",
-                device["minAmbientTempSetpointLimit"]["value"],
+            attributes.append(
+                self.build_attribute(
+                    device["hiloId"],
+                    "MinTempSetpointLimit",
+                    device["minAmbientTempSetpointLimit"]["value"],
+                )
             )
         return attributes
 
@@ -234,7 +235,7 @@ class GraphqlValueMapper:
             self.build_attribute(
                 device["hiloId"],
                 "FloorMode",
-                self._map_to_floor_mode(device["floorMode"]),
+                device["floorMode"],
             )
         )
         if device.get("floorLimit") is not None:
@@ -257,10 +258,6 @@ class GraphqlValueMapper:
                     device["coolTempSetpoint"]["value"],
                 )
             )
-        if device.get("fanSpeed") is not None:
-            attributes.append(
-                self.build_attribute(device["hiloId"], "FanSpeed", device["fanSpeed"])
-            )
         if device.get("minAmbientCoolSetPoint") is not None:
             attributes.append(
                 self.build_attribute(
@@ -277,48 +274,37 @@ class GraphqlValueMapper:
                     device["maxAmbientCoolSetPoint"]["value"],
                 )
             )
-        if device.get("minAmbientTempSetpoint") is not None:
-            attributes.append(
-                self.build_attribute(
-                    device["hiloId"],
-                    "MinTempSetpoint",
-                    device["minAmbientTempSetpoint"]["value"],
-                )
-            )
-        if device.get("maxAmbientTempSetpoint") is not None:
-            attributes.append(
-                self.build_attribute(
-                    device["hiloId"],
-                    "MaxTempSetpoint",
-                    device["maxAmbientTempSetpoint"]["value"],
-                )
-            )
         attributes.extend(
             [
                 self.build_attribute(
-                    device["allowedModes"],
+                    device["hiloId"],
                     "Thermostat24VAllowedMode",
-                    self._map_to_floor_mode(device["allowedModes"]),
+                    device["allowedModes"],
                 ),
                 self.build_attribute(
-                    device["fanAllowedModes"],
+                    device["hiloId"],
                     "Thermostat24VAllowedFanMode",
-                    self._map_to_thermostat_mode(device["fanAllowedModes"]),
+                    device["fanAllowedModes"],
                 ),
                 self.build_attribute(
-                    device["fanMode"],
+                    device["hiloId"],
                     "FanMode",
-                    self._map_to_thermostat_mode(device["fanMode"]),
+                    device["fanMode"],
                 ),
                 self.build_attribute(
-                    device["mode"],
+                    device["hiloId"],
                     "Thermostat24VMode",
-                    self._map_to_thermostat_mode(device["mode"]),
+                    device["mode"],
                 ),
                 self.build_attribute(
-                    device["currentState"],
+                    device["hiloId"],
                     "CurrentState",
-                    self._map_to_thermostat_mode(device["currentState"]),
+                    device["currentState"],
+                ),
+                attributes.append(
+                    self.build_attribute(
+                        device["hiloId"], "FanSpeed", device.get("fanSpeed")
+                    )
                 ),
             ]
         )
@@ -495,52 +481,3 @@ class GraphqlValueMapper:
             "value": value,
             "timeStampUTC": datetime.now(timezone.utc).isoformat(),
         }
-
-    def _map_to_floor_mode(self, floor_mode: int) -> str:
-        match floor_mode:
-            case 0:
-                return "Ambient"
-            case 1:
-                return "Floor"
-            case 2:
-                return "Hybrid"
-
-    def _map_to_thermostat_mode(self, mode: int) -> str:
-        match mode:
-            case 0:
-                return "Unknown"
-            case 1:
-                return "Heat"
-            case 2:
-                return "Auto"
-            case 3:
-                return "AutoHeat"
-            case 4:
-                return "EmergencyHeat"
-            case 5:
-                return "Cool"
-            case 6:
-                return "AutoCool"
-            case 7:
-                return "SouthernAway"
-            case 8:
-                return "Off"
-            case 9:
-                return "Manual"
-            case 10:
-                return "AutoBypass"
-            case _:
-                return ""
-
-    def _map_to_ccr_mode(self, ccr_mode: int) -> str:
-        match ccr_mode:
-            case 0:
-                return "Unknown"
-            case 1:
-                return "Auto"
-            case 2:
-                return "Off"
-            case 3:
-                return "Manual"
-            case _:
-                return ""
