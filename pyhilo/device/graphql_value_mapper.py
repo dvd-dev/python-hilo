@@ -36,14 +36,12 @@ class GraphqlValueMapper:
                 readings.extend(reading)
         return readings
 
-    def _map_devices_values(
-        self, device: Dict[str, Any]
-    ) -> list[Dict[str, Any]]:
+    def _map_devices_values(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
         attributes: list[Dict[str, Any]] = self._map_basic_device(device)
         match device["deviceType"].lower():
             case "tstat":
                 attributes.extend(self._build_thermostat(device))
-            case "cce":  # Water Heater
+            case "cee":  # Water Heater
                 attributes.extend(self._build_water_heater(device))
             case "ccr":  # ChargeController
                 attributes.extend(self._build_charge_controller(device))
@@ -246,43 +244,53 @@ class GraphqlValueMapper:
                 )
             )
         return attributes
-    
-    def _build_lowvoltage_thermostat(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
+
+    def _build_lowvoltage_thermostat(
+        self, device: Dict[str, Any]
+    ) -> list[Dict[str, Any]]:
         attributes = self._build_thermostat(device)
         if device.get("coolTempSetpoint") is not None:
             attributes.append(
                 self.build_attribute(
-                    device["hiloId"], "CoolTemperatureSet", device["coolTempSetpoint"]["value"]
+                    device["hiloId"],
+                    "CoolTemperatureSet",
+                    device["coolTempSetpoint"]["value"],
                 )
             )
         if device.get("fanSpeed") is not None:
             attributes.append(
-                self.build_attribute(
-                    device["hiloId"], "FanSpeed", device["fanSpeed"]
-                )
+                self.build_attribute(device["hiloId"], "FanSpeed", device["fanSpeed"])
             )
         if device.get("minAmbientCoolSetPoint") is not None:
             attributes.append(
                 self.build_attribute(
-                    device["hiloId"], "MinCoolSetpoint", device["minAmbientCoolSetPoint"]["value"]
+                    device["hiloId"],
+                    "MinCoolSetpoint",
+                    device["minAmbientCoolSetPoint"]["value"],
                 )
             )
         if device.get("maxAmbientCoolSetPoint") is not None:
             attributes.append(
                 self.build_attribute(
-                    device["hiloId"], "MaxCoolSetpoint", device["maxAmbientCoolSetPoint"]["value"]
+                    device["hiloId"],
+                    "MaxCoolSetpoint",
+                    device["maxAmbientCoolSetPoint"]["value"],
                 )
             )
         if device.get("minAmbientTempSetpoint") is not None:
             attributes.append(
                 self.build_attribute(
-                    device["hiloId"], "MinTempSetpoint", device["minAmbientTempSetpoint"]["value"]
+                    device["hiloId"],
+                    "MinTempSetpoint",
+                    device["minAmbientTempSetpoint"]["value"],
                 )
             )
         if device.get("maxAmbientTempSetpoint") is not None:
             attributes.append(
                 self.build_attribute(
-                    device["hiloId"], "MaxTempSetpoint", device["maxAmbientTempSetpoint"]["value"]
+                    device["hiloId"],
+                    "MaxTempSetpoint",
+                    device["maxAmbientTempSetpoint"]["value"],
                 )
             )
         attributes.extend(
@@ -297,17 +305,17 @@ class GraphqlValueMapper:
                     "Thermostat24VAllowedFanMode",
                     self._map_to_thermostat_mode(device["fanAllowedModes"]),
                 ),
-                 self.build_attribute(
+                self.build_attribute(
                     device["fanMode"],
                     "FanMode",
                     self._map_to_thermostat_mode(device["fanMode"]),
                 ),
-                 self.build_attribute(
+                self.build_attribute(
                     device["mode"],
                     "Thermostat24VMode",
                     self._map_to_thermostat_mode(device["mode"]),
                 ),
-                 self.build_attribute(
+                self.build_attribute(
                     device["currentState"],
                     "CurrentState",
                     self._map_to_thermostat_mode(device["currentState"]),
@@ -358,11 +366,10 @@ class GraphqlValueMapper:
                     device["hiloId"], "CcrAllowedModes", device["ccrAllowedModes"]
                 )
             )
-        attributes.append(
-            self.build_attribute(
-                device["hiloId"], "CcrMode", self._map_to_ccr_mode(device["ccrMode"])
+        if device.get("ccrMode") is not None:
+            attributes.append(
+                self.build_attribute(device["hiloId"], "CcrMode", device["ccrMode"])
             )
-        )
         return attributes
 
     def _build_charging_point(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
@@ -410,16 +417,16 @@ class GraphqlValueMapper:
                 self.build_attribute(
                     device["hiloId"],
                     "ColorTemperature",
-                    device["colorTemperature"]["value"],
+                    device["colorTemperature"],
                 )
             )
         if device.get("level") is not None:
             attributes.append(
                 self.build_attribute(
-                    device["hiloId"], "Intensity", device["level"]["value"] / 100
+                    device["hiloId"], "Intensity", device["level"] / 100
                 )
             )
-        if device.get("lightType") == 1:  # LightType.Color
+        if device.get("lightType").lower() == "color":
             attributes.append(
                 self.build_attribute(device["hiloId"], "Hue", device.get("hue") or 0)
             )
@@ -429,7 +436,7 @@ class GraphqlValueMapper:
                 )
             )
         attributes.append(
-            self.build_attribute(device["hiloId"], "OnOff", device["atate"])
+            self.build_attribute(device["hiloId"], "OnOff", device["state"])
         )
         return attributes
 
@@ -449,10 +456,8 @@ class GraphqlValueMapper:
         )
 
     def _map_drms_state(self, device: Dict[str, Any]) -> Dict[str, Any]:
-        return (
-            self.build_attribute(
-                device["hiloId"], "DrmsState", device["gDState"] == "Active"
-            ),
+        return self.build_attribute(
+            device["hiloId"], "DrmsState", device["gDState"] == "Active"
         )
 
     def _map_heating(self, device: Dict[str, Any]) -> Dict[str, Any]:

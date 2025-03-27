@@ -148,6 +148,8 @@ class GraphQlHelper:
                                 value
                                 kind
                             }
+                            ccrMode,
+                            ccrAllowedModes
                         }
                         ... on HeatingFloorThermostat {
                             deviceType
@@ -366,6 +368,8 @@ class GraphQlHelper:
                     value
                     kind
                 }
+                ccrMode,
+			    ccrAllowedModes
             }
             ... on HeatingFloorThermostat {
                 deviceType
@@ -417,7 +421,7 @@ class GraphQlHelper:
                 zigbeeVersion
                 state
                 ccrType
-              alerts
+                alerts
                 power {
                     value
                     kind
