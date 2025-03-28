@@ -1,7 +1,7 @@
 from datetime import datetime, timezone
-from typing import Any, Dict, List
+from typing import Any, Dict
 
-from pyhilo.device import DeviceReading, HiloDevice
+from pyhilo.device import DeviceReading
 
 
 class GraphqlValueMapper:
@@ -301,10 +301,8 @@ class GraphqlValueMapper:
                     "CurrentState",
                     device["currentState"],
                 ),
-                attributes.append(
-                    self.build_attribute(
-                        device["hiloId"], "FanSpeed", device.get("fanSpeed")
-                    )
+                self.build_attribute(
+                    device["hiloId"], "FanSpeed", device.get("fanSpeed")
                 ),
             ]
         )
