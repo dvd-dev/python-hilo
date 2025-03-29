@@ -4,7 +4,6 @@ from pyhilo import API
 from pyhilo.const import HILO_DEVICE_TYPES, LOG
 from pyhilo.device import DeviceReading, HiloDevice
 from pyhilo.device.climate import Climate  # noqa
-from pyhilo.device.graphql_value_mapper import GraphqlValueMapper
 from pyhilo.device.light import Light  # noqa
 from pyhilo.device.sensor import Sensor  # noqa
 from pyhilo.device.switch import Switch  # noqa
@@ -119,8 +118,3 @@ class Devices:
         self.location_id = location_ids[0]
         self.location_hilo_id = location_ids[1]
         await self.update()
-        # TODO AA - trouver ou placer ça pour que ça fasse du sens, pas sûre que c'est ici
-        values = await self._api.call_get_location_query(self.location_hilo_id)
-        mapper = GraphqlValueMapper(self._api)
-        readings = mapper.map_values(values)
-        self._map_readings_to_devices(readings)

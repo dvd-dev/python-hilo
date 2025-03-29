@@ -87,9 +87,7 @@ class HiloDevice:
                     new_val.append(DeviceAttribute("Disconnected", "null"))
             elif att == "provider":
                 att = "manufacturer"
-                new_val = HILO_PROVIDERS.get(
-                    int(val), f"Unknown ({val})"
-                )  # type: ignore
+                new_val = HILO_PROVIDERS.get(int(val), f"Unknown ({val})")  # type: ignore
             else:
                 if att == "serial":
                     att = "identifier"
@@ -234,9 +232,7 @@ class DeviceReading:
         #       attr='intensity',
         #       value_type='%')
         # }
-        kwargs["timeStamp"] = from_utc_timestamp(
-            kwargs.pop("timeStampUTC", "")
-        )  # type: ignore
+        kwargs["timeStamp"] = from_utc_timestamp(kwargs.pop("timeStampUTC", ""))  # type: ignore
         self.id = 0
         self.value: Union[int, bool, str] = 0
         self.device_id = 0
