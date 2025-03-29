@@ -388,7 +388,7 @@ class GraphQlHelper:
                     kind
                 }
                 ccrMode,
-			    ccrAllowedModes
+                ccrAllowedModes
             }
             ... on HeatingFloorThermostat {
                 deviceType
