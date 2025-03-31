@@ -463,8 +463,8 @@ class GraphqlValueMapper:
             self._power_kw_to_w(value, device["power"]["kind"]),
         )
 
-    def _power_kw_to_w(self, power: float, power_kind: int) -> float:
-        if power_kind == 12:  # PowerKind.KW
+    def _power_kw_to_w(self, power: float, power_kind: str) -> float:
+        if power_kind.lower() == "kilowatt":
             return power * 1000
 
         return power
