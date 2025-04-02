@@ -546,23 +546,25 @@ class GraphQlHelper:
     async def subscribe_to_device_updated(
         self, location_hilo_id: str, callback: callable = None
     ) -> None:
-        transport = WebsocketsTransport(
-            url=f"wss://platform.hiloenergie.com/api/digital-twin/v3/graphql?access_token={self.access_token}"
-        )
-        client = Client(transport=transport, fetch_schema_from_transport=True)
-        query = gql(self.SUBSCRIPTION_DEVICE_UPDATED)
-        try:
-            async with client as session:
-                async for result in session.subscribe(
-                    query, variable_values={"locationHiloId": location_hilo_id}
-                ):
-                    print(f"Received subscription result {result}")
-                    device_hilo_id = self._handle_device_subscription_result(result)
-                    callback(device_hilo_id)
-        except asyncio.CancelledError:
-            print("Subscription cancelled.")
-            asyncio.sleep(1)
-            await self.subscribe_to_device_updated(location_hilo_id)
+        while True:  # Loop to reconnect if the connection is lost
+            transport = WebsocketsTransport(
+                url=f"wss://platform.hiloenergie.com/api/digital-twin/v3/graphql?access_token={self.access_token}"
+            )
+            client = Client(transport=transport, fetch_schema_from_transport=True)
+            query = gql(self.SUBSCRIPTION_DEVICE_UPDATED)
+            try:
+                async with client as session:
+                    async for result in session.subscribe(
+                        query, variable_values={"locationHiloId": location_hilo_id}
+                    ):
+                        print(f"Received subscription result {result}")
+                        device_hilo_id = self._handle_device_subscription_result(result)
+                        if callback:
+                            callback(device_hilo_id)
+            except Exception as e: 
+                print(f"Connection lost: {e}. Reconnecting in 5 seconds...")
+                await asyncio.sleep(5)
+                self.call_get_location_query(location_hilo_id)
 
     async def subscribe_to_location_updated(
         self, location_hilo_id: str, callback: callable = None
