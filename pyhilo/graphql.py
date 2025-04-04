@@ -16,14 +16,12 @@ class GraphQlHelper:
     def __init__(self, api: API, devices: Devices):
         self._api = api
         self._devices = devices
-        self.access_token = ""
         self.mapper: GraphqlValueMapper = GraphqlValueMapper()
 
         self.subscriptions: List[Optional[asyncio.Task]] = [None]
 
     async def async_init(self) -> None:
         """Initialize the Hilo "GraphQlHelper" class."""
-        self.access_token = await self._api.async_get_access_token()
         await self.call_get_location_query(self._devices.location_hilo_id)
 
     QUERY_GET_LOCATION: str = """query getLocation($locationHiloId: String!) {
@@ -32,7 +30,7 @@ class GraphQlHelper:
                     lastUpdate
                     lastUpdateVersion
                     devices {
-                    deviceType
+                        deviceType
                         hiloId
                         physicalAddress
                         connectionStatus
@@ -530,9 +528,10 @@ class GraphQlHelper:
 }"""
 
     async def call_get_location_query(self, location_hilo_id: str) -> None:
+        access_token = await self._get_access_token()
         transport = AIOHTTPTransport(
             url="https://platform.hiloenergie.com/api/digital-twin/v3/graphql",
-            headers={"Authorization": f"Bearer {self.access_token}"},
+            headers={"Authorization": f"Bearer {access_token}"},
         )
         client = Client(transport=transport, fetch_schema_from_transport=True)
         query = gql(self.QUERY_GET_LOCATION)
@@ -547,8 +546,9 @@ class GraphQlHelper:
         self, location_hilo_id: str, callback: callable = None
     ) -> None:
         while True:  # Loop to reconnect if the connection is lost
+            access_token = await self._get_access_token()
             transport = WebsocketsTransport(
-                url=f"wss://platform.hiloenergie.com/api/digital-twin/v3/graphql?access_token={self.access_token}"
+                url=f"wss://platform.hiloenergie.com/api/digital-twin/v3/graphql?access_token={access_token}"
             )
             client = Client(transport=transport, fetch_schema_from_transport=True)
             query = gql(self.SUBSCRIPTION_DEVICE_UPDATED)
@@ -561,7 +561,7 @@ class GraphQlHelper:
                         device_hilo_id = self._handle_device_subscription_result(result)
                         if callback:
                             callback(device_hilo_id)
-            except Exception as e: 
+            except Exception as e:
                 print(f"Connection lost: {e}. Reconnecting in 5 seconds...")
                 await asyncio.sleep(5)
                 self.call_get_location_query(location_hilo_id)
@@ -569,8 +569,9 @@ class GraphQlHelper:
     async def subscribe_to_location_updated(
         self, location_hilo_id: str, callback: callable = None
     ) -> None:
+        access_token = await self._get_access_token()
         transport = WebsocketsTransport(
-            url=f"wss://platform.hiloenergie.com/api/digital-twin/v3/graphql?access_token={self.access_token}"
+            url=f"wss://platform.hiloenergie.com/api/digital-twin/v3/graphql?access_token={access_token}"
         )
         client = Client(transport=transport, fetch_schema_from_transport=True)
         query = gql(self.SUBSCRIPTION_LOCATION_UPDATED)
@@ -586,6 +587,10 @@ class GraphQlHelper:
             print("Subscription cancelled.")
             asyncio.sleep(1)
             await self.subscribe_to_location_updated(location_hilo_id)
+
+    async def _get_access_token(self) -> str:
+        """Get the access token."""
+        return await self._api.async_get_access_token()
 
     def _handle_query_result(self, result: Dict[str, Any]) -> None:
         devices_values: list[any] = result["getLocation"]["devices"]
