@@ -114,5 +114,9 @@ async def set_state(
         new_state: dict[str, Any] = {**current_state, **merged_state}
         async with aiofiles.open(state_yaml, mode="w") as yaml_file:
             LOG.debug("Saving state to yaml file")
+            # TODO: Use asyncio.get_running_loop() and run_in_executor to write
+            # to the file in a non blocking manner. Currently, the file writes
+            # are properly async but the yaml dump is done synchroniously on the
+            # main event loop.
             content = yaml.dump(new_state)
             await yaml_file.write(content)
