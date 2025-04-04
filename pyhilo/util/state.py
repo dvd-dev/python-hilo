@@ -4,7 +4,7 @@ from os.path import isfile
 from typing import Any, Optional, Type, TypedDict, TypeVar, Union
 
 import aiofiles
-import ruyaml as yaml
+import yaml
 
 from pyhilo.const import LOG
 
@@ -42,7 +42,8 @@ class RegistrationDict(TypedDict, total=False):
 
 class FirebaseDict(TypedDict):
     fid: Optional[str]
-    name: Optional[str]  # "projects/18450192328/installations/d7N8yHopRWOiTYCrnYLi8a"
+    # "projects/18450192328/installations/d7N8yHopRWOiTYCrnYLi8a"
+    name: Optional[str]
     token: TokenDict
 
 
@@ -108,7 +109,8 @@ async def set_state(
     """
     async with lock:  # note ic-dev21: on lock le fichier pour être sûr de finir la job
         current_state = await get_state(state_yaml) or {}
-        merged_state: dict[str, Any] = {key: {**current_state.get(key, {}), **state}}  # type: ignore
+        merged_state: dict[str, Any] = {
+            key: {**current_state.get(key, {}), **state}}  # type: ignore
         new_state: dict[str, Any] = {**current_state, **merged_state}
         async with aiofiles.open(state_yaml, mode="w") as yaml_file:
             LOG.debug("Saving state to yaml file")
