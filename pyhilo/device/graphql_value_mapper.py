@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from typing import Any, Dict, Generator, Union
+from typing import Any, Dict
 
 from pyhilo.device import DeviceReading
 
@@ -9,45 +9,61 @@ class GraphqlValueMapper:
     A class to map GraphQL values to DeviceReading instances.
     """
 
-    def __init__(self, api: Any):
-        self._api = api
-
-    def map_values(self, values: Dict[str, Any]) -> list[DeviceReading]:
-        devices_values: list[any] = values["getLocation"]["devices"]
-        readings: list[DeviceReading] = []
-        for device in devices_values:
+    def map_query_values(self, values: Dict[str, Any]) -> list[Dict[str, Any]]:
+        readings: list[Dict[str, Any]] = []
+        for device in values:
             if device.get("deviceType") is not None:
                 reading = self._map_devices_values(device)
                 readings.extend(reading)
         return readings
 
-    def _map_devices_values(self, device: Dict[str, Any]) -> list[DeviceReading]:
+    def map_device_subscription_values(
+        self, device: list[Dict[str, Any]]
+    ) -> list[Dict[str, Any]]:
+        readings: list[Dict[str, Any]] = []
+        if device.get("deviceType") is not None:
+            reading = self._map_devices_values(device)
+            readings.extend(reading)
+        return readings
+
+    def map_location_subscription_values(
+        self, values: Dict[str, Any]
+    ) -> list[Dict[str, Any]]:
+        readings: list[Dict[str, Any]] = []
+        for device in values:
+            if device.get("deviceType") is not None:
+                reading = self._map_devices_values(device)
+                readings.extend(reading)
+        return readings
+
+    def _map_devices_values(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
         attributes: list[Dict[str, Any]] = self._map_basic_device(device)
-        match device["deviceType"]:
-            case "Tstat":
+        match device["deviceType"].lower():
+            case "tstat":
                 attributes.extend(self._build_thermostat(device))
-            case "CCE":  # Water Heater
+            case "cee":  # Water Heater
                 attributes.extend(self._build_water_heater(device))
-            case "CCR":  # ChargeController
+            case "ccr":  # ChargeController
                 attributes.extend(self._build_charge_controller(device))
-            case "HeatingFloor":
+            case "heatingfloor":
                 attributes.extend(self._build_floor_thermostat(device))
-            # case "LowVoltageTstat":
-            case "ChargingPoint":
+            case "lowvoltagetstat":
+                attributes.extend(self._build_lowvoltage_thermostat(device))
+            case "chargingpoint":
                 attributes.extend(self._build_charging_point(device))
-            case "Meter":
+            case "meter":  # Smart Meter
                 attributes.extend(self._build_smart_meter(device))
-            case "Hub":  # Gateway
+            case "hub":  # Gateway
                 attributes.extend(self._build_gateway(device))
-            case "ColorBulb":
+            case "colorbulb":
                 attributes.extend(self._build_light(device))
-            case "Dimmer":
+            case "dimmer":
                 attributes.extend(self._build_dimmer(device))
-            case "Switch":
+            case "switch":
                 attributes.extend(self._build_switch(device))
             case _:
                 pass
-        return self._map_to_device_reading(attributes)
+        return attributes
 
     def _map_to_device_reading(
         self, attributes: list[Dict[str, Any]]
@@ -173,42 +189,43 @@ class GraphqlValueMapper:
             self.build_attribute(
                 device["hiloId"],
                 "ThermostatMode",
-                self._map_to_thermostat_mode(device.get("mode")),
+                device.get("mode"),
             )
         )
         attributes.append(self._map_gd_state(device))
-        if withDefaultMinMaxTemp:
-            attributes.extend(
-                [
-                    self.build_attribute(device["hiloId"], "MaxTempSetpoint", 30),
-                    self.build_attribute(device["hiloId"], "MinTempSetpoint", 5),
-                ]
-            )
-        else:
-            if device.get("maxAmbientTempSetpoint") is not None:
+
+        if device.get("maxAmbientTempSetpoint") is not None:
+            attributes.append(
                 self.build_attribute(
-                    device["maxAmbientTempSetpoint"],
+                    device["hiloId"],
                     "MaxTempSetpoint",
                     device["maxAmbientTempSetpoint"]["value"],
                 )
-            if device.get("minAmbientTempSetpoint") is not None:
+            )
+        if device.get("minAmbientTempSetpoint") is not None:
+            attributes.append(
                 self.build_attribute(
                     device["hiloId"],
                     "MinTempSetpoint",
                     device["minAmbientTempSetpoint"]["value"],
                 )
+            )
 
         if device.get("maxAmbientTempSetpointLimit") is not None:
-            self.build_attribute(
-                device["hiloId"],
-                "MaxTempSetpointLimit",
-                device["maxAmbientTempSetpointLimit"]["value"],
+            attributes.append(
+                self.build_attribute(
+                    device["hiloId"],
+                    "MaxTempSetpointLimit",
+                    device["maxAmbientTempSetpointLimit"]["value"],
+                )
             )
         if device.get("minAmbientTempSetpointLimit") is not None:
-            self.build_attribute(
-                device["hiloId"],
-                "MinTempSetpointLimit",
-                device["minAmbientTempSetpointLimit"]["value"],
+            attributes.append(
+                self.build_attribute(
+                    device["hiloId"],
+                    "MinTempSetpointLimit",
+                    device["minAmbientTempSetpointLimit"]["value"],
+                )
             )
         return attributes
 
@@ -218,7 +235,7 @@ class GraphqlValueMapper:
             self.build_attribute(
                 device["hiloId"],
                 "FloorMode",
-                self._map_to_floor_mode(device["floorMode"]),
+                device["floorMode"],
             )
         )
         if device.get("floorLimit") is not None:
@@ -227,6 +244,68 @@ class GraphqlValueMapper:
                     device["hiloId"], "FloorLimit", device["floorLimit"]["value"]
                 )
             )
+        return attributes
+
+    def _build_lowvoltage_thermostat(
+        self, device: Dict[str, Any]
+    ) -> list[Dict[str, Any]]:
+        attributes = self._build_thermostat(device)
+        if device.get("coolTempSetpoint") is not None:
+            attributes.append(
+                self.build_attribute(
+                    device["hiloId"],
+                    "CoolTemperatureSet",
+                    device["coolTempSetpoint"]["value"],
+                )
+            )
+        if device.get("minAmbientCoolSetPoint") is not None:
+            attributes.append(
+                self.build_attribute(
+                    device["hiloId"],
+                    "MinCoolSetpoint",
+                    device["minAmbientCoolSetPoint"]["value"],
+                )
+            )
+        if device.get("maxAmbientCoolSetPoint") is not None:
+            attributes.append(
+                self.build_attribute(
+                    device["hiloId"],
+                    "MaxCoolSetpoint",
+                    device["maxAmbientCoolSetPoint"]["value"],
+                )
+            )
+        attributes.extend(
+            [
+                self.build_attribute(
+                    device["hiloId"],
+                    "Thermostat24VAllowedMode",
+                    device["allowedModes"],
+                ),
+                self.build_attribute(
+                    device["hiloId"],
+                    "Thermostat24VAllowedFanMode",
+                    device["fanAllowedModes"],
+                ),
+                self.build_attribute(
+                    device["hiloId"],
+                    "FanMode",
+                    device["fanMode"],
+                ),
+                self.build_attribute(
+                    device["hiloId"],
+                    "Thermostat24VMode",
+                    device["mode"],
+                ),
+                self.build_attribute(
+                    device["hiloId"],
+                    "CurrentState",
+                    device["currentState"],
+                ),
+                self.build_attribute(
+                    device["hiloId"], "FanSpeed", device.get("fanSpeed")
+                ),
+            ]
+        )
         return attributes
 
     def _build_water_heater(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
@@ -271,11 +350,10 @@ class GraphqlValueMapper:
                     device["hiloId"], "CcrAllowedModes", device["ccrAllowedModes"]
                 )
             )
-        attributes.append(
-            self.build_attribute(
-                device["hiloId"], "CcrMode", self._map_to_ccr_mode(device["ccrMode"])
+        if device.get("ccrMode") is not None:
+            attributes.append(
+                self.build_attribute(device["hiloId"], "CcrMode", device["ccrMode"])
             )
-        )
         return attributes
 
     def _build_charging_point(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
@@ -323,16 +401,16 @@ class GraphqlValueMapper:
                 self.build_attribute(
                     device["hiloId"],
                     "ColorTemperature",
-                    device["colorTemperature"]["value"],
+                    device["colorTemperature"],
                 )
             )
         if device.get("level") is not None:
             attributes.append(
                 self.build_attribute(
-                    device["hiloId"], "Intensity", device["level"]["value"] / 100
+                    device["hiloId"], "Intensity", device["level"] / 100
                 )
             )
-        if device.get("lightType") == 1:  # LightType.Color
+        if device.get("lightType").lower() == "color":
             attributes.append(
                 self.build_attribute(device["hiloId"], "Hue", device.get("hue") or 0)
             )
@@ -342,7 +420,7 @@ class GraphqlValueMapper:
                 )
             )
         attributes.append(
-            self.build_attribute(device["hiloId"], "OnOff", device["atate"])
+            self.build_attribute(device["hiloId"], "OnOff", device["state"])
         )
         return attributes
 
@@ -362,10 +440,8 @@ class GraphqlValueMapper:
         )
 
     def _map_drms_state(self, device: Dict[str, Any]) -> Dict[str, Any]:
-        return (
-            self.build_attribute(
-                device["hiloId"], "DrmsState", device["gDState"] == "Active"
-            ),
+        return self.build_attribute(
+            device["hiloId"], "DrmsState", device["gDState"] == "Active"
         )
 
     def _map_heating(self, device: Dict[str, Any]) -> Dict[str, Any]:
@@ -387,8 +463,8 @@ class GraphqlValueMapper:
             self._power_kw_to_w(value, device["power"]["kind"]),
         )
 
-    def _power_kw_to_w(self, power: float, power_kind: int) -> float:
-        if power_kind == 12:  # PowerKind.KW
+    def _power_kw_to_w(self, power: float, power_kind: str) -> float:
+        if power_kind.lower() == "kilowatt":
             return power * 1000
 
         return power
@@ -398,56 +474,8 @@ class GraphqlValueMapper:
     ) -> Dict[str, Any]:
         return {
             "hilo_id": hilo_id,
-            "device_attribute": self._api.dev_atts(device_attribute, "null"),
+            "attribute": device_attribute,
+            "valueType": "null",
             "value": value,
             "timeStampUTC": datetime.now(timezone.utc).isoformat(),
         }
-
-    def _map_to_floor_mode(self, floor_mode: int) -> str:
-        match floor_mode:
-            case 0:
-                return "Ambient"
-            case 1:
-                return "Floor"
-            case 2:
-                return "Hybrid"
-
-    def _map_to_thermostat_mode(self, mode: int) -> str:
-        match mode:
-            case 0:
-                return "Unknown"
-            case 1:
-                return "Heat"
-            case 2:
-                return "Auto"
-            case 3:
-                return "AutoHeat"
-            case 4:
-                return "EmergencyHeat"
-            case 5:
-                return "Cool"
-            case 6:
-                return "AutoCool"
-            case 7:
-                return "SouthernAway"
-            case 8:
-                return "Off"
-            case 9:
-                return "Manual"
-            case 10:
-                return "AutoBypass"
-            case _:
-                return ""
-
-    def _map_to_ccr_mode(self, ccr_mode: int) -> str:
-        match ccr_mode:
-            case 0:
-                return "Unknown"
-            case 1:
-                return "Auto"
-            case 2:
-                return "Off"
-            case 3:
-                return "Manual"
-            case _:
-                return ""
