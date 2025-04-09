@@ -1,6 +1,6 @@
 {
   "name": "python-hilo",
-  "version": "2025.2.2",
+  "version": "2025.4.1",
   "private": true,
   "description": "A Python3, async interface to the Hilo API",
   "scripts": {
