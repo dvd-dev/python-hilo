@@ -8,7 +8,8 @@ class GraphqlValueMapper:
     """
     A class to map GraphQL values to DeviceReading instances.
     """
-
+    OnState = "on"
+    
     def map_query_values(self, values: Dict[str, Any]) -> list[Dict[str, Any]]:
         readings: list[Dict[str, Any]] = []
         for device in values:
@@ -358,7 +359,7 @@ class GraphqlValueMapper:
             )
         attributes.append(
             self.build_attribute(
-                device["hiloId"], "OnOff", device["state"].lower() == "on"
+                device["hiloId"], "OnOff", device["state"].lower() == self.OnState
             )
         )
         return attributes
@@ -380,12 +381,12 @@ class GraphqlValueMapper:
             attributes.append(self._map_power(device))
         attributes.append(
             self.build_attribute(
-                device["hiloId"], "Status", device["state"].lower() == "on"
+                device["hiloId"], "Status", device["state"].lower() == self.OnState
             )
         )
         attributes.append(
             self.build_attribute(
-                device["hiloId"], "OnOff", device["state"].lower() == "on"
+                device["hiloId"], "OnOff", device["state"].lower() == self.OnState
             )
         )
         return attributes
@@ -402,7 +403,7 @@ class GraphqlValueMapper:
             )
         attributes.append(
             self.build_attribute(
-                device["hiloId"], "OnOff", device["state"].lower() == "on"
+                device["hiloId"], "OnOff", device["state"].lower() == self.OnState
             )
         )
         return attributes
@@ -434,7 +435,7 @@ class GraphqlValueMapper:
             )
         attributes.append(
             self.build_attribute(
-                device["hiloId"], "OnOff", device["state"].lower() == "on"
+                device["hiloId"], "OnOff", device["state"].lower() == self.OnState
             )
         )
         return attributes
