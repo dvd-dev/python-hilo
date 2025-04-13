@@ -57,6 +57,8 @@ class GraphqlValueMapper:
                 attributes.extend(self._build_gateway(device))
             case "colorbulb":
                 attributes.extend(self._build_light(device))
+            case "whitebulb":
+                attributes.extend(self._build_light(device))
             case "dimmer":
                 attributes.extend(self._build_dimmer(device))
             case "switch":
@@ -354,6 +356,11 @@ class GraphqlValueMapper:
             attributes.append(
                 self.build_attribute(device["hiloId"], "CcrMode", device["ccrMode"])
             )
+        attributes.append(
+            self.build_attribute(
+                device["hiloId"], "OnOff", device["state"].lower() == "on"
+            )
+        )
         return attributes
 
     def _build_charging_point(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
@@ -372,10 +379,14 @@ class GraphqlValueMapper:
         if device.get("power") is not None:
             attributes.append(self._map_power(device))
         attributes.append(
-            self.build_attribute(device["hiloId"], "Status", device["state"])
+            self.build_attribute(
+                device["hiloId"], "Status", device["state"].lower() == "on"
+            )
         )
         attributes.append(
-            self.build_attribute(device["hiloId"], "OnOff", device["state"])
+            self.build_attribute(
+                device["hiloId"], "OnOff", device["state"].lower() == "on"
+            )
         )
         return attributes
 
@@ -390,7 +401,9 @@ class GraphqlValueMapper:
                 )
             )
         attributes.append(
-            self.build_attribute(device["hiloId"], "OnOff", device["state"])
+            self.build_attribute(
+                device["hiloId"], "OnOff", device["state"].lower() == "on"
+            )
         )
         return attributes
 
@@ -420,7 +433,9 @@ class GraphqlValueMapper:
                 )
             )
         attributes.append(
-            self.build_attribute(device["hiloId"], "OnOff", device["state"])
+            self.build_attribute(
+                device["hiloId"], "OnOff", device["state"].lower() == "on"
+            )
         )
         return attributes
 
