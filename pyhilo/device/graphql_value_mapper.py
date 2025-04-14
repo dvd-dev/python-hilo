@@ -8,8 +8,9 @@ class GraphqlValueMapper:
     """
     A class to map GraphQL values to DeviceReading instances.
     """
+
     OnState = "on"
-    
+
     def map_query_values(self, values: Dict[str, Any]) -> list[Dict[str, Any]]:
         readings: list[Dict[str, Any]] = []
         for device in values:

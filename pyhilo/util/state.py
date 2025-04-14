@@ -58,6 +58,7 @@ class RegistrationDict(TypedDict, total=False):
 
 class FirebaseDict(TypedDict):
     """Represents a dictionary containing Firebase information."""
+
     fid: str | None
     name: str | None
     token: TokenDict
