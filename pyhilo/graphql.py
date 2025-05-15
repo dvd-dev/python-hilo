@@ -564,7 +564,7 @@ class GraphQlHelper:
             except Exception as e:
                 print(f"Connection lost: {e}. Reconnecting in 5 seconds...")
                 await asyncio.sleep(5)
-                self.call_get_location_query(location_hilo_id)
+                await self.call_get_location_query(location_hilo_id)
 
     async def subscribe_to_location_updated(
         self, location_hilo_id: str, callback: callable = None
