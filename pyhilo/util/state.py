@@ -161,7 +161,7 @@ async def set_state(
             LOG.debug("Saving state to yaml file")
             # TODO: Use asyncio.get_running_loop() and run_in_executor to write
             # to the file in a non blocking manner. Currently, the file writes
-            # are properly async but the yaml dump is done synchroniously on the
+            # are properly async but the yaml dump is done synchronously on the
             # main event loop.
             content = yaml.dump(new_state)
             await yaml_file.write(content)
