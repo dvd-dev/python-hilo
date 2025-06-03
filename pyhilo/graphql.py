@@ -529,6 +529,7 @@ class GraphQlHelper:
 }"""
 
     async def call_get_location_query(self, location_hilo_id: str) -> None:
+        """This functions calls the digital-twin and requests location id"""
         access_token = await self._get_access_token()
         transport = AIOHTTPTransport(
             url="https://platform.hiloenergie.com/api/digital-twin/v3/graphql",
@@ -594,6 +595,7 @@ class GraphQlHelper:
         return await self._api.async_get_access_token()
 
     def _handle_query_result(self, result: Dict[str, Any]) -> None:
+        """This receives query results and maps them to the proper device."""
         devices_values: list[any] = result["getLocation"]["devices"]
         attributes = self.mapper.map_query_values(devices_values)
         self._devices.parse_values_received(attributes)

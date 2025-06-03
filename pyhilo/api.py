@@ -393,6 +393,7 @@ class API:
         await self.websocket_manager.refresh_token(self.websocket_manager.challengehub)
 
     async def get_websocket_params(self) -> None:
+        """Retrieves and constructs WebSocket connection parameters from the negotiation endpoint."""
         uri = parse.urlparse(self.ws_url)
         LOG.debug("Getting websocket params")
         LOG.debug(f"Getting uri {uri}")
@@ -415,10 +416,11 @@ class API:
             "available_transports": transport_dict,
             "full_ws_url": self.full_ws_url,
         }
-        LOG.debug("Calling set_state websocket_params")
+        LOG.debug("Calling set_state from get_websocket_params")
         await set_state(self._state_yaml, "websocket", websocket_dict)
 
     async def fb_install(self, fb_id: str) -> None:
+        """Registers a Firebase installation and stores the authentication token state."""
         LOG.debug("Posting firebase install")
         body = {
             "fid": fb_id,
@@ -441,7 +443,7 @@ class API:
             raise RequestError(err) from err
         LOG.debug(f"FB Install data: {resp}")
         auth_token = resp.get("authToken", {})
-        LOG.debug("Calling set_state fb_install")
+        LOG.debug("Calling set_state from fb_install")
         await set_state(
             self._state_yaml,
             "firebase",
@@ -493,6 +495,7 @@ class API:
         )
 
     async def get_location_ids(self) -> tuple[int, str]:
+        """Gets location id from an API call"""
         url = f"{API_AUTOMATION_ENDPOINT}/Locations"
         LOG.debug(f"LocationId URL is {url}")
         req: list[dict[str, Any]] = await self.async_request("get", url)
@@ -516,6 +519,7 @@ class API:
         key: DeviceAttribute,
         value: Union[str, float, int, None],
     ) -> None:
+        """Sets device attributes"""
         url = self._get_url(f"Devices/{device.id}/Attributes", device.location_id)
         LOG.debug(f"Device Attribute URL is {url}")
         await self.async_request("put", url, json={key.hilo_attribute: value})
@@ -611,7 +615,7 @@ class API:
           }
         }
         """
-
+        # ic-dev21 need to check but this is probably dead code
         url = self._get_url("Events", location_id, True)
         if not event_id:
             url += "?active=true"
@@ -645,6 +649,7 @@ class API:
         return cast(dict[str, Any], await self.async_request("get", url))
 
     async def get_gateway(self, location_id: int) -> dict[str, Any]:
+        """Gets info about the Hilo hub (gateway)"""
         url = self._get_url("Gateways/Info", location_id)
         LOG.debug(f"Gateway URL is {url}")
         req = await self.async_request("get", url)

@@ -25,6 +25,7 @@ class Event:
     recovery_end: datetime
 
     def __init__(self, **event: dict[str, Any]):
+        """Initialize."""
         self._convert_phases(cast(dict[str, Any], event.get("phases")))
         params: dict[str, Any] = event.get("parameters", {})
         devices: list[dict[str, Any]] = params.get("devices", [])
@@ -79,6 +80,7 @@ class Event:
         return 1800 <= time_since_preheat_start <= 2700 and not already_has_allowed_wh
 
     def as_dict(self) -> dict[str, Any]:
+        """Formats the information received as a dictionary"""
         rep = {k: getattr(self, k) for k in self.dict_items}
         rep["phases"] = {k: getattr(self, k) for k in self.phases_list}
         rep["state"] = self.state
@@ -134,6 +136,7 @@ class Event:
 
     @property
     def current_phase_times(self) -> dict[str, datetime]:
+        """Defines timestamps for Hilo Challenge"""
         if self.state in ["completed", "off", "scheduled", "unknown"]:
             return {}
         phase_timestamp = self._phase_time_mapping.get(self.state, self.state)

@@ -17,10 +17,12 @@ class OAuth2Helper:
 
     # Ref : https://blog.sanghviharshit.com/reverse-engineering-private-api-oauth-code-flow-with-pkce/
     def _get_code_verifier(self) -> str:
+        """Generates a random cryptographic key string to be used as a code verifier in PKCE."""
         code = base64.urlsafe_b64encode(os.urandom(40)).decode("utf-8")
         return re.sub("[^a-zA-Z0-9]+", "", code)
 
     def _get_code_challenge(self, verifier: str) -> str:
+        """Generates a SHA-256 code challenge for PKCE"""
         sha_verifier = hashlib.sha256(verifier.encode("utf-8")).digest()
         code = base64.urlsafe_b64encode(sha_verifier).decode("utf-8")
         return code.replace("=", "")

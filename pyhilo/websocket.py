@@ -311,6 +311,7 @@ class WebsocketClient:
             schedule_callback(callback)
 
     async def _clean_queue(self) -> None:
+        """Removes queued tasks."""
         for task in self._queued_tasks:
             task.cancel()
 
@@ -368,6 +369,24 @@ class WebsocketClient:
     async def async_invoke(
         self, arg: list, target: str, inv_id: int, inv_type: WSMsgType = WSMsgType.TEXT
     ) -> None:
+        """
+        Sends an invocation message over the WebSocket connection.
+
+        Waits for the WebSocket to be ready if it is not already, then sends a message
+        containing the target method, arguments, and invocation ID.
+
+        Args:
+            arg (list): The list of arguments to send with the invocation.
+            target (str): The name of the method or action being invoked on the server.
+            inv_id (int): A unique identifier for this invocation message.
+            inv_type (WSMsgType, optional): The WebSocket message type. Defaults to WSMsgType.TEXT.
+
+        Returns:
+            None
+
+        Notes:
+            If the WebSocket is not ready within 10 seconds, the invocation is skipped.
+        """
         if not self._ready:
             LOG.warning(
                 f"Delaying invoke {target} {inv_id} {arg}: Websocket not ready."

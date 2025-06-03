@@ -11,6 +11,7 @@ from pyhilo.device.switch import Switch  # noqa
 
 class Devices:
     def __init__(self, api: API):
+        """Initialize."""
         self._api = api
         self.devices: list[HiloDevice] = []
         self.location_id: int = 0
@@ -37,6 +38,9 @@ class Devices:
         ]
 
     def parse_values_received(self, values: list[dict[str, Any]]) -> list[HiloDevice]:
+        """Places value received in a dict while removing null attributes, 
+        this returns values to be mapped to devices.
+        """
         readings = []
         for val in values:
             val["device_attribute"] = self._api.dev_atts(
@@ -48,6 +52,7 @@ class Devices:
     def _map_readings_to_devices(
         self, readings: list[DeviceReading]
     ) -> list[HiloDevice]:
+        """Uses the dict from parse_values_received to map the values to devices."""
         updated_devices = []
         for reading in readings:
             device_identifier = reading.device_id
@@ -65,11 +70,15 @@ class Devices:
         return updated_devices
 
     def find_device(self, device_identifier: int | str) -> HiloDevice:
+        """Makes sure the devices received have an identifier, this means some need to be hardcoded
+        like the unknown power meter.
+        """
         if isinstance(device_identifier, int):
             return next((d for d in self.devices if d.id == device_identifier), None)
         return next((d for d in self.devices if d.hilo_id == device_identifier), None)
 
     def generate_device(self, device: dict) -> HiloDevice:
+        """Generate all devices from the list received."""
         device["location_id"] = self.location_id
         if dev := self.find_device(device["id"]):
             dev.update(**device)
@@ -101,6 +110,7 @@ class Devices:
     async def update_devicelist_from_signalr(
         self, values: list[dict[str, Any]]
     ) -> list[HiloDevice]:
+        #ic-dev21 not sure if this is dead code?
         new_devices = []
         for raw_device in values:
             LOG.debug(f"Generating device {raw_device}")
