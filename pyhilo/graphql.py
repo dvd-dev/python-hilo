@@ -547,7 +547,9 @@ class GraphQlHelper:
     async def subscribe_to_device_updated(
         self, location_hilo_id: str, callback: callable = None
     ) -> None:
+        LOG.debug("subscribe_to_device_updated called")
         while True:  # Loop to reconnect if the connection is lost
+            LOG.debug("subscribe_to_device_updated while true")
             access_token = await self._get_access_token()
             transport = WebsocketsTransport(
                 url=f"wss://platform.hiloenergie.com/api/digital-twin/v3/graphql?access_token={access_token}"
@@ -559,14 +561,25 @@ class GraphQlHelper:
                     async for result in session.subscribe(
                         query, variable_values={"locationHiloId": location_hilo_id}
                     ):
-                        LOG.debug(f"Received subscription result {result}")
+                        LOG.debug(
+                            f"subscribe_to_device_updated: Received subscription result {result}"
+                        )
                         device_hilo_id = self._handle_device_subscription_result(result)
                         if callback:
                             callback(device_hilo_id)
             except Exception as e:
-                LOG.debug(f"Connection lost: {e}. Reconnecting in 5 seconds...")
+                LOG.debug(
+                    f"subscribe_to_device_updated: Connection lost: {e}. Reconnecting in 5 seconds..."
+                )
                 await asyncio.sleep(5)
-                await self.call_get_location_query(location_hilo_id)
+                try:
+                    await self.call_get_location_query(location_hilo_id)
+                    LOG.debug("subscribe_to_device_updated, call_get_location_query success")
+
+                except Exception as e2:
+                    LOG.error(
+                        f"subscribe_to_device_updated, exception while reconnecting, retrying: {e2}"
+                    )
 
     async def subscribe_to_location_updated(
         self, location_hilo_id: str, callback: callable = None
