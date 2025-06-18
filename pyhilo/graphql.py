@@ -574,7 +574,9 @@ class GraphQlHelper:
                 await asyncio.sleep(5)
                 try:
                     await self.call_get_location_query(location_hilo_id)
-                    LOG.debug("subscribe_to_device_updated, call_get_location_query success")
+                    LOG.debug(
+                        "subscribe_to_device_updated, call_get_location_query success"
+                    )
 
                 except Exception as e2:
                     LOG.error(

@@ -38,7 +38,7 @@ class Devices:
         ]
 
     def parse_values_received(self, values: list[dict[str, Any]]) -> list[HiloDevice]:
-        """Places value received in a dict while removing null attributes, 
+        """Places value received in a dict while removing null attributes,
         this returns values to be mapped to devices.
         """
         readings = []
@@ -110,7 +110,7 @@ class Devices:
     async def update_devicelist_from_signalr(
         self, values: list[dict[str, Any]]
     ) -> list[HiloDevice]:
-        #ic-dev21 not sure if this is dead code?
+        # ic-dev21 not sure if this is dead code?
         new_devices = []
         for raw_device in values:
             LOG.debug(f"Generating device {raw_device}")
