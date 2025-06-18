@@ -6,7 +6,6 @@ from pyhilo.device.switch import Switch
 from pyhilo.devices import Devices
 from pyhilo.event import Event
 from pyhilo.exceptions import HiloError, InvalidCredentialsError, WebsocketError
-from pyhilo.oauth2 import AuthCodeWithPKCEImplementation
 from pyhilo.util import from_utc_timestamp, time_diff
 from pyhilo.websocket import WebsocketEvent
 
@@ -18,7 +17,6 @@ __all__ = [
     "HiloError",
     "InvalidCredentialsError",
     "WebsocketError",
-    "AuthCodeWithPKCEImplementation",
     "from_utc_timestamp",
     "time_diff",
     "WebsocketEvent",
