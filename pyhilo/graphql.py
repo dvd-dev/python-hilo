@@ -562,14 +562,16 @@ class GraphQlHelper:
                         query, variable_values={"locationHiloId": location_hilo_id}
                     ):
                         LOG.debug(
-                            f"subscribe_to_device_updated: Received subscription result {result}"
+                            "subscribe_to_device_updated: Received subscription result %s",
+                            result,
                         )
                         device_hilo_id = self._handle_device_subscription_result(result)
                         if callback:
                             callback(device_hilo_id)
             except Exception as e:
                 LOG.debug(
-                    f"subscribe_to_device_updated: Connection lost: {e}. Reconnecting in 5 seconds..."
+                    "subscribe_to_device_updated: Connection lost: %s. Reconnecting in 5 seconds...",
+                    e,
                 )
                 await asyncio.sleep(5)
                 try:
@@ -580,7 +582,8 @@ class GraphQlHelper:
 
                 except Exception as e2:
                     LOG.error(
-                        f"subscribe_to_device_updated, exception while reconnecting, retrying: {e2}"
+                        "subscribe_to_device_updated, exception while reconnecting, retrying: %s",
+                        e2,
                     )
 
     async def subscribe_to_location_updated(
@@ -597,7 +600,7 @@ class GraphQlHelper:
                 async for result in session.subscribe(
                     query, variable_values={"locationHiloId": location_hilo_id}
                 ):
-                    LOG.debug(f"Received subscription result {result}")
+                    LOG.debug("Received subscription result %s", result)
                     device_hilo_id = self._handle_location_subscription_result(result)
                     callback(device_hilo_id)
         except asyncio.CancelledError:
@@ -620,7 +623,7 @@ class GraphQlHelper:
         attributes = self.mapper.map_device_subscription_values(devices_values)
         updated_device = self._devices.parse_values_received(attributes)
         # callback to update the device in the UI
-        LOG.debug(f"Device updated: {updated_device}")
+        LOG.debug("Device updated: %s", updated_device)
         return devices_values.get("hiloId")
 
     def _handle_location_subscription_result(self, result: Dict[str, Any]) -> str:
@@ -628,5 +631,5 @@ class GraphQlHelper:
         attributes = self.mapper.map_location_subscription_values(devices_values)
         updated_device = self._devices.parse_values_received(attributes)
         # callback to update the device in the UI
-        LOG.debug(f"Device updated: {updated_device}")
+        LOG.debug("Device updated: %s", updated_device)
         return devices_values.get("hiloId")
