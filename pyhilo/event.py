@@ -67,7 +67,7 @@ class Event:
 
     def update_wh(self, used_wH: float) -> None:
         """This function is used to update the used_kWh attribute during a Hilo Challenge Event"""
-        LOG.debug(f"Updating Wh: {used_wH}")
+        LOG.debug("Updating Wh: %s", used_wH)
         self.used_kWh = round(used_wH / 1000, 2)
         self.last_update = datetime.now(timezone.utc).astimezone()
 

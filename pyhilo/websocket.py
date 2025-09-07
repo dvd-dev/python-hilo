@@ -214,18 +214,22 @@ class WebsocketClient:
 
         if self._api.log_traces:
             LOG.debug(
-                f"[TRACE] Sending data to websocket {self._api.endpoint} : {json.dumps(payload)}"
+                "[TRACE] Sending data to websocket %s : %s",
+                self._api.endpoint,
+                json.dumps(payload),
             )
         # Hilo added a control character (chr(30)) at the end of each payload they send.
         # They also expect this char to be there at the end of every payload we send them.
-        LOG.debug(f"WebsocketClient _async_send_json payload: {payload}")
+        LOG.debug("WebsocketClient _async_send_json payload: %s", payload)
         await self._client.send_str(json.dumps(payload) + chr(30))
 
     def _parse_message(self, msg: dict[str, Any]) -> None:
         """Parse an incoming message."""
         if self._api.log_traces:
             LOG.debug(
-                f"[TRACE] Received message on websocket(_parse_message) {self._api.endpoint}: {msg}"
+                "[TRACE] Received message on websocket(_parse_message) %s: %s",
+                self._api.endpoint,
+                msg,
             )
         if msg.get("type") == SignalRMsgType.PING:
             schedule_callback(self._async_pong)
@@ -272,7 +276,7 @@ class WebsocketClient:
 
         LOG.info("Websocket: Connecting to server %s", self._api.endpoint)
         if self._api.log_traces:
-            LOG.debug(f"[TRACE] Websocket URL: {self._api.full_ws_url}")
+            LOG.debug("[TRACE] Websocket URL: %s", self._api.full_ws_url)
         headers = {
             "Sec-WebSocket-Extensions": "permessage-deflate; client_max_window_bits",
             "Pragma": "no-cache",
@@ -396,9 +400,13 @@ class WebsocketClient:
             except asyncio.TimeoutError:
                 return
             self._ready_event.clear()
-        LOG.debug(
-            f"async_invoke invoke argument: {arg}, invocationId: {inv_id}, target: {target}, type: {type}"
-        )
+            LOG.debug(
+                "async_invoke invoke argument: %s, invocationId: %s, target: %s, type: %s",
+                arg,
+                inv_id,
+                target,
+                type,
+            )
         await self._async_send_json(
             {
                 "arguments": arg,
@@ -481,9 +489,9 @@ class WebsocketManager:
         Returns:
             Tuple containing the websocket URL and access token
         """
-        LOG.debug(f"Getting websocket url for {config.endpoint}")
+        LOG.debug("Getting websocket url for %s", config.endpoint)
         url = f"{config.endpoint}/negotiate"
-        LOG.debug(f"Negotiate URL is {url}")
+        LOG.debug("Negotiate URL is %s", url)
 
         resp = await self.async_request("post", url)
         ws_url = resp.get("url")
@@ -513,8 +521,8 @@ class WebsocketManager:
             config: The websocket configuration to get parameters for
         """
         uri = parse.urlparse(config.url)
-        LOG.debug(f"Getting websocket params for {config.endpoint}")
-        LOG.debug(f"Getting uri {uri}")
+        LOG.debug("Getting websocket params for %s", config.endpoint)
+        LOG.debug("Getting uri %s", uri)
 
         resp = await self.async_request(
             "post",
@@ -529,7 +537,7 @@ class WebsocketManager:
         config.full_ws_url = (
             f"{config.url}&id={config.connection_id}&access_token={config.token}"
         )
-        LOG.debug(f"Getting full ws URL {config.full_ws_url}")
+        LOG.debug("Getting full ws URL %s", config.full_ws_url)
 
         transport_dict = resp.get("availableTransports", [])
         websocket_dict = {
@@ -544,5 +552,5 @@ class WebsocketManager:
             if config.endpoint == AUTOMATION_DEVICEHUB_ENDPOINT
             else "websocketChallenges"
         )
-        LOG.debug(f"Calling set_state {state_key}_params")
+        LOG.debug("Calling set_state %s_params", state_key)
         await self._set_state(self._state_yaml, state_key, websocket_dict)

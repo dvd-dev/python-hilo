@@ -60,7 +60,7 @@ class Devices:
                 device_identifier = reading.hilo_id
             if device := self.find_device(device_identifier):
                 device.update_readings(reading)
-                LOG.debug(f"{device} Received {reading}")
+                LOG.debug("%s Received %s", device, reading)
                 if device not in updated_devices:
                     updated_devices.append(device)
             else:
@@ -96,14 +96,14 @@ class Devices:
         fresh_devices = await self._api.get_devices(self.location_id)
         generated_devices = []
         for raw_device in fresh_devices:
-            LOG.debug(f"Generating device {raw_device}")
+            LOG.debug("Generating device %s", raw_device)
             dev = self.generate_device(raw_device)
             generated_devices.append(dev)
             if dev not in self.devices:
                 self.devices.append(dev)
         for device in self.devices:
             if device not in generated_devices:
-                LOG.debug(f"Device unpaired {device}")
+                LOG.debug("Device unpaired %s", device)
                 # Don't do anything with unpaired device for now.
                 # self.devices.remove(device)
 
@@ -113,7 +113,7 @@ class Devices:
         # ic-dev21 not sure if this is dead code?
         new_devices = []
         for raw_device in values:
-            LOG.debug(f"Generating device {raw_device}")
+            LOG.debug("Generating device %s", raw_device)
             dev = self.generate_device(raw_device)
             if dev not in self.devices:
                 self.devices.append(dev)

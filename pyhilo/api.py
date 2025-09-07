@@ -140,7 +140,7 @@ class API:
             await self._oauth_session.async_ensure_token_valid()
 
         access_token = str(self._oauth_session.token["access_token"])
-        LOG.debug(f"Websocket access token is {access_token}")
+        LOG.debug("Websocket access token is %s", access_token)
 
         return str(self._oauth_session.token["access_token"])
 
@@ -246,8 +246,9 @@ class API:
         data: dict[str, Any] = {}
         url = parse.urljoin(f"https://{host}", endpoint)
         if self.log_traces:
-            LOG.debug(f"[TRACE] Headers: {kwargs['headers']}")
-            LOG.debug(f"[TRACE] Async request: {method} {url}")
+            LOG.debug("[TRACE] Headers: %s", kwargs["headers"])
+            LOG.debug("[TRACE] Async request: %s %s", method, url)
+
         async with self.session.request(method, url, **kwargs) as resp:
             if "application/json" in resp.headers.get("content-type", ""):
                 try:
@@ -396,7 +397,7 @@ class API:
         """Retrieves and constructs WebSocket connection parameters from the negotiation endpoint."""
         uri = parse.urlparse(self.ws_url)
         LOG.debug("Getting websocket params")
-        LOG.debug(f"Getting uri {uri}")
+        LOG.debug("Getting uri %s", uri)
         resp: dict[str, Any] = await self.async_request(
             "post",
             f"{uri.path}negotiate?{uri.query}",
@@ -407,7 +408,7 @@ class API:
         )
         conn_id: str = resp.get("connectionId", "")
         self.full_ws_url = f"{self.ws_url}&id={conn_id}&access_token={self.ws_token}"
-        LOG.debug(f"Getting full ws URL {self.full_ws_url}")
+        LOG.debug("Getting full ws URL %s", self.full_ws_url)
         transport_dict: list[WebsocketTransportsDict] = resp.get(
             "availableTransports", []
         )
@@ -441,7 +442,7 @@ class API:
             if err.status in (401, 403):
                 raise InvalidCredentialsError("Invalid credentials") from err
             raise RequestError(err) from err
-        LOG.debug(f"FB Install data: {resp}")
+        LOG.debug("FB Install data: %s", resp)
         auth_token = resp.get("authToken", {})
         LOG.debug("Calling set_state from fb_install")
         await set_state(
@@ -479,7 +480,7 @@ class API:
             if err.status in (401, 403):
                 raise InvalidCredentialsError("Invalid credentials") from err
             raise RequestError(err) from err
-        LOG.debug(f"Android client register: {resp}")
+        LOG.debug("Android client register: %s", resp)
         msg: str = resp.get("message", "")
         if msg.startswith("Error="):
             LOG.error(f"Android registration error: {msg}")
@@ -497,14 +498,14 @@ class API:
     async def get_location_ids(self) -> tuple[int, str]:
         """Gets location id from an API call"""
         url = f"{API_AUTOMATION_ENDPOINT}/Locations"
-        LOG.debug(f"LocationId URL is {url}")
+        LOG.debug("LocationId URL is %s", url)
         req: list[dict[str, Any]] = await self.async_request("get", url)
         return (req[0]["id"], req[0]["locationHiloId"])
 
     async def get_devices(self, location_id: int) -> list[dict[str, Any]]:
         """Get list of all devices"""
         url = self._get_url("Devices", location_id)
-        LOG.debug(f"Devices URL is {url}")
+        LOG.debug("Devices URL is %s", url)
         devices: list[dict[str, Any]] = await self.async_request("get", url)
         devices.append(await self.get_gateway(location_id))
         # Now it's time to add devices coming from external sources like hass
@@ -521,7 +522,7 @@ class API:
     ) -> None:
         """Sets device attributes"""
         url = self._get_url(f"Devices/{device.id}/Attributes", device.location_id)
-        LOG.debug(f"Device Attribute URL is {url}")
+        LOG.debug("Device Attribute URL is %s", url)
         await self.async_request("put", url, json={key.hilo_attribute: value})
 
     async def get_event_notifications(self, location_id: int) -> dict[str, Any]:
@@ -549,7 +550,7 @@ class API:
           "viewed": false
         }"""
         url = self._get_url(None, location_id, events=True)
-        LOG.debug(f"Event Notifications URL is {url}")
+        LOG.debug("Event Notifications URL is %s", url)
         return cast(dict[str, Any], await self.async_request("get", url))
 
     async def get_gd_events(
@@ -622,7 +623,7 @@ class API:
         else:
             url += f"/{event_id}"
 
-        LOG.debug(f"get_gd_events URL is {url}")
+        LOG.debug("get_gd_events URL is %s", url)
         return cast(dict[str, Any], await self.async_request("get", url))
 
     async def get_seasons(self, location_id: int) -> dict[str, Any]:
@@ -645,13 +646,13 @@ class API:
         ]
         """
         url = self._get_url("Seasons", location_id, challenge=True)
-        LOG.debug(f"Seasons URL is {url}")
+        LOG.debug("Seasons URL is %s", url)
         return cast(dict[str, Any], await self.async_request("get", url))
 
     async def get_gateway(self, location_id: int) -> dict[str, Any]:
         """Gets info about the Hilo hub (gateway)"""
         url = self._get_url("Gateways/Info", location_id)
-        LOG.debug(f"Gateway URL is {url}")
+        LOG.debug("Gateway URL is %s", url)
         req = await self.async_request("get", url)
         saved_attrs = [
             "zigBeePairingActivated",
@@ -694,7 +695,7 @@ class API:
         ]
         """
         url = self._get_url("Weather", location_id)
-        LOG.debug(f"Weather URL is {url}")
+        LOG.debug("Weather URL is %s", url)
         response = await self.async_request("get", url)
-        LOG.debug(f"Weather API response: {response}")
+        LOG.debug("Weather API response: %s", response)
         return cast(dict[str, Any], await self.async_request("get", url))
