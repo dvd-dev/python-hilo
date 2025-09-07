@@ -10,7 +10,7 @@ from pyhilo.device import HiloDevice
 class Switch(HiloDevice):
     def __init__(self, api: API, **kwargs: dict[str, Union[str, int]]):
         super().__init__(api, **kwargs)  # type: ignore
-        LOG.debug(f"Setting up Switch device: {self.name}")
+        LOG.debug("Setting up Switch device: %s", self.name)
 
     @property
     def state(self) -> str:
