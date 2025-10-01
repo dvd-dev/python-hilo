@@ -1,4 +1,5 @@
 import asyncio
+import logging
 from typing import Any, Dict, List, Optional
 
 from gql import Client, gql
@@ -549,8 +550,8 @@ class GraphQlHelper:
     ) -> None:
         LOG.debug("subscribe_to_device_updated called")
 
-        #Setting log level to suppress keepalive messages on gql transport
-        logging.getLogger('gql.transport.websockets').setLevel(logging.WARNING)
+        # Setting log level to suppress keepalive messages on gql transport
+        logging.getLogger("gql.transport.websockets").setLevel(logging.WARNING)
         while True:  # Loop to reconnect if the connection is lost
             LOG.debug("subscribe_to_device_updated while true")
             access_token = await self._get_access_token()
