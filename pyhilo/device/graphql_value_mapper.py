@@ -396,10 +396,10 @@ class GraphqlValueMapper:
         attributes = []
         if device.get("power") is not None:
             attributes.append(self._map_power(device))
-        if device.get("Level") is not None:
+        if device.get("level") is not None:
             attributes.append(
                 self.build_attribute(
-                    device["hiloId"], "Intensity", device["Level"]["value"] / 100
+                    device["hiloId"], "Intensity", device["level"] / 100
                 )
             )
         attributes.append(
