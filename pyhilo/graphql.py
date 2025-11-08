@@ -563,7 +563,7 @@ class GraphQlHelper:
             access_token = await self._get_access_token()
             transport = WebsocketsTransport(
                 url=f"wss://platform.hiloenergie.com/api/digital-twin/v3/graphql?access_token={access_token}",
-                ssl=ssl_context
+                ssl=ssl_context,
             )
             client = Client(transport=transport, fetch_schema_from_transport=True)
             query = gql(self.SUBSCRIPTION_DEVICE_UPDATED)
