@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import ssl
 from typing import Any, Dict, List, Optional
 
 from gql import Client, gql
@@ -552,11 +553,17 @@ class GraphQlHelper:
 
         # Setting log level to suppress keepalive messages on gql transport
         logging.getLogger("gql.transport.websockets").setLevel(logging.WARNING)
+
+        #
+        loop = asyncio.get_event_loop()
+        ssl_context = await loop.run_in_executor(None, ssl.create_default_context)
+
         while True:  # Loop to reconnect if the connection is lost
             LOG.debug("subscribe_to_device_updated while true")
             access_token = await self._get_access_token()
             transport = WebsocketsTransport(
-                url=f"wss://platform.hiloenergie.com/api/digital-twin/v3/graphql?access_token={access_token}"
+                url=f"wss://platform.hiloenergie.com/api/digital-twin/v3/graphql?access_token={access_token}",
+                ssl=ssl_context,
             )
             client = Client(transport=transport, fetch_schema_from_transport=True)
             query = gql(self.SUBSCRIPTION_DEVICE_UPDATED)
