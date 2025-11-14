@@ -8,7 +8,7 @@ from gql.transport.aiohttp import AIOHTTPTransport
 from gql.transport.websockets import WebsocketsTransport
 
 from pyhilo import API
-from pyhilo.const import LOG
+from pyhilo.const import LOG, PLATFORM_HOST
 from pyhilo.device.graphql_value_mapper import GraphqlValueMapper
 from pyhilo.devices import Devices
 
@@ -534,7 +534,7 @@ class GraphQlHelper:
         """This functions calls the digital-twin and requests location id"""
         access_token = await self._get_access_token()
         transport = AIOHTTPTransport(
-            url="https://platform.hiloenergie.com/api/digital-twin/v3/graphql",
+            url=f"https://{PLATFORM_HOST}/api/digital-twin/v3/graphql",
             headers={"Authorization": f"Bearer {access_token}"},
         )
         client = Client(transport=transport, fetch_schema_from_transport=True)
@@ -562,7 +562,7 @@ class GraphQlHelper:
             LOG.debug("subscribe_to_device_updated while true")
             access_token = await self._get_access_token()
             transport = WebsocketsTransport(
-                url=f"wss://platform.hiloenergie.com/api/digital-twin/v3/graphql?access_token={access_token}",
+                url=f"wss://{PLATFORM_HOST}/api/digital-twin/v3/graphql?access_token={access_token}",
                 ssl=ssl_context,
             )
             client = Client(transport=transport, fetch_schema_from_transport=True)
@@ -602,7 +602,7 @@ class GraphQlHelper:
     ) -> None:
         access_token = await self._get_access_token()
         transport = WebsocketsTransport(
-            url=f"wss://platform.hiloenergie.com/api/digital-twin/v3/graphql?access_token={access_token}"
+            url=f"wss://{PLATFORM_HOST}/api/digital-twin/v3/graphql?access_token={access_token}"
         )
         client = Client(transport=transport, fetch_schema_from_transport=True)
         query = gql(self.SUBSCRIPTION_LOCATION_UPDATED)
