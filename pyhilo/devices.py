@@ -69,7 +69,7 @@ class Devices:
                 )
         return updated_devices
 
-    def find_device(self, device_identifier: int | str) -> HiloDevice:
+    def find_device(self, device_identifier: int | str) -> HiloDevice | None:
         """Makes sure the devices received have an identifier, this means some need to be hardcoded
         like the unknown power meter.
         """
