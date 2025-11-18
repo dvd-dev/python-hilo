@@ -55,7 +55,7 @@ class Devices:
         """Uses the dict from parse_values_received to map the values to devices."""
         updated_devices = []
         for reading in readings:
-            device_identifier = reading.device_id
+            device_identifier: Union[int, str] = reading.device_id
             if device_identifier == 0:
                 device_identifier = reading.hilo_id
             if device := self.find_device(device_identifier):
