@@ -12,6 +12,7 @@ from urllib import parse
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientResponseError
 import backoff
+from homeassistant.helpers.config_entry_oauth2_flow import OAuth2Session
 
 from pyhilo.const import (
     ANDROID_CLIENT_ENDPOINT,
@@ -66,7 +67,7 @@ class API:
         self,
         *,
         session: ClientSession,
-        oauth_session,
+        oauth_session: OAuth2Session,
         request_retries: int = REQUEST_RETRY,
         log_traces: bool = False,
     ) -> None:
@@ -97,7 +98,7 @@ class API:
         cls,
         *,
         session: ClientSession,
-        oauth_session,
+        oauth_session: OAuth2Session,
         request_retries: int = REQUEST_RETRY,
         log_traces: bool = False,
     ) -> API:
@@ -140,7 +141,7 @@ class API:
             await self._oauth_session.async_ensure_token_valid()
 
         access_token = str(self._oauth_session.token["access_token"])
-        LOG.debug("Websocket access token is %s", access_token)
+        LOG.debug("LOCALLY Websocket access token is %s", access_token)
 
         return str(self._oauth_session.token["access_token"])
 
@@ -382,11 +383,12 @@ class API:
         # Create both websocket clients
         # ic-dev21 need to work on this as it can't lint as is, may need to
         # instantiate differently
-        self.websocket_devices = WebsocketClient(self.websocket_manager.devicehub)
+        # TODO: fix type ignore after refactor
+        self.websocket_devices = WebsocketClient(self.websocket_manager.devicehub)  # type: ignore
 
         # For backward compatibility during the transition to challengehub websocket
         self.websocket = self.websocket_devices
-        self.websocket_challenges = WebsocketClient(self.websocket_manager.challengehub)
+        self.websocket_challenges = WebsocketClient(self.websocket_manager.challengehub)  # type: ignore
 
     async def refresh_ws_token(self) -> None:
         """Refresh the websocket token."""
