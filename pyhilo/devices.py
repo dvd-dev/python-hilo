@@ -55,7 +55,7 @@ class Devices:
         """Uses the dict from parse_values_received to map the values to devices."""
         updated_devices = []
         for reading in readings:
-            device_identifier = reading.device_id
+            device_identifier: Union[int, str] = reading.device_id
             if device_identifier == 0:
                 device_identifier = reading.hilo_id
             if device := self.find_device(device_identifier):
@@ -69,7 +69,7 @@ class Devices:
                 )
         return updated_devices
 
-    def find_device(self, device_identifier: int | str) -> HiloDevice:
+    def find_device(self, device_identifier: int | str) -> HiloDevice | None:
         """Makes sure the devices received have an identifier, this means some need to be hardcoded
         like the unknown power meter.
         """
