@@ -141,7 +141,7 @@ class API:
             await self._oauth_session.async_ensure_token_valid()
 
         access_token = str(self._oauth_session.token["access_token"])
-        LOG.debug("LOCALLY Websocket access token is %s", access_token)
+        LOG.debug("Websocket access token is %s", access_token)
 
         return str(self._oauth_session.token["access_token"])
 
