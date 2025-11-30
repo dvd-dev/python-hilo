@@ -71,6 +71,12 @@ class Event:
         self.used_kWh = round(used_wH / 1000, 2)
         self.last_update = datetime.now(timezone.utc).astimezone()
 
+    def update_allowed_wh(self, allowed_wH: float) -> None:
+        """This function is used to update the allowed_kWh attribute during a Hilo Challenge Event"""
+        LOG.debug("Updating allowed Wh: %s", allowed_wH)
+        self.allowed_kWh = round(allowed_wH / 1000, 2)
+        self.last_update = datetime.now(timezone.utc).astimezone()
+
     def should_check_for_allowed_wh(self) -> bool:
         """This function is used to authorize subscribing to a specific event in Hilo to receive the allowed_kWh
         that is made available in the pre_heat phase"""
