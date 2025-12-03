@@ -310,6 +310,10 @@ class WebsocketClient:
             raise CannotConnectError(err) from err
 
         LOG.info(f"Connected to websocket server {self._api.endpoint}")
+
+        #Quick pause to prevent race condition
+        await asyncio.sleep(0.05)
+
         self._watchdog.trigger()
         for callback in self._connect_callbacks:
             schedule_callback(callback)
