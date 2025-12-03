@@ -311,7 +311,7 @@ class WebsocketClient:
 
         LOG.info(f"Connected to websocket server {self._api.endpoint}")
 
-        #Quick pause to prevent race condition
+        # Quick pause to prevent race condition
         await asyncio.sleep(0.05)
 
         self._watchdog.trigger()
