@@ -27,7 +27,7 @@ class Event:
     def __init__(self, **event: dict[str, Any]):
         """Initialize."""
         self._convert_phases(cast(dict[str, Any], event.get("phases")))
-        params: dict[str, Any] = event.get("parameters", {})
+        params: dict[str, Any] = event.get("parameters") or {}
         devices: list[dict[str, Any]] = params.get("devices", [])
         consumption: dict[str, Any] = event.get("consumption", {})
         allowed_wH: int = consumption.get("baselineWh", 0) or 0
@@ -69,6 +69,12 @@ class Event:
         """This function is used to update the used_kWh attribute during a Hilo Challenge Event"""
         LOG.debug("Updating Wh: %s", used_wH)
         self.used_kWh = round(used_wH / 1000, 2)
+        self.last_update = datetime.now(timezone.utc).astimezone()
+
+    def update_allowed_wh(self, allowed_wH: float) -> None:
+        """This function is used to update the allowed_kWh attribute during a Hilo Challenge Event"""
+        LOG.debug("Updating allowed Wh: %s", allowed_wH)
+        self.allowed_kWh = round(allowed_wH / 1000, 2)
         self.last_update = datetime.now(timezone.utc).astimezone()
 
     def should_check_for_allowed_wh(self) -> bool:
