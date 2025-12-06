@@ -273,6 +273,10 @@ class WebsocketClient:
         if self.connected:
             LOG.debug("Websocket: async_connect() called but already connected")
             return
+        
+        if self._api.session.closed:
+            LOG.error("Websocket: Cannot connect, session is closed")
+            raise CannotConnectError("Session is closed")
 
         LOG.info("Websocket: Connecting to server %s", self._api.endpoint)
         if self._api.log_traces:
@@ -344,6 +348,9 @@ class WebsocketClient:
                 messages = await self._async_receive_json()
                 for msg in messages:
                     self._parse_message(msg)
+        except asyncio.CancelledError:
+            LOG.info("Websocket: Listen cancelled.")
+            raise
         except ConnectionClosedError as err:
             LOG.error(f"Websocket: Closed while listening: {err}")
             LOG.exception(err)
