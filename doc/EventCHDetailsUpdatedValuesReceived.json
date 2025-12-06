@@ -1,0 +1,13 @@
+{
+  "type": 1,
+  "target": "EventCHDetailsUpdatedValuesReceived",
+  "arguments": [
+    {
+      "id": 332,
+      "isConfigurable": false,
+      "progress": "inProgress",
+      "currentPhase": "recovery",
+      "generatedTimeUTC": "2025-11-28T01:00:04.3288792Z"
+    }
+  ]
+}
