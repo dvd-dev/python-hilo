@@ -273,7 +273,7 @@ class WebsocketClient:
         if self.connected:
             LOG.debug("Websocket: async_connect() called but already connected")
             return
-        
+
         if self._api.session.closed:
             LOG.error("Websocket: Cannot connect, session is closed")
             raise CannotConnectError("Session is closed")
