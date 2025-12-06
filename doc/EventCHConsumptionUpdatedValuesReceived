@@ -1,0 +1,17 @@
+{
+  "type": 1,
+  "target": "EventCHConsumptionUpdatedValuesReceived",
+  "arguments": [
+    {
+      "currentWh": 5594.0482177734375,
+      "baselineWh": 24619.00758743286,
+      "isCapped": false,
+      "reward": 10.8,
+      "energySavingsWh": 19024.9593696594,
+      "isInsufficientEnergySavings": false,
+      "generatedTimeUTC": "2025-11-28T01:03:24.6006747Z",
+      "isMissingBaseline": false,
+      "isMissingConsumption": false
+    }
+  ]
+}
