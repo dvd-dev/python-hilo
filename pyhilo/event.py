@@ -108,9 +108,8 @@ class Event:
             self.phases_list.append(phase)
         for phase in self.__annotations__:
             if phase not in self.phases_list:
-                now_with_tz = datetime.now(timezone.utc).astimezone()
                 # On t'aime Carl
-                setattr(self, phase, now_with_tz)
+                setattr(self, phase, datetime(2099, 12, 31, tzinfo=timezone.utc))
 
     def _create_phases(
         self, hours: int, phase_name: str, parent_phase: str
