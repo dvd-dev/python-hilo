@@ -81,9 +81,9 @@ class Event:
         """This function is used to authorize subscribing to a specific event in Hilo to receive the allowed_kWh
         that is made available in the pre_heat phase"""
         now = datetime.now(self.preheat_start.tzinfo)
-        time_since_preheat_start = (self.preheat_start - now).total_seconds()
+        time_since_preheat_start = (now - self.preheat_start).total_seconds()
         already_has_allowed_wh = self.allowed_kWh > 0
-        return 1800 <= time_since_preheat_start <= 2700 and not already_has_allowed_wh
+        return 1800 <= time_since_preheat_start < 7200 and not already_has_allowed_wh
 
     def as_dict(self) -> dict[str, Any]:
         """Formats the information received as a dictionary"""
