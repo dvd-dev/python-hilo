@@ -81,9 +81,9 @@ class Event:
         """This function is used to authorize subscribing to a specific event in Hilo to receive the allowed_kWh
         that is made available in the pre_heat phase"""
         now = datetime.now(self.preheat_start.tzinfo)
-        time_since_preheat_start = (self.preheat_start - now).total_seconds()
+        time_since_preheat_start = (now - self.preheat_start).total_seconds()
         already_has_allowed_wh = self.allowed_kWh > 0
-        return 1800 <= time_since_preheat_start <= 2700 and not already_has_allowed_wh
+        return 1800 <= time_since_preheat_start < 7200 and not already_has_allowed_wh
 
     def as_dict(self) -> dict[str, Any]:
         """Formats the information received as a dictionary"""
@@ -108,9 +108,8 @@ class Event:
             self.phases_list.append(phase)
         for phase in self.__annotations__:
             if phase not in self.phases_list:
-                now_with_tz = datetime.now(timezone.utc).astimezone()
                 # On t'aime Carl
-                setattr(self, phase, now_with_tz)
+                setattr(self, phase, datetime(2099, 12, 31, tzinfo=timezone.utc))
 
     def _create_phases(
         self, hours: int, phase_name: str, parent_phase: str
