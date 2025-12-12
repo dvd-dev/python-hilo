@@ -14,13 +14,14 @@ Take care not to share your tokens as they are not encrypted and contain persona
 <img width="1393" height="186" alt="image" src="https://github.com/user-attachments/assets/0b9559b1-1d9a-41ae-b4bf-185a5a5c588b" />
 
 2. Login using your Hilo Credentials
+   
    <img width="631" height="569" alt="image" src="https://github.com/user-attachments/assets/ad7c79a7-2402-44e8-9a0b-962406b89527" />
 
-4. Once you get to this page, select the URL and copy it to clipboard
+3. Once you get to this page, select the URL and copy it to clipboard
 <img width="694" height="274" alt="image" src="https://github.com/user-attachments/assets/85989069-31a3-418d-b305-1f2378432d84" />
 <img width="567" height="46" alt="image" src="https://github.com/user-attachments/assets/1d979626-6d93-46cb-aae0-50ef061a0d61" />
 
-5. Go back to get_tokens.py and press enter, you'll get all 3 tokens:
+4. Go back to get_tokens.py and press enter, you'll get all 3 tokens:
 <img width="178" height="71" alt="image" src="https://github.com/user-attachments/assets/2755488e-48a9-4751-a821-883e8c82c2cb" />
 <img width="292" height="86" alt="image" src="https://github.com/user-attachments/assets/0b05e29d-cbec-4dbc-a442-1714639a5af5" />
 <img width="292" height="86" alt="image" src="https://github.com/user-attachments/assets/c6e36a72-58fb-4b61-b443-55ce8948b682" />
