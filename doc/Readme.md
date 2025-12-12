@@ -54,6 +54,8 @@ Take care not to share your tokens as they are not encrypted and contain persona
     "type": 1
 }
 ```
+6. You should received the DeviceListInitialValuesReceived message back.
+
 ### ChallengeHub
 
 1. Open up a new websocket connection and paste the DeviceHub URL
@@ -70,7 +72,7 @@ Take care not to share your tokens as they are not encrypted and contain persona
 ```
 5. You can send various messages to the ChallengeHub to request different information. Some replies are documented here.
 
-   # TODO: ADD INVOKES ARE THEIR REPLIES
+TODO: ADD INVOKES AND THEIR REPLIES
 
 
 
