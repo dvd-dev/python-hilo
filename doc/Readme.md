@@ -29,4 +29,51 @@ Take care not to share your tokens as they are not encrypted and contain persona
 # Using Postman to send payloads to devicehub or challengehub
 ## Prerequisite: you need to have your tokens on hand, they are relatively short lived so once you have them, get to connecting!
 
+### DeviceHub
+
+1. Open up a new websocket connection and paste the DeviceHub URL
+2. In Headers, add "Authorization".
+3. In the Authorization field, type in "Bearer" then a space, and paste your DeviceHub token.
+   <img width="856" height="479" alt="image" src="https://github.com/user-attachments/assets/6ff6540d-066b-4ea2-a640-5bcaada9ea09" />
+4. Go to the "Messages" tab and type in. Notice the control character at the end chr(30). It is required.
+
+```
+{
+    "protocol": "json",
+    "version": 1
+}
+```
+5. You can then invoke "SubscribeToLocation" to get your device informations.
+```
+{
+    "arguments": [
+        69420
+    ],
+    "invocationId": "0",
+    "target": "SubscribeToLocation",
+    "type": 1
+}
+```
+### ChallengeHub
+
+1. Open up a new websocket connection and paste the DeviceHub URL
+2. In Headers, add "Authorization".
+3. In the Authorization field, type in "Bearer" then a space, and paste your DeviceHub token.
+   <img width="856" height="479" alt="image" src="https://github.com/user-attachments/assets/6ff6540d-066b-4ea2-a640-5bcaada9ea09" />
+4. Go to the "Messages" tab and type in. Notice the control character at the end chr(30). It is required.
+
+```
+{
+    "protocol": "json",
+    "version": 1
+}
+```
+5. You can send various messages to the ChallengeHub to request different information. Some replies are documented here.
+
+   # TODO: ADD INVOKES ARE THEIR REPLIES
+
+
+
+
+
 
