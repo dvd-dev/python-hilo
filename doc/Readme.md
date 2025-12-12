@@ -70,11 +70,12 @@ Take care not to share your tokens as they are not encrypted and contain persona
     "version": 1
 }
 ```
-5. You can send various messages to the ChallengeHub to request different information. For the 2025-2026 season with the addition of Flex D, the messages were split between Winter Credit (Crédit Hivernal) and Flex D. Each of rates has its own event id, for example, event 337 was for Winter Credits, and event 338 was for Flex D, both occured at the same time. You will have access to one, or the other, depending on your rate.
+5. You can send various messages to the ChallengeHub to request different information. For the 2025-2026 season with the addition of Flex D, the messages were split between Winter Credit (Crédit Hivernal) and Flex D. Winter Credit messages will contain CH in their target, and Flex D event will contain Flex in their target. Each of rates has its own event id, for example, event 337 was for Winter Credits, and event 338 was for Flex D, both occured at the same time. You will have access to one, or the other, depending on your rate.
 
 
-TODO: ADD INVOKES AND THEIR REPLIES
+#### Examples of various invokesto the ChallengeHub
 
+SubcribeToEventList should return EventListInitialValuesReceived
 
 
 
