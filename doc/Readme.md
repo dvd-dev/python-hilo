@@ -23,7 +23,7 @@ Take care not to share your tokens as they are not encrypted and contain persona
 
 4. Go back to get_tokens.py and press enter, you'll get all 3 tokens:
 
-
+<img width="1208" height="805" alt="image" src="https://github.com/user-attachments/assets/10258890-e935-4b16-8d16-12bdd340c001" />
    
 
 # Using Postman to send payloads to devicehub or challengehub
