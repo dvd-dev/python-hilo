@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 from datetime import datetime, timedelta
 import json
 import random
@@ -92,6 +93,7 @@ class API:
         self.ws_url: str = ""
         self.ws_token: str = ""
         self.endpoint: str = ""
+        self._urn: str | None = None
 
     @classmethod
     async def async_create(
@@ -144,6 +146,27 @@ class API:
         LOG.debug("Websocket access token is %s", access_token)
 
         return str(self._oauth_session.token["access_token"])
+
+    @property
+    def urn(self) -> str | None:
+        """Extract URN from the JWT access token."""
+        try:
+            if not self._oauth_session.valid_token:
+                return None
+            token = self._oauth_session.token["access_token"]
+            payload_part = token.split(".")[1]
+            # Add padding if necessary
+            padding = 4 - len(payload_part) % 4
+            if padding != 4:
+                payload_part += "=" * padding
+
+            decoded = base64.urlsafe_b64decode(payload_part)
+            claims = json.loads(decoded)
+            self._urn = claims.get("urn")
+            return self._urn
+        except (IndexError, json.JSONDecodeError, KeyError):
+            LOG.error("Failed to extract URN from access token")
+            return None
 
     def dev_atts(
         self, attribute: str, value_type: Union[str, None] = None
