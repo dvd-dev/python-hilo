@@ -145,6 +145,9 @@ class API:
         access_token = str(self._oauth_session.token["access_token"])
         LOG.debug("Websocket access token is %s", access_token)
 
+        urn = self.urn
+        LOG.debug("Extracted URN: %s", urn)
+
         return str(self._oauth_session.token["access_token"])
 
     @property
@@ -162,7 +165,12 @@ class API:
 
             decoded = base64.urlsafe_b64decode(payload_part)
             claims = json.loads(decoded)
-            self._urn = claims.get("urn")
+            urn_claim = claims.get("urn:com:hiloenergie:profile:location_hilo_id")
+            if urn_claim and isinstance(urn_claim, list) and len(urn_claim) > 0:
+                self._urn = urn_claim[0]  # Get the first URN from the array
+            else:
+                self._urn = None
+                
             return self._urn
         except (IndexError, json.JSONDecodeError, KeyError):
             LOG.error("Failed to extract URN from access token")
