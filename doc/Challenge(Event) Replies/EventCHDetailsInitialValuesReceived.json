@@ -1,0 +1,120 @@
+{
+  "type": 1,
+  "target": "EventCHDetailsInitialValuesReceived",
+  "arguments": [
+    {
+      "report": {
+        "status": "Success",
+        "isCredited": false,
+        "isFlatRate": false,
+        "isInsufficientReduction": false
+      },
+      "consumption": {
+        "currentWh": 9338.39990234375,
+        "baselineWh": 14570.39999961853,
+        "isCapped": false,
+        "reward": 2.97,
+        "energySavingsWh": 5232.00009727478,
+        "isInsufficientEnergySavings": false,
+        "cumulativeBaselinePoints": [
+          { "timeUTC": "2025-12-14T21:00:00+00:00", "wh": 0.0 },
+          { "timeUTC": "2025-12-14T22:00:00+00:00", "wh": 3832.7999114990234 },
+          { "timeUTC": "2025-12-14T23:00:00+00:00", "wh": 7516.7999267578125 },
+          { "timeUTC": "2025-12-15T00:00:00+00:00", "wh": 11287.199974060059 },
+          { "timeUTC": "2025-12-15T01:00:00+00:00", "wh": 14570.39999961853 }
+        ],
+        "cumulativeConsumptionPoints": [
+          { "timeUTC": "2025-12-14T21:00:00+00:00", "wh": 0.0 },
+          { "timeUTC": "2025-12-14T21:01:00+00:00", "wh": 19.0 },
+          { "timeUTC": "2025-12-14T22:31:00+00:00", "wh": 37.0 },
+          { "timeUTC": "2025-12-14T22:32:00+00:00", "wh": 56.0 },
+          { "timeUTC": "2025-12-14T22:33:00+00:00", "wh": 74.0 },
+          { "timeUTC": "2025-12-14T22:34:00+00:00", "wh": 92.0 },
+          { "timeUTC": "2025-12-14T22:35:00+00:00", "wh": 110.0 },
+          { "timeUTC": "2025-12-14T22:36:00+00:00", "wh": 129.0 },
+          { "timeUTC": "2025-12-14T22:37:00+00:00", "wh": 147.0 },
+          { "timeUTC": "2025-12-14T22:38:00+00:00", "wh": 165.0 },
+          { "timeUTC": "2025-12-14T22:39:00+00:00", "wh": 183.0 },
+          { "timeUTC": "2025-12-14T22:40:00+00:00", "wh": 202.0 },
+          { "timeUTC": "2025-12-14T22:41:00+00:00", "wh": 220.0 },
+          { "timeUTC": "2025-12-14T22:42:00+00:00", "wh": 238.0 },
+          { "timeUTC": "2025-12-14T22:43:00+00:00", "wh": 256.0 },
+          { "timeUTC": "2025-12-14T22:44:00+00:00", "wh": 275.0 },
+          { "timeUTC": "2025-12-14T22:45:00+00:00", "wh": 293.0 },
+          { "timeUTC": "2025-12-14T22:46:00+00:00", "wh": 314.0 },
+          { "timeUTC": "2025-12-14T22:47:00+00:00", "wh": 335.0 },
+          { "timeUTC": "2025-12-14T22:48:00+00:00", "wh": 356.0 },
+          { "timeUTC": "2025-12-14T22:49:00+00:00", "wh": 377.0 },
+          { "timeUTC": "2025-12-14T22:50:00+00:00", "wh": 398.0 },
+          { "timeUTC": "2025-12-14T22:51:00+00:00", "wh": 420.0 },
+          { "timeUTC": "2025-12-14T22:52:00+00:00", "wh": 441.0 },
+          { "timeUTC": "2025-12-14T22:53:00+00:00", "wh": 462.0 },
+          { "timeUTC": "2025-12-14T22:54:00+00:00", "wh": 483.0 },
+          { "timeUTC": "2025-12-14T22:55:00+00:00", "wh": 504.0 },
+          { "timeUTC": "2025-12-14T22:56:00+00:00", "wh": 525.0 },
+          { "timeUTC": "2025-12-14T22:57:00+00:00", "wh": 546.0 },
+          { "timeUTC": "2025-12-14T22:58:00+00:00", "wh": 567.0 },
+          { "timeUTC": "2025-12-14T22:59:00+00:00", "wh": 588.0 },
+          { "timeUTC": "2025-12-14T23:00:00+00:00", "wh": 610.0 },
+          { "timeUTC": "2025-12-14T23:01:00+00:00", "wh": 669.0 },
+          { "timeUTC": "2025-12-14T23:02:00+00:00", "wh": 728.0 },
+          { "timeUTC": "2025-12-14T23:03:00+00:00", "wh": 787.0 },
+          { "timeUTC": "2025-12-14T23:04:00+00:00", "wh": 846.0 },
+          { "timeUTC": "2025-12-14T23:05:00+00:00", "wh": 905.0 },
+          { "timeUTC": "2025-12-14T23:06:00+00:00", "wh": 964.0 },
+          { "timeUTC": "2025-12-14T23:07:00+00:00", "wh": 1023.0 },
+          { "timeUTC": "2025-12-14T23:08:00+00:00", "wh": 1082.0 },
+          { "timeUTC": "2025-12-14T23:09:00+00:00", "wh": 1141.0 },
+          { "timeUTC": "2025-12-14T23:10:00+00:00", "wh": 1200.0 },
+          { "timeUTC": "2025-12-14T23:11:00+00:00", "wh": 1259.0 },
+          { "timeUTC": "2025-12-14T23:12:00+00:00", "wh": 1318.0 },
+          { "timeUTC": "2025-12-14T23:13:00+00:00", "wh": 1377.0 },
+          { "timeUTC": "2025-12-14T23:14:00+00:00", "wh": 1436.0 },
+          { "timeUTC": "2025-12-14T23:15:00+00:00", "wh": 1495.0 },
+          { "timeUTC": "2025-12-15T01:00:00+00:00", "wh": 4649.0 }
+        ],
+        "generatedTimeUTC": "2025-12-18T23:54:34.5085197Z",
+        "isMissingBaseline": false,
+        "isMissingConsumption": false
+      },
+      "id": 348,
+      "progress": "completed",
+      "period": "PM",
+      "phases": {
+        "settingsDeadlineUTC": "2025-12-14T05:00:00Z",
+        "preheatStartDateUTC": "2025-12-14T19:00:00Z",
+        "preheatEndDateUTC": "2025-12-14T21:00:00Z",
+        "reductionStartDateUTC": "2025-12-14T21:00:00Z",
+        "reductionEndDateUTC": "2025-12-15T01:00:00Z",
+        "recoveryStartDateUTC": "2025-12-15T01:00:00Z",
+        "recoveryEndDateUTC": "2025-12-15T02:00:00Z"
+      },
+      "isAutomated": true,
+      "isConfigurable": false,
+      "generatedTimeUTC": "2025-12-18T23:54:34.5085197+00:00",
+      "optOutDevices": [
+        { "id": 454741, "eventDateUtc": "2025-12-15T01:00:04.0734474Z", "triggerTypeId": 3, "triggerApplicationId": 1 },
+        { "id": 454744, "eventDateUtc": "2025-12-15T01:00:04.1153037Z", "triggerTypeId": 3, "triggerApplicationId": 1 },
+        { "id": 454750, "eventDateUtc": "2025-12-14T23:30:00.5695185Z", "triggerTypeId": 3, "triggerApplicationId": 1 },
+        { "id": 454756, "eventDateUtc": "2025-12-15T00:15:00.1756772Z", "triggerTypeId": 3, "triggerApplicationId": 1 },
+        { "id": 454761, "eventDateUtc": "2025-12-14T21:00:04.7216725Z", "triggerTypeId": 3, "triggerApplicationId": 1 },
+        { "id": 454764, "eventDateUtc": "2025-12-14T21:00:04.6214513Z", "triggerTypeId": 3, "triggerApplicationId": 1 }
+      ],
+      "parameters": {
+        "mode": "extreme",
+        "devices": [
+          { "id": 454741, "deviceUid": "BC33ACFFFE2BABDD", "name": "Thermostat Cuisine", "roomName": "Salon/Cuisine", "optOut": false, "preheat": false, "deviceType": "Thermostat" },
+          { "id": 454744, "deviceUid": "BC33ACFFFE21C79A", "name": "Thermostat chambre des maîtres", "roomName": "Chambre des maîtres ", "optOut": false, "preheat": false, "deviceType": "Thermostat" },
+          { "id": 454747, "deviceUid": "5C0272FFFE823394", "name": "Thermostat salle de bain", "roomName": "Salle de bain en haut", "optOut": false, "preheat": false, "deviceType": "Thermostat" },
+          { "id": 454750, "deviceUid": "BC33ACFFFE296648", "name": "Thermostat chambre X", "roomName": "Chambre X", "optOut": false, "preheat": false, "deviceType": "Thermostat" },
+          { "id": 454756, "deviceUid": "BC33ACFFFE2BAD65", "name": "Thermostat salle de jeux", "roomName": "Salle de jeux", "optOut": false, "preheat": false, "deviceType": "Thermostat" },
+          { "id": 454761, "deviceUid": "5C0272FFFE8233C9", "name": "thermostat salle de bain en bas", "roomName": "Salle de bain en bas", "optOut": false, "preheat": false, "deviceType": "Thermostat" },
+          { "id": 454764, "deviceUid": "BC33ACFFFE295E81", "name": "Thermostat bureau", "roomName": "Bureau", "optOut": false, "preheat": false, "deviceType": "Thermostat" },
+          { "id": 454766, "deviceUid": "BC33ACFFFE2B042D", "name": "Thermostat chambre invité", "roomName": "Chambre d'invités", "optOut": false, "preheat": false, "deviceType": "Thermostat" }
+        ]
+      },
+      "isPreSeason": false,
+      "kWhCost": 0.56786
+    }
+  ]
+}
