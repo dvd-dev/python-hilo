@@ -669,7 +669,7 @@ class API:
         return cast(dict[str, Any], await self.async_request("get", url))
 
     # keep location_id for now for backward compatibility with existing hilo branch
-    async def get_seasons(self, location_id: int) -> dict[str, Any]:
+    async def get_seasons(self, location_id: int) -> list[dict[str, Any]]:
         """This will return the rewards and current season total
         https://api.hiloenergie.com/challenge/v1/api/Locations/XXXX/Seasons
         [
@@ -694,7 +694,7 @@ class API:
         seasons = await self.async_request("get", url)
         LOG.debug("Seasons API response: %s", seasons)
 
-        all_seasons = []
+        all_seasons: list[dict[str, Any]] = []
 
         for season_data in seasons:
             season = season_data.get("season")
