@@ -153,6 +153,9 @@ class API:
     @property
     def urn(self) -> str | None:
         """Extract URN from the JWT access token."""
+        if self._urn is not None:
+            return self._urn
+
         try:
             if not self._oauth_session.valid_token:
                 return None
@@ -170,7 +173,7 @@ class API:
                 self._urn = urn_claim[0]  # Get the first URN from the array
             else:
                 self._urn = None
-                
+
             return self._urn
         except (IndexError, json.JSONDecodeError, KeyError):
             LOG.error("Failed to extract URN from access token")
@@ -299,11 +302,12 @@ class API:
     def _get_url(
         self,
         endpoint: Union[str, None],
-        location_id: int,
         gd: bool = False,
         drms: bool = False,
         events: bool = False,
         challenge: bool = False,
+        location_id: Union[int, None] = None,
+        urn: Union[str, None] = None,
     ) -> str:
         """Generate a path to the requested endpoint.
 
@@ -329,9 +333,12 @@ class API:
             base = API_EVENTS_ENDPOINT + API_NOTIFICATIONS_ENDPOINT
         if challenge:
             base = API_CHALLENGE_ENDPOINT
-        url = base + "/Locations/" + str(location_id)
+
+        url = base + (f"/Locations/{urn}" if urn else f"/Locations/{location_id}")
+
         if endpoint:
-            url += "/" + str(endpoint)
+            url += f"/{endpoint}"
+
         return url
 
     async def _async_handle_on_backoff(self, _: dict[str, Any]) -> None:
@@ -537,7 +544,7 @@ class API:
 
     async def get_devices(self, location_id: int) -> list[dict[str, Any]]:
         """Get list of all devices"""
-        url = self._get_url("Devices", location_id)
+        url = self._get_url("Devices", location_id=location_id)
         LOG.debug("Devices URL is %s", url)
         devices: list[dict[str, Any]] = await self.async_request("get", url)
         devices.append(await self.get_gateway(location_id))
@@ -554,7 +561,9 @@ class API:
         value: Union[str, float, int, None],
     ) -> None:
         """Sets device attributes"""
-        url = self._get_url(f"Devices/{device.id}/Attributes", device.location_id)
+        url = self._get_url(
+            f"Devices/{device.id}/Attributes", location_id=device.location_id
+        )
         LOG.debug("Device Attribute URL is %s", url)
         await self.async_request("put", url, json={key.hilo_attribute: value})
 
@@ -582,7 +591,7 @@ class API:
           "notificationDataJSON": "{\"NotificationType\":null,\"Title\":\"\",\"SubTitle\":null,\"Body\":\"Test manuel de l’alarme détecté.\",\"Badge\":0,\"Sound\":null,\"Data\":null,\"Tags\":null,\"Type\":\"TestDetected\",\"DeviceId\":324236,\"LocationId\":4051}",
           "viewed": false
         }"""
-        url = self._get_url(None, location_id, events=True)
+        url = self._get_url(None, events=True, location_id=location_id)
         LOG.debug("Event Notifications URL is %s", url)
         return cast(dict[str, Any], await self.async_request("get", url))
 
@@ -650,7 +659,7 @@ class API:
         }
         """
         # ic-dev21 need to check but this is probably dead code
-        url = self._get_url("Events", location_id, True)
+        url = self._get_url("Events", True, location_id=location_id)
         if not event_id:
             url += "?active=true"
         else:
@@ -659,6 +668,7 @@ class API:
         LOG.debug("get_gd_events URL is %s", url)
         return cast(dict[str, Any], await self.async_request("get", url))
 
+    # keep location_id for now for backward compatibility with existing hilo branch
     async def get_seasons(self, location_id: int) -> dict[str, Any]:
         """This will return the rewards and current season total
         https://api.hiloenergie.com/challenge/v1/api/Locations/XXXX/Seasons
@@ -678,13 +688,34 @@ class API:
           }
         ]
         """
-        url = self._get_url("Seasons", location_id, challenge=True)
+        url = self._get_url("seasonssummary", challenge=True, urn=self.urn)
         LOG.debug("Seasons URL is %s", url)
-        return cast(dict[str, Any], await self.async_request("get", url))
+
+        seasons = await self.async_request("get", url)
+        LOG.debug("Seasons API response: %s", seasons)
+
+        all_seasons = []
+
+        for season_data in seasons:
+            season = season_data.get("season")
+            ratePlan = season_data.get("ratePlan")
+            periodId = season_data.get("periodId")
+
+            url = self._get_url(
+                f"rates/{ratePlan}/seasons/{season}/events?periodId={periodId}",
+                challenge=True,
+                urn=self.urn,
+            )
+            LOG.debug("Seasons Events URL is %s", url)
+            season_events = await self.async_request("get", url)
+            LOG.debug("Season %s Events API response: %s", season, season_events)
+            all_seasons.append(season_events)
+
+        return all_seasons
 
     async def get_gateway(self, location_id: int) -> dict[str, Any]:
         """Gets info about the Hilo hub (gateway)"""
-        url = self._get_url("Gateways/Info", location_id)
+        url = self._get_url("Gateways/Info", location_id=location_id)
         LOG.debug("Gateway URL is %s", url)
         req = await self.async_request("get", url)
         saved_attrs = [
@@ -727,7 +758,7 @@ class API:
           }
         ]
         """
-        url = self._get_url("Weather", location_id)
+        url = self._get_url("Weather", location_id=location_id)
         LOG.debug("Weather URL is %s", url)
         response = await self.async_request("get", url)
         LOG.debug("Weather API response: %s", response)
