@@ -1,4 +1,5 @@
-"""Event object """
+"""Event object"""
+
 from datetime import datetime, timedelta, timezone
 import logging
 import re
@@ -26,7 +27,7 @@ class Event:
 
     def __init__(self, **event: dict[str, Any]):
         """Initialize."""
-        self._convert_phases(cast(dict[str, Any], event.get("phases")))
+        self._convert_phases(cast(dict[str, Any], event.get("phases", {})))
         params: dict[str, Any] = event.get("parameters") or {}
         devices: list[dict[str, Any]] = params.get("devices", [])
         consumption: dict[str, Any] = event.get("consumption", {})
@@ -44,6 +45,7 @@ class Event:
         self.allowed_kWh: float = round(allowed_wH / 1000, 2)
         self.used_kWh: float = round(used_wH / 1000, 2)
         self.used_percentage: float = 0
+        self.reward = cast(float, event.get("reward", 0.0))
         self.last_update = datetime.now(timezone.utc).astimezone()
         if allowed_wH > 0:
             self.used_percentage = round(used_wH / allowed_wH * 100, 2)
@@ -63,6 +65,7 @@ class Event:
             "used_kWh",
             "used_percentage",
             "last_update",
+            "reward",
         ]
 
     def update_wh(self, used_wH: float) -> None:
