@@ -1,0 +1,30 @@
+{
+  "event_type_id": 1,
+  "target": "EventAdded",
+  "arguments": [
+    {
+      "id": 354,
+      "ratePlan": "CH",
+      "period": "PM",
+      "phases": {
+        "planPublicationStartUtc": "2026-01-04T16:01:00Z",
+        "settingsDeadlineUTC": "2026-01-04T05:00:00Z",
+        "preheatStartDateUTC": "2026-01-04T19:00:00Z",
+        "preheatEndDateUTC": "2026-01-04T21:00:00Z",
+        "reductionStartDateUTC": "2026-01-04T21:00:00Z",
+        "reductionEndDateUTC": "2026-01-05T01:00:00Z",
+        "recoveryStartDateUTC": "2026-01-05T01:00:00Z",
+        "recoveryEndDateUTC": "2026-01-05T02:00:00Z"
+      },
+      "progress": "scheduled",
+      "isAutomated": true,
+      "isConfigurable": true,
+      "currentPhase": null,
+      "isPreseasonEvent": false
+    }
+  ],
+  "invocation": null,
+  "error": null,
+  "timestamp": "2026-01-03T11:58:08.117395",
+  "event_type": "INVOKE"
+}
