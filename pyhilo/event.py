@@ -35,7 +35,7 @@ class Event:
         used_wH: int = consumption.get("currentWh", 0) or 0
         self.participating: bool = cast(bool, event.get("isParticipating", False))
         self.configurable: bool = cast(bool, event.get("isConfigurable", False))
-        self.period: str = cast(str, event.get("period", ""))
+        self.period: str = (cast(str, event.get("period", "")) or "").lower()
         self.event_id: int = cast(int, event["id"])
         self.total_devices: int = len(devices)
         self.opt_out_devices: int = len([x for x in devices if x["optOut"]])
