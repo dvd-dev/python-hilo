@@ -1,4 +1,5 @@
-"""Event object """
+"""Event object"""
+
 from datetime import datetime, timedelta, timezone
 import logging
 import re
@@ -26,7 +27,7 @@ class Event:
 
     def __init__(self, **event: dict[str, Any]):
         """Initialize."""
-        self._convert_phases(cast(dict[str, Any], event.get("phases")))
+        self._convert_phases(cast(dict[str, Any], event.get("phases", {})))
         params: dict[str, Any] = event.get("parameters") or {}
         devices: list[dict[str, Any]] = params.get("devices", [])
         consumption: dict[str, Any] = event.get("consumption", {})
@@ -34,7 +35,7 @@ class Event:
         used_wH: int = consumption.get("currentWh", 0) or 0
         self.participating: bool = cast(bool, event.get("isParticipating", False))
         self.configurable: bool = cast(bool, event.get("isConfigurable", False))
-        self.period: str = cast(str, event.get("period", ""))
+        self.period: str = (cast(str, event.get("period", "")) or "").lower()
         self.event_id: int = cast(int, event["id"])
         self.total_devices: int = len(devices)
         self.opt_out_devices: int = len([x for x in devices if x["optOut"]])
@@ -44,6 +45,7 @@ class Event:
         self.allowed_kWh: float = round(allowed_wH / 1000, 2)
         self.used_kWh: float = round(used_wH / 1000, 2)
         self.used_percentage: float = 0
+        self.reward = cast(float, event.get("reward", 0.0))
         self.last_update = datetime.now(timezone.utc).astimezone()
         if allowed_wH > 0:
             self.used_percentage = round(used_wH / allowed_wH * 100, 2)
@@ -63,6 +65,7 @@ class Event:
             "used_kWh",
             "used_percentage",
             "last_update",
+            "reward",
         ]
 
     def update_wh(self, used_wH: float) -> None:
@@ -70,12 +73,21 @@ class Event:
         LOG.debug("Updating Wh: %s", used_wH)
         self.used_kWh = round(used_wH / 1000, 2)
         self.last_update = datetime.now(timezone.utc).astimezone()
+        self._recalculate_percentage()
 
     def update_allowed_wh(self, allowed_wH: float) -> None:
         """This function is used to update the allowed_kWh attribute during a Hilo Challenge Event"""
         LOG.debug("Updating allowed Wh: %s", allowed_wH)
         self.allowed_kWh = round(allowed_wH / 1000, 2)
         self.last_update = datetime.now(timezone.utc).astimezone()
+        self._recalculate_percentage()
+
+    def _recalculate_percentage(self) -> None:
+        """Recalculate used percentage based on current values"""
+        if self.allowed_kWh > 0:
+            self.used_percentage = round(self.used_kWh / self.allowed_kWh * 100, 2)
+        else:
+            self.used_percentage = 0
 
     def should_check_for_allowed_wh(self) -> bool:
         """This function is used to authorize subscribing to a specific event in Hilo to receive the allowed_kWh
