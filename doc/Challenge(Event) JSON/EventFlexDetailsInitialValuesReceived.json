@@ -1,0 +1,90 @@
+{
+  "type": 1,
+  "target": "EventFlexDetailsInitialValuesReceived",
+  "arguments": [
+    {
+      "consumption": {
+        "baselineWh": 8848.80006313324,
+        "baselineCost": 3.98,
+        "reductionStatus": "pending",
+        "cumulativeBaselinePoints": [
+          {
+            "cost": 0.0,
+            "timeUTC": "2026-01-05T11:00:00+00:00",
+            "wh": 0.0
+          },
+          {
+            "cost": 1.05,
+            "timeUTC": "2026-01-05T12:00:00+00:00",
+            "wh": 2349.600076675415
+          },
+          {
+            "cost": 2.15,
+            "timeUTC": "2026-01-05T13:00:00+00:00",
+            "wh": 4788.000106811523
+          },
+          {
+            "cost": 3.1,
+            "timeUTC": "2026-01-05T14:00:00+00:00",
+            "wh": 6895.20001411438
+          },
+          {
+            "cost": 3.98,
+            "timeUTC": "2026-01-05T15:00:00+00:00",
+            "wh": 8848.80006313324
+          }
+        ],
+        "isMissingBaseline": false,
+        "isMissingConsumption": false,
+        "generatedTimeUTC": "2026-01-04T19:31:34.7970923Z"
+      },
+      "id": 355,
+      "progress": "scheduled",
+      "period": "AM",
+      "phases": {
+        "settingsDeadlineUTC": "2026-01-05T05:00:00Z",
+        "preheatStartDateUTC": "2026-01-05T06:00:00Z",
+        "preheatEndDateUTC": "2026-01-05T11:00:00Z",
+        "reductionStartDateUTC": "2026-01-05T11:00:00Z",
+        "reductionEndDateUTC": "2026-01-05T15:00:00Z",
+        "recoveryStartDateUTC": "2026-01-05T15:00:00Z",
+        "recoveryEndDateUTC": "2026-01-05T16:00:00Z"
+      },
+      "isAutomated": true,
+      "isConfigurable": true,
+      "generatedTimeUTC": "2026-01-04T19:31:34.7970923+00:00",
+      "optOutDevices": [],
+      "parameters": {
+        "mode": "ambitious",
+        "devices": [
+          {
+            "id": 1415445,
+            "deviceUid": "5C0272FFFED82C0F",
+            "name": "Réservoir Eau-chaude Géothermie",
+            "optOut": true,
+            "preheat": false,
+            "deviceType": "Cee"
+          },
+          {
+            "id": 1415452,
+            "deviceUid": "500B91400004DB8F",
+            "name": "Plancher",
+            "optOut": true,
+            "preheat": false,
+            "deviceType": "FloorThermostat"
+          },
+          {
+            "id": 1415506,
+            "deviceUid": "5CFCE1383B46",
+            "name": "Cuisine",
+            "optOut": true,
+            "preheat": false,
+            "deviceType": "Thermostat24V"
+          }
+        ]
+      },
+      "isPreSeason": false,
+      "kWhCost": 0.45088
+    }
+  ]
+}
