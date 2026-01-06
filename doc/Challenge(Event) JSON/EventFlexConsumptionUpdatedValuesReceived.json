@@ -1,0 +1,41 @@
+{
+  "type": 1,
+  "target": "EventFlexConsumptionUpdatedValuesReceived",
+  "arguments": [
+    {
+      "baselineWh": 9952.800035476685,
+      "baselineCost": 4.48,
+      "reductionStatus": "pending",
+      "cumulativeBaselinePoints": [
+        {
+          "cost": 0.0,
+          "timeUTC": "2026-01-05T21:00:00+00:00",
+          "wh": 0.0
+        },
+        {
+          "cost": 1.08,
+          "timeUTC": "2026-01-05T22:00:00+00:00",
+          "wh": 2416.800022125244
+        },
+        {
+          "cost": 2.3,
+          "timeUTC": "2026-01-05T23:00:00+00:00",
+          "wh": 5102.400064468384
+        },
+        {
+          "cost": 3.4,
+          "timeUTC": "2026-01-06T00:00:00+00:00",
+          "wh": 7550.400018692017
+        },
+        {
+          "cost": 4.48,
+          "timeUTC": "2026-01-06T01:00:00+00:00",
+          "wh": 9952.800035476685
+        }
+      ],
+      "isMissingBaseline": false,
+      "isMissingConsumption": false,
+      "generatedTimeUTC": "2026-01-05T11:00:06.8820095Z"
+    }
+  ]
+}
