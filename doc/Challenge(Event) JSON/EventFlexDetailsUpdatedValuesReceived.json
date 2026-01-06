@@ -1,0 +1,14 @@
+{
+  "type": 1,
+  "target": "EventFlexDetailsUpdatedValuesReceived",
+  "arguments": [
+    {
+      "id": 355,
+      "isAutomated": true,
+      "isConfigurable": false,
+      "progress": "inProgress",
+      "currentPhase": "reduction",
+      "generatedTimeUTC": "2026-01-05T11:00:00.4411761Z"
+    }
+  ]
+}
