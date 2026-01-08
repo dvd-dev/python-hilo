@@ -1,0 +1,508 @@
+{
+	"info": {
+		"_postman_id": "0bd1e0bd-a0dd-4d20-b54e-350dd995b6fe",
+		"name": "Hilo",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "3157913",
+		"_collection_link": "https://bold-rocket-8844-1.postman.co/workspace/Hilo-HA~f9f93dda-0067-4a91-8c40-1ae643af72b8/collection/3157913-0bd1e0bd-a0dd-4d20-b54e-350dd995b6fe?action=share&source=collection_link&creator=3157913"
+	},
+	"item": [
+		{
+			"name": "DeviceHub",
+			"item": [
+				{
+					"name": "1-API Hilo Device Hub Negotiate",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const response = pm.response.json(); \r",
+									"\r",
+									"pm.environment.set(\"_deviceHubAccessToken\", response.accessToken);\r",
+									"pm.environment.set(\"_deviceHubUrl\", response.url);\r",
+									"pm.environment.set(\"_deviceNegotiateHubUrl\", decodeURIComponent(response.url).replace(\"client/?\", \"client/negotiate?\"));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{api_hilo_url}}/DeviceHub/negotiate?negotiateVersion=1",
+							"host": [
+								"{{api_hilo_url}}"
+							],
+							"path": [
+								"DeviceHub",
+								"negotiate"
+							],
+							"query": [
+								{
+									"key": "negotiateVersion",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2-Device Hub Negotiate",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const response = pm.response.json(); \r",
+									"\r",
+									"pm.environment.set(\"_deviceHubConnectionToken\", response.connectionToken);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{_deviceHubAccessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{_deviceNegotiateHubUrl}}",
+							"host": [
+								"{{_deviceNegotiateHubUrl}}"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "ChallengeHub",
+			"item": [
+				{
+					"name": "1-API Hilo Challenge Hub Negotiate",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const response = pm.response.json(); \r",
+									"\r",
+									"pm.environment.set(\"_challengeHubAccessToken\", response.accessToken);\r",
+									"pm.environment.set(\"_challengeHubUrl\", response.url);\r",
+									"pm.environment.set(\"_challengeNegotiateHubUrl\", decodeURIComponent(response.url).replace(\"client/?\", \"client/negotiate?\"));"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{api_hilo_url}}/ChallengeHub/negotiate?negotiateVersion=1",
+							"host": [
+								"{{api_hilo_url}}"
+							],
+							"path": [
+								"ChallengeHub",
+								"negotiate"
+							],
+							"query": [
+								{
+									"key": "negotiateVersion",
+									"value": "1"
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "2-Challenge Hub Negotiate",
+					"event": [
+						{
+							"listen": "test",
+							"script": {
+								"exec": [
+									"const response = pm.response.json(); \r",
+									"console.log(response);\r",
+									"pm.environment.set(\"_challengeHubConnectionToken\", response.connectionToken);"
+								],
+								"type": "text/javascript",
+								"packages": {},
+								"requests": {}
+							}
+						}
+					],
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{_challengeHubAccessToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "POST",
+						"header": [],
+						"url": {
+							"raw": "{{_challengeNegotiateHubUrl}}&negotiateVersion=1",
+							"host": [
+								"{{_challengeNegotiateHubUrl}}&negotiateVersion=1"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "Clientele",
+			"item": [
+				{
+					"name": "GetUserInfo",
+					"request": {
+						"method": "GET",
+						"header": [
+							{
+								"key": "Ocp-Apim-Subscription-Key",
+								"value": "{{api_ocp_subscription_key}}",
+								"type": "text"
+							}
+						],
+						"url": {
+							"raw": "{{api_hilo_url}}/clientele/api/UserInfo/GetUserInfo",
+							"host": [
+								"{{api_hilo_url}}"
+							],
+							"path": [
+								"clientele",
+								"api",
+								"UserInfo",
+								"GetUserInfo"
+							]
+						}
+					},
+					"response": []
+				}
+			]
+		},
+		{
+			"name": "1-Get Locations",
+			"event": [
+				{
+					"listen": "test",
+					"script": {
+						"exec": [
+							"const response = pm.response.json(); \r",
+							"pm.environment.set(\"_locationId\", response[0].id);\r",
+							"\r",
+							"const accessToken = pm.request.auth.oauth2.get(\"accessToken\");\r",
+							"if (accessToken) {\r",
+							"    const parts = accessToken.split('.');\r",
+							"    if (parts.length === 3) {\r",
+							"        const decodedPayload = atob(parts[1]);\r",
+							"        const claims = JSON.parse(decodedPayload);\r",
+							"        pm.environment.set(\"_locationHiloId\", claims[\"urn:com:hiloenergie:profile:location_hilo_id\"]);\r",
+							"    } else {\r",
+							"        console.error(\"Invalid JWT format received\");\r",
+							"    }\r",
+							"} else {\r",
+							"    console.error(\"JWT token not found in the response\");\r",
+							"}\r",
+							"\r",
+							""
+						],
+						"type": "text/javascript",
+						"packages": {},
+						"requests": {}
+					}
+				}
+			],
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{api_ocp_subscription_key}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{api_hilo_url}}/Automation/v1/api/Locations",
+					"host": [
+						"{{api_hilo_url}}"
+					],
+					"path": [
+						"Automation",
+						"v1",
+						"api",
+						"Locations"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Application Minimal Version",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{api_ocp_subscription_key}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{api_hilo_url}}/Status/MinVersion",
+					"host": [
+						"{{api_hilo_url}}"
+					],
+					"path": [
+						"Status",
+						"MinVersion"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Application Status",
+			"request": {
+				"auth": {
+					"type": "noauth"
+				},
+				"method": "GET",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{api_ocp_subscription_key}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{api_hilo_url}}/Status/Status",
+					"host": [
+						"{{api_hilo_url}}"
+					],
+					"path": [
+						"Status",
+						"Status"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get SeasonsSummary",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{api_ocp_subscription_key}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "https://api.hiloenergie.com/challenge/v1/api/locations/{{_locationHiloId}}/seasonssummary",
+					"protocol": "https",
+					"host": [
+						"api",
+						"hiloenergie",
+						"com"
+					],
+					"path": [
+						"challenge",
+						"v1",
+						"api",
+						"locations",
+						"{{_locationHiloId}}",
+						"seasonssummary"
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get FlexEvents",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{api_ocp_subscription_key}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{api_hilo_url}}/challenge/v1/api/locations/{{_locationHiloId}}/rates/flex/seasons/2025/events?periodId=RmxleHx1cm46aGlsbzpjcm06NDY1Mzk3Mi1wMnQweDM6MHwyMDI1LTExLTEwVDE5OjI5OjEzLjM5NzcyMjFa",
+					"host": [
+						"{{api_hilo_url}}"
+					],
+					"path": [
+						"challenge",
+						"v1",
+						"api",
+						"locations",
+						"{{_locationHiloId}}",
+						"rates",
+						"flex",
+						"seasons",
+						"2025",
+						"events"
+					],
+					"query": [
+						{
+							"key": "periodId",
+							"value": "RmxleHx1cm46aGlsbzpjcm06NDY1Mzk3Mi1wMnQweDM6MHwyMDI1LTExLTEwVDE5OjI5OjEzLjM5NzcyMjFa"
+						}
+					]
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Get CHEvents",
+			"request": {
+				"method": "GET",
+				"header": [
+					{
+						"key": "Ocp-Apim-Subscription-Key",
+						"value": "{{api_ocp_subscription_key}}",
+						"type": "text"
+					}
+				],
+				"url": {
+					"raw": "{{api_hilo_url}}/challenge/v1/api/locations/{{_locationHiloId}}/rates/ch/seasons/2025/events?periodId=RmxleHx1cm46aGlsbzpjcm06NDY1Mzk3Mi1wMnQweDM6MHwyMDI1LTExLTEwVDE5OjI5OjEzLjM5NzcyMjFa",
+					"host": [
+						"{{api_hilo_url}}"
+					],
+					"path": [
+						"challenge",
+						"v1",
+						"api",
+						"locations",
+						"{{_locationHiloId}}",
+						"rates",
+						"ch",
+						"seasons",
+						"2025",
+						"events"
+					],
+					"query": [
+						{
+							"key": "periodId",
+							"value": "RmxleHx1cm46aGlsbzpjcm06NDY1Mzk3Mi1wMnQweDM6MHwyMDI1LTExLTEwVDE5OjI5OjEzLjM5NzcyMjFa"
+						}
+					]
+				}
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "oauth2",
+		"oauth2": [
+			{
+				"key": "refreshTokenUrl",
+				"value": "{{b2c_token_url}}",
+				"type": "string"
+			},
+			{
+				"key": "redirect_uri",
+				"value": "https://my.home-assistant.io/redirect/oauth",
+				"type": "string"
+			},
+			{
+				"key": "useBrowser",
+				"value": false,
+				"type": "boolean"
+			},
+			{
+				"key": "scope",
+				"value": "openid https://HiloDirectoryB2C.onmicrosoft.com/hiloapis/user_impersonation offline_access",
+				"type": "string"
+			},
+			{
+				"key": "accessTokenUrl",
+				"value": "{{b2c_token_url}}",
+				"type": "string"
+			},
+			{
+				"key": "authUrl",
+				"value": "{{b2c_auth_url}}",
+				"type": "string"
+			},
+			{
+				"key": "clientId",
+				"value": "{{b2c_client_id}}",
+				"type": "string"
+			},
+			{
+				"key": "grant_type",
+				"value": "authorization_code_with_pkce",
+				"type": "string"
+			},
+			{
+				"key": "tokenName",
+				"value": "MainAccessToken",
+				"type": "string"
+			},
+			{
+				"key": "addTokenTo",
+				"value": "header",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"packages": {},
+				"requests": {},
+				"exec": [
+					""
+				]
+			}
+		}
+	]
+}
