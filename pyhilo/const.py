@@ -1,9 +1,13 @@
 import logging
 import platform
+import uuid
 from typing import Final
 
 import aiohttp
 
+# THe instance ID is random and unique to a specific instance/run.
+# Helps identifying multiple instances behind the same public IP, can be useful to the Hilo/HQ devs for debugging purposes
+INSTANCE_ID: Final = str(uuid.uuid4())[24:]
 LOG: Final = logging.getLogger(__package__)
 DEFAULT_STATE_FILE: Final = "hilo_state.yaml"
 REQUEST_RETRY: Final = 9
@@ -46,7 +50,7 @@ AUTOMATION_CHALLENGE_ENDPOINT: Final = "/ChallengeHub"
 
 
 # Request constants
-DEFAULT_USER_AGENT: Final = f"PyHilo/{PYHILO_VERSION} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
+DEFAULT_USER_AGENT: Final = f"PyHilo/{PYHILO_VERSION}-{INSTANCE_ID} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
 
 
 # NOTE(dvd): Not sure how to get new ones so I'm using the ones from my emulator
