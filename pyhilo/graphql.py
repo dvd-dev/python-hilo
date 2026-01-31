@@ -1,13 +1,11 @@
 import asyncio
 import hashlib
+import json
 import logging
-import ssl
-from typing import Any, Dict, List, Optional
+from typing import Any, Callable, Dict, List, Optional
 
-import aiohttp
-from gql import Client, gql
-from gql.transport.aiohttp import AIOHTTPTransport
-from gql.transport.websockets import WebsocketsTransport
+import httpx
+from httpx_sse import aconnect_sse
 
 from pyhilo import API
 from pyhilo.const import LOG, PLATFORM_HOST
@@ -551,24 +549,28 @@ class GraphQlHelper:
             "variables": {"locationHiloId": location_hilo_id},
         }
 
-        async with aiohttp.ClientSession(headers=headers) as session:
-            async with session.post(url, json=payload) as response:
-                try:
-                    response_json = await response.json()
-                except Exception as e:
-                    LOG.error("Error parsing response: %s", e)
-                    return
+        async with httpx.AsyncClient(http2=True) as client:
+            try:
+                response = await client.post(url, json=payload, headers=headers)
+                response.raise_for_status()
+                response_json = response.json()
+            except Exception as e:
+                LOG.error("Error parsing response: %s", e)
+                return
 
             if "errors" in response_json:
                 for error in response_json["errors"]:
                     if error.get("message") == "PersistedQueryNotFound":
                         payload["query"] = query
-                        async with session.post(url, json=payload) as response:
-                            try:
-                                response_json = await response.json()
-                            except Exception as e:
-                                LOG.error("Error parsing response on retry: %s", e)
-                                return
+                        try:
+                            response = await client.post(
+                                url, json=payload, headers=headers
+                            )
+                            response.raise_for_status()
+                            response_json = response.json()
+                        except Exception as e:
+                            LOG.error("Error parsing response on retry: %s", e)
+                            return
                         break
 
             if "errors" in response_json:
@@ -582,74 +584,107 @@ class GraphQlHelper:
         self, location_hilo_id: str, callback: callable = None
     ) -> None:
         LOG.debug("subscribe_to_device_updated called")
-
-        # Setting log level to suppress keepalive messages on gql transport
-        logging.getLogger("gql.transport.websockets").setLevel(logging.WARNING)
-
-        #
-        loop = asyncio.get_event_loop()
-        ssl_context = await loop.run_in_executor(None, ssl.create_default_context)
-
-        while True:  # Loop to reconnect if the connection is lost
-            LOG.debug("subscribe_to_device_updated while true")
-            access_token = await self._get_access_token()
-            transport = WebsocketsTransport(
-                url=f"wss://{PLATFORM_HOST}/api/digital-twin/v3/graphql?access_token={access_token}",
-                ssl=ssl_context,
-            )
-            client = Client(transport=transport, fetch_schema_from_transport=True)
-            query = gql(self.SUBSCRIPTION_DEVICE_UPDATED)
-            try:
-                async with client as session:
-                    async for result in session.subscribe(
-                        query, variable_values={"locationHiloId": location_hilo_id}
-                    ):
-                        LOG.debug(
-                            "subscribe_to_device_updated: Received subscription result %s",
-                            result,
-                        )
-                        device_hilo_id = self._handle_device_subscription_result(result)
-                        if callback:
-                            callback(device_hilo_id)
-            except Exception as e:
-                LOG.debug(
-                    "subscribe_to_device_updated: Connection lost: %s. Reconnecting in 5 seconds...",
-                    e,
-                )
-                await asyncio.sleep(5)
-                try:
-                    await self.call_get_location_query(location_hilo_id)
-                    LOG.debug(
-                        "subscribe_to_device_updated, call_get_location_query success"
-                    )
-
-                except Exception as e2:
-                    LOG.error(
-                        "subscribe_to_device_updated, exception while reconnecting, retrying: %s",
-                        e2,
-                    )
+        await self._listen_to_sse(
+            self.SUBSCRIPTION_DEVICE_UPDATED,
+            {"locationHiloId": location_hilo_id},
+            self._handle_device_subscription_result,
+            callback,
+            location_hilo_id,
+        )
 
     async def subscribe_to_location_updated(
         self, location_hilo_id: str, callback: callable = None
     ) -> None:
-        access_token = await self._get_access_token()
-        transport = WebsocketsTransport(
-            url=f"wss://{PLATFORM_HOST}/api/digital-twin/v3/graphql?access_token={access_token}"
+        LOG.debug("subscribe_to_location_updated called")
+        await self._listen_to_sse(
+            self.SUBSCRIPTION_LOCATION_UPDATED,
+            {"locationHiloId": location_hilo_id},
+            self._handle_location_subscription_result,
+            callback,
+            location_hilo_id,
         )
-        client = Client(transport=transport, fetch_schema_from_transport=True)
-        query = gql(self.SUBSCRIPTION_LOCATION_UPDATED)
-        try:
-            async with client as session:
-                async for result in session.subscribe(
-                    query, variable_values={"locationHiloId": location_hilo_id}
-                ):
-                    LOG.debug("Received subscription result %s", result)
-                    device_hilo_id = self._handle_location_subscription_result(result)
-                    callback(device_hilo_id)
-        except asyncio.CancelledError:
-            LOG.debug("Subscription cancelled.")
-            asyncio.sleep(1)
-            await self.subscribe_to_location_updated(location_hilo_id)
+
+    async def _listen_to_sse(
+        self,
+        query: str,
+        variables: Dict[str, Any],
+        handler: Callable[[Dict[str, Any]], str],
+        callback: Optional[Callable[[str], None]] = None,
+        location_hilo_id: str = None,
+    ) -> None:
+        query_hash = hashlib.sha256(query.encode("utf-8")).hexdigest()
+        payload = {
+            "extensions": {
+                "persistedQuery": {
+                    "version": 1,
+                    "sha256Hash": query_hash,
+                }
+            },
+            "variables": variables,
+        }
+
+        while True:
+            try:
+                access_token = await self._get_access_token()
+                url = f"https://{PLATFORM_HOST}/api/digital-twin/v3/graphql"
+                headers = {"Authorization": f"Bearer {access_token}"}
+
+                retry_with_full_query = False
+
+                async with httpx.AsyncClient(http2=True, timeout=None) as client:
+                    async with aconnect_sse(
+                        client, "POST", url, json=payload, headers=headers
+                    ) as event_source:
+                        async for sse in event_source.aiter_sse():
+                            if not sse.data:
+                                continue
+                            try:
+                                data = json.loads(sse.data)
+                            except json.JSONDecodeError:
+                                continue
+
+                            if "errors" in data:
+                                if any(
+                                    e.get("message") == "PersistedQueryNotFound"
+                                    for e in data["errors"]
+                                ):
+                                    retry_with_full_query = True
+                                    break
+                                LOG.error(
+                                    "GraphQL Subscription Errors: %s", data["errors"]
+                                )
+                                continue
+
+                            if "data" in data:
+                                LOG.debug(
+                                    "Received subscription result %s", data["data"]
+                                )
+                                result = handler(data["data"])
+                                if callback:
+                                    callback(result)
+
+                if retry_with_full_query:
+                    payload["query"] = query
+                    continue
+
+            except Exception as e:
+                LOG.debug(
+                    "Subscription connection lost: %s. Reconnecting in 5 seconds...", e
+                )
+                await asyncio.sleep(5)
+                # Reset payload to APQ only on reconnect
+                if "query" in payload:
+                    del payload["query"]
+
+                if location_hilo_id:
+                    try:
+                        await self.call_get_location_query(location_hilo_id)
+                        LOG.debug("call_get_location_query success after reconnect")
+                    except Exception as e2:
+                        LOG.error(
+                            "exception while RE-connecting, retrying: %s",
+                            e2,
+                        )
 
     async def _get_access_token(self) -> str:
         """Get the access token."""
