@@ -1,8 +1,10 @@
 import asyncio
+import hashlib
 import logging
 import ssl
 from typing import Any, Dict, List, Optional
 
+import aiohttp
 from gql import Client, gql
 from gql.transport.aiohttp import AIOHTTPTransport
 from gql.transport.websockets import WebsocketsTransport
@@ -533,18 +535,48 @@ class GraphQlHelper:
     async def call_get_location_query(self, location_hilo_id: str) -> None:
         """This functions calls the digital-twin and requests location id"""
         access_token = await self._get_access_token()
-        transport = AIOHTTPTransport(
-            url=f"https://{PLATFORM_HOST}/api/digital-twin/v3/graphql",
-            headers={"Authorization": f"Bearer {access_token}"},
-        )
-        client = Client(transport=transport, fetch_schema_from_transport=True)
-        query = gql(self.QUERY_GET_LOCATION)
+        url = f"https://{PLATFORM_HOST}/api/digital-twin/v3/graphql"
+        headers = {"Authorization": f"Bearer {access_token}"}
 
-        async with client as session:
-            result = await session.execute(
-                query, variable_values={"locationHiloId": location_hilo_id}
-            )
-        self._handle_query_result(result)
+        query = self.QUERY_GET_LOCATION
+        query_hash = hashlib.sha256(query.encode("utf-8")).hexdigest()
+
+        payload = {
+            "extensions": {
+                "persistedQuery": {
+                    "version": 1,
+                    "sha256Hash": query_hash,
+                }
+            },
+            "variables": {"locationHiloId": location_hilo_id},
+        }
+
+        async with aiohttp.ClientSession(headers=headers) as session:
+            async with session.post(url, json=payload) as response:
+                try:
+                    response_json = await response.json()
+                except Exception as e:
+                    LOG.error("Error parsing response: %s", e)
+                    return
+
+            if "errors" in response_json:
+                for error in response_json["errors"]:
+                    if error.get("message") == "PersistedQueryNotFound":
+                        payload["query"] = query
+                        async with session.post(url, json=payload) as response:
+                            try:
+                                response_json = await response.json()
+                            except Exception as e:
+                                LOG.error("Error parsing response on retry: %s", e)
+                                return
+                        break
+
+            if "errors" in response_json:
+                LOG.error("GraphQL errors: %s", response_json["errors"])
+                return
+
+            if "data" in response_json:
+                self._handle_query_result(response_json["data"])
 
     async def subscribe_to_device_updated(
         self, location_hilo_id: str, callback: callable = None
