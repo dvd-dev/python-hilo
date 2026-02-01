@@ -1,4 +1,5 @@
 """Define the hilo package."""
+
 from pyhilo.api import API
 from pyhilo.const import UNMONITORED_DEVICES
 from pyhilo.device import HiloDevice

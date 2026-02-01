@@ -11,7 +11,7 @@ class GraphqlValueMapper:
 
     OnState = "on"
 
-    def map_query_values(self, values: Dict[str, Any]) -> list[Dict[str, Any]]:
+    def map_query_values(self, values: list[Dict[str, Any]]) -> list[Dict[str, Any]]:
         readings: list[Dict[str, Any]] = []
         for device in values:
             if device.get("deviceType") is not None:
@@ -20,7 +20,7 @@ class GraphqlValueMapper:
         return readings
 
     def map_device_subscription_values(
-        self, device: list[Dict[str, Any]]
+        self, device: Dict[str, Any]
     ) -> list[Dict[str, Any]]:
         readings: list[Dict[str, Any]] = []
         if device.get("deviceType") is not None:
@@ -32,7 +32,7 @@ class GraphqlValueMapper:
         self, values: Dict[str, Any]
     ) -> list[Dict[str, Any]]:
         readings: list[Dict[str, Any]] = []
-        for device in values:
+        for device in values.get("devices", []):
             if device.get("deviceType") is not None:
                 reading = self._map_devices_values(device)
                 readings.extend(reading)
@@ -425,7 +425,8 @@ class GraphqlValueMapper:
                     device["hiloId"], "Intensity", device["level"] / 100
                 )
             )
-        if device.get("lightType").lower() == "color":
+        light_type = device.get("lightType")
+        if light_type and light_type.lower() == "color":
             attributes.append(
                 self.build_attribute(device["hiloId"], "Hue", device.get("hue") or 0)
             )
