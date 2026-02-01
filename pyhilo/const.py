@@ -11,7 +11,7 @@ INSTANCE_ID: Final = str(uuid.uuid4())[24:]
 LOG: Final = logging.getLogger(__package__)
 DEFAULT_STATE_FILE: Final = "hilo_state.yaml"
 REQUEST_RETRY: Final = 9
-PYHILO_VERSION: Final = "2026.1.02"
+PYHILO_VERSION: Final = "2026.2.01"
 # TODO: Find a way to keep previous line in sync with pyproject.toml automatically
 
 CONTENT_TYPE_FORM: Final = "application/x-www-form-urlencoded"
