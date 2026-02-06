@@ -1,7 +1,7 @@
 import logging
 import platform
-import uuid
 from typing import Final
+import uuid
 
 import aiohttp
 

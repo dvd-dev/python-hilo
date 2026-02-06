@@ -128,11 +128,37 @@ async def get_state(state_yaml: str) -> StateDict:
         state_yaml
     ):  # noqa: PTH113 - isfile is fine and simpler in this case.
         return _get_defaults(StateDict)  # type: ignore
-    async with aiofiles.open(state_yaml, mode="r") as yaml_file:
-        LOG.debug("Loading state from yaml")
-        content = await yaml_file.read()
-        state_yaml_payload: StateDict = yaml.safe_load(content)
-    return state_yaml_payload
+
+    try:
+        async with aiofiles.open(state_yaml, mode="r") as yaml_file:
+            LOG.debug("Loading state from yaml")
+            content = await yaml_file.read()
+            state_yaml_payload: StateDict = yaml.safe_load(content)
+
+            # Handle corrupted/empty YAML files
+            if state_yaml_payload is None:
+                LOG.warning(
+                    "State file %s is corrupted or empty, reinitializing with defaults",
+                    state_yaml,
+                )
+                defaults = _get_defaults(StateDict)  # type: ignore
+                async with aiofiles.open(state_yaml, mode="w") as yaml_file_write:
+                    content = yaml.dump(defaults)
+                    await yaml_file_write.write(content)
+                return defaults
+
+        return state_yaml_payload
+    except yaml.YAMLError as e:
+        LOG.error(
+            "Failed to parse state file %s: %s. Reinitializing with defaults.",
+            state_yaml,
+            e,
+        )
+        defaults = _get_defaults(StateDict)  # type: ignore
+        async with aiofiles.open(state_yaml, mode="w") as yaml_file_write:
+            content = yaml.dump(defaults)
+            await yaml_file_write.write(content)
+        return defaults
 
 
 async def set_state(
