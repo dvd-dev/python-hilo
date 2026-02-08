@@ -77,7 +77,7 @@ class StateDict(TypedDict, total=False):
 T = TypeVar("T", bound="StateDict")
 
 
-def _get_defaults(cls: type[T]) -> dict[str, Any]:
+def _get_defaults(cls: type[T]) -> T:
     """Generate a default dict based on typed dict
 
     This function recursively creates a nested dictionary structure that mirrors
@@ -127,13 +127,13 @@ async def get_state(state_yaml: str) -> StateDict:
     if not isfile(
         state_yaml
     ):  # noqa: PTH113 - isfile is fine and simpler in this case.
-        return _get_defaults(StateDict)  # type: ignore
+        return _get_defaults(StateDict)
 
     try:
         async with aiofiles.open(state_yaml, mode="r") as yaml_file:
             LOG.debug("Loading state from yaml")
             content = await yaml_file.read()
-            state_yaml_payload: StateDict = yaml.safe_load(content)
+            state_yaml_payload: StateDict | None = yaml.safe_load(content)
 
             # Handle corrupted/empty YAML files
             if state_yaml_payload is None:
@@ -141,7 +141,7 @@ async def get_state(state_yaml: str) -> StateDict:
                     "State file %s is corrupted or empty, reinitializing with defaults",
                     state_yaml,
                 )
-                defaults = _get_defaults(StateDict)  # type: ignore
+                defaults = _get_defaults(StateDict)
                 async with aiofiles.open(state_yaml, mode="w") as yaml_file_write:
                     content = yaml.dump(defaults)
                     await yaml_file_write.write(content)
@@ -154,7 +154,7 @@ async def get_state(state_yaml: str) -> StateDict:
             state_yaml,
             e,
         )
-        defaults = _get_defaults(StateDict)  # type: ignore
+        defaults = _get_defaults(StateDict)
         async with aiofiles.open(state_yaml, mode="w") as yaml_file_write:
             content = yaml.dump(defaults)
             await yaml_file_write.write(content)
