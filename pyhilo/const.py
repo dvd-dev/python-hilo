@@ -24,7 +24,9 @@ AUTH_AUTHORIZE: Final = f"https://{AUTH_HOSTNAME}{AUTH_ENDPOINT}authorize"
 AUTH_TOKEN: Final = f"https://{AUTH_HOSTNAME}{AUTH_ENDPOINT}token"
 AUTH_CHALLENGE_METHOD: Final = "S256"
 AUTH_CLIENT_ID: Final = "1ca9f585-4a55-4085-8e30-9746a65fa561"
-AUTH_SCOPE: Final = "openid https://HiloDirectoryB2C.onmicrosoft.com/hiloapis/user_impersonation offline_access"
+AUTH_SCOPE: Final = (
+    "openid https://HiloDirectoryB2C.onmicrosoft.com/hiloapis/user_impersonation offline_access"
+)
 SUBSCRIPTION_KEY: Final = "20eeaedcb86945afa3fe792cea89b8bf"
 
 # API constants
@@ -50,7 +52,9 @@ AUTOMATION_CHALLENGE_ENDPOINT: Final = "/ChallengeHub"
 
 
 # Request constants
-DEFAULT_USER_AGENT: Final = f"PyHilo/{PYHILO_VERSION}-{INSTANCE_ID} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
+DEFAULT_USER_AGENT: Final = (
+    f"PyHilo/{PYHILO_VERSION}-{INSTANCE_ID} aiohttp/{aiohttp.__version__} Python/{platform.python_version()}"
+)
 
 
 # NOTE(dvd): Not sure how to get new ones so I'm using the ones from my emulator

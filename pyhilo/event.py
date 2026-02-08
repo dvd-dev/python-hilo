@@ -27,7 +27,7 @@ class Event:
 
     def __init__(self, **event: dict[str, Any]):
         """Initialize."""
-        self._convert_phases(cast(dict[str, Any], event.get("phases", {})))
+        self._convert_phases(event.get("phases", {}))
         params: dict[str, Any] = event.get("parameters") or {}
         devices: list[dict[str, Any]] = params.get("devices", [])
         consumption: dict[str, Any] = event.get("consumption", {})

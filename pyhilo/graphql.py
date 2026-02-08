@@ -1,7 +1,6 @@
 import asyncio
 import hashlib
 import json
-import logging
 from typing import Any, Callable, Dict, List, Optional
 
 import httpx
@@ -581,7 +580,9 @@ class GraphQlHelper:
                 self._handle_query_result(response_json["data"])
 
     async def subscribe_to_device_updated(
-        self, location_hilo_id: str, callback: callable = None
+        self,
+        location_hilo_id: str,
+        callback: Optional[Callable[[str], None]] = None,
     ) -> None:
         LOG.debug("subscribe_to_device_updated called")
         await self._listen_to_sse(
@@ -593,7 +594,9 @@ class GraphQlHelper:
         )
 
     async def subscribe_to_location_updated(
-        self, location_hilo_id: str, callback: callable = None
+        self,
+        location_hilo_id: str,
+        callback: Optional[Callable[[str], None]] = None,
     ) -> None:
         LOG.debug("subscribe_to_location_updated called")
         await self._listen_to_sse(
@@ -610,10 +613,10 @@ class GraphQlHelper:
         variables: Dict[str, Any],
         handler: Callable[[Dict[str, Any]], str],
         callback: Optional[Callable[[str], None]] = None,
-        location_hilo_id: str = None,
+        location_hilo_id: Optional[str] = None,
     ) -> None:
         query_hash = hashlib.sha256(query.encode("utf-8")).hexdigest()
-        payload = {
+        payload: Dict[str, Any] = {
             "extensions": {
                 "persistedQuery": {
                     "version": 1,
@@ -659,9 +662,9 @@ class GraphQlHelper:
                                 LOG.debug(
                                     "Received subscription result %s", data["data"]
                                 )
-                                result = handler(data["data"])
+                                handler_result = handler(data["data"])
                                 if callback:
-                                    callback(result)
+                                    callback(handler_result)
 
                 if retry_with_full_query:
                     payload["query"] = query
@@ -692,22 +695,22 @@ class GraphQlHelper:
 
     def _handle_query_result(self, result: Dict[str, Any]) -> None:
         """This receives query results and maps them to the proper device."""
-        devices_values: list[any] = result["getLocation"]["devices"]
+        devices_values: List[Dict[str, Any]] = result["getLocation"]["devices"]
         attributes = self.mapper.map_query_values(devices_values)
         self._devices.parse_values_received(attributes)
 
     def _handle_device_subscription_result(self, result: Dict[str, Any]) -> str:
-        devices_values: list[any] = result["onAnyDeviceUpdated"]["device"]
-        attributes = self.mapper.map_device_subscription_values(devices_values)
+        device_value: Dict[str, Any] = result["onAnyDeviceUpdated"]["device"]
+        attributes = self.mapper.map_device_subscription_values(device_value)
         updated_device = self._devices.parse_values_received(attributes)
         # callback to update the device in the UI
         LOG.debug("Device updated: %s", updated_device)
-        return devices_values.get("hiloId")
+        return str(device_value.get("hiloId"))
 
     def _handle_location_subscription_result(self, result: Dict[str, Any]) -> str:
-        devices_values: list[any] = result["onAnyLocationUpdated"]["location"]
-        attributes = self.mapper.map_location_subscription_values(devices_values)
+        location_value: Dict[str, Any] = result["onAnyLocationUpdated"]["location"]
+        attributes = self.mapper.map_location_subscription_values(location_value)
         updated_device = self._devices.parse_values_received(attributes)
         # callback to update the device in the UI
         LOG.debug("Device updated: %s", updated_device)
-        return devices_values.get("hiloId")
+        return str(location_value.get("hiloId"))
