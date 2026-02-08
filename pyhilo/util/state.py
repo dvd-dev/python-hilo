@@ -138,11 +138,9 @@ async def get_state(state_yaml: str) -> StateDict:
 async def set_state(
     state_yaml: str,
     key: str,
-    state: TokenDict
-    | RegistrationDict
-    | FirebaseDict
-    | AndroidDeviceDict
-    | WebsocketDict,
+    state: (
+        TokenDict | RegistrationDict | FirebaseDict | AndroidDeviceDict | WebsocketDict
+    ),
 ) -> None:
     """Save state yaml.
     :param state_yaml: filename where to read the state
