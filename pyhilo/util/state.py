@@ -136,7 +136,7 @@ async def get_state(state_yaml: str) -> StateDict:
             state_yaml_payload: StateDict | None = yaml.safe_load(content)
 
             # Handle corrupted/empty YAML files
-            if state_yaml_payload is None:
+            if state_yaml_payload is None or not isinstance(state_yaml_payload, dict):
                 LOG.warning(
                     "State file %s is corrupted or empty, reinitializing with defaults",
                     state_yaml,
