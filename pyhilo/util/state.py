@@ -129,6 +129,7 @@ def _write_state(state_yaml: str, state: dict[str, Any] | StateDict) -> None:
     ) as tmp:
         tmp.write(content)
         tmp_path = tmp.name
+    os.chmod(tmp_path, 0o644)
     os.replace(tmp_path, state_yaml)
 
 
