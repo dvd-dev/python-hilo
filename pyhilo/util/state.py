@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import asyncio
-import os
-import tempfile
 from datetime import datetime
+import os
 from os.path import isfile
+import tempfile
 from typing import Any, ForwardRef, TypedDict, TypeVar, get_type_hints
 
 import aiofiles
@@ -118,12 +118,15 @@ def _get_defaults(cls: type[T]) -> T:
             new_dict[k] = None  # type: ignore[literal-required]
     return new_dict  # type: ignore[return-value]
 
-def _write_state(state_yaml: str, state: dict[str, Any]) -> None:
+
+def _write_state(state_yaml: str, state: dict[str, Any] | StateDict) -> None:
     "Write state atomically to a temp file, this prevents reading a file being written to"
 
     dir_name = os.path.dirname(os.path.abspath(state_yaml))
     content = yaml.dump(state)
-    with tempfile.NamedTemporaryFile(mode = "w", dir=dir_name, delete=False, suffix=".tmp") as tmp:
+    with tempfile.NamedTemporaryFile(
+        mode="w", dir=dir_name, delete=False, suffix=".tmp"
+    ) as tmp:
         tmp.write(content)
         tmp_path = tmp.name
     os.replace(tmp_path, state_yaml)
@@ -139,7 +142,9 @@ async def get_state(state_yaml: str, _already_locked: bool = False) -> StateDict
     :type _already_locked: ``bool``
     :rtype: ``StateDict``
     """
-    if not isfile(state_yaml):  # noqa: PTH113 - isfile is fine and simpler in this case.
+    if not isfile(
+        state_yaml
+    ):  # noqa: PTH113 - isfile is fine and simpler in this case.
         return _get_defaults(StateDict)
 
     try:
@@ -178,7 +183,6 @@ async def get_state(state_yaml: str, _already_locked: bool = False) -> StateDict
             async with lock:
                 _write_state(state_yaml, defaults)
         return defaults
-
 
 
 async def set_state(
