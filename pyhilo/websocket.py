@@ -173,7 +173,9 @@ class WebsocketClient:
         response = await self._client.receive(300)
 
         if response.type in (WSMsgType.CLOSE, WSMsgType.CLOSED, WSMsgType.CLOSING):
-            LOG.error(f"Websocket: Received event to close connection: {response.type}")
+            LOG.error(
+                "Websocket: Received event to close connection: %s", response.type
+            )
             raise ConnectionClosedError("Connection was closed.")
 
         if response.type == WSMsgType.ERROR:
@@ -183,7 +185,7 @@ class WebsocketClient:
             raise ConnectionFailedError
 
         if response.type != WSMsgType.TEXT:
-            LOG.error(f"Websocket: Received invalid message: {response}")
+            LOG.error("Websocket: Received invalid message: %s", response)
             raise InvalidMessageError(f"Received non-text message: {response.type}")
 
         messages: list[Dict[str, Any]] = []
@@ -196,7 +198,7 @@ class WebsocketClient:
         except ValueError as v_exc:
             raise InvalidMessageError("Received invalid JSON") from v_exc
         except json.decoder.JSONDecodeError as j_exc:
-            LOG.error(f"Received invalid JSON: {msg}")
+            LOG.error("Received invalid JSON: %s", msg)
             LOG.exception(j_exc)
             data = {}
 
@@ -307,14 +309,14 @@ class WebsocketClient:
                 **proxy_env,
             )
         except (ClientError, ServerDisconnectedError, WSServerHandshakeError) as err:
-            LOG.error(f"Unable to connect to WS server {err}")
+            LOG.error("Unable to connect to WS server %s", err)
             if hasattr(err, "status") and err.status in (401, 403, 404, 409):
                 raise InvalidCredentialsError("Invalid credentials") from err
         except Exception as err:
-            LOG.error(f"Unable to connect to WS server {err}")
+            LOG.error("Unable to connect to WS server %s", err)
             raise CannotConnectError(err) from err
 
-        LOG.info(f"Connected to websocket server {self._api.endpoint}")
+        LOG.info("Connected to websocket server %s", self._api.endpoint)
 
         # Quick pause to prevent race condition
         await asyncio.sleep(0.05)
@@ -353,11 +355,11 @@ class WebsocketClient:
             LOG.info("Websocket: Listen cancelled.")
             raise
         except ConnectionClosedError as err:
-            LOG.error(f"Websocket: Closed while listening: {err}")
+            LOG.error("Websocket: Closed while listening: %s", err)
             LOG.exception(err)
             pass
         except InvalidMessageError as err:
-            LOG.warning(f"Websocket: Received invalid json : {err}")
+            LOG.warning("Websocket: Received invalid json : %s", err)
             pass
         finally:
             LOG.info("Websocket: Listen completed; cleaning up")

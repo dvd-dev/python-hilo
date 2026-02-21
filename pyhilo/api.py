@@ -291,7 +291,7 @@ class API:
                 try:
                     data = await resp.json(content_type=None)
                 except json.decoder.JSONDecodeError:
-                    LOG.warning(f"JSON Decode error: {resp.__dict__}")
+                    LOG.warning("JSON Decode error: %s", resp.__dict__)
                     message = await resp.text()
                     data = {"error": message}
             else:
@@ -353,7 +353,7 @@ class API:
         err: ClientResponseError = err_info[1].with_traceback(err_info[2])  # type: ignore
 
         if err.status in (401, 403):
-            LOG.warning(f"Refreshing websocket token {err.request_info.url}")
+            LOG.warning("Refreshing websocket token %s", err.request_info.url)
             if (
                 "client/negotiate" in str(err.request_info.url)
                 and err.request_info.method == "POST"
@@ -361,7 +361,7 @@ class API:
                 LOG.info(
                     "401 detected on websocket, refreshing websocket token. Old url: {self.ws_url} Old Token: {self.ws_token}"
                 )
-                LOG.info(f"401 detected on {err.request_info.url}")
+                LOG.info("401 detected on %s", err.request_info.url)
                 async with self._backoff_refresh_lock_ws:
                     await self.refresh_ws_token()
                     await self.get_websocket_params()
@@ -480,7 +480,7 @@ class API:
                 json=body,
             )
         except ClientResponseError as err:
-            LOG.error(f"ClientResponseError: {err}")
+            LOG.error("ClientResponseError: %s", err)
             if err.status in (401, 403):
                 raise InvalidCredentialsError("Invalid credentials") from err
             raise RequestError(err) from err
@@ -518,14 +518,14 @@ class API:
                 data=parsed_body,
             )
         except ClientResponseError as err:
-            LOG.error(f"ClientResponseError: {err}")
+            LOG.error("ClientResponseError: %s", err)
             if err.status in (401, 403):
                 raise InvalidCredentialsError("Invalid credentials") from err
             raise RequestError(err) from err
         LOG.debug("Android client register: %s", resp)
         msg: str = resp.get("message", "")
         if msg.startswith("Error="):
-            LOG.error(f"Android registration error: {msg}")
+            LOG.error("Android registration error: %s", msg)
             raise RequestError
         token = msg.split("=")[-1]
         LOG.debug("Calling set_state android_register")
