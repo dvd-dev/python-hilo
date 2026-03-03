@@ -87,7 +87,7 @@ class Devices:
         try:
             device_type = HILO_DEVICE_TYPES[dev.type]
         except KeyError:
-            LOG.warning(f"Unknown device type {dev.type}, adding as Sensor")
+            LOG.warning("Unknown device type %s, adding as Sensor", dev.type)
             device_type = "Sensor"
         dev.__class__ = globals()[device_type]
         return dev

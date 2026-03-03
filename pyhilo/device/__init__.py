@@ -51,7 +51,7 @@ class HiloDevice:
     def update(self, **kwargs: Dict[str, Union[str, int, Dict]]) -> None:
         # TODO(dvd): This has to be re-written, this is not dynamic at all.
         if self._api.log_traces:
-            LOG.debug(f"[TRACE] Adding device {kwargs}")
+            LOG.debug("[TRACE] Adding device %s", kwargs)
         for orig_att, val in kwargs.items():
             att = camel_to_snake(orig_att)
             if reading_att := HILO_READING_TYPES.get(orig_att):
@@ -70,7 +70,7 @@ class HiloDevice:
                 self.update_readings(DeviceReading(**reading))  # type: ignore
 
             if att not in HILO_DEVICE_ATTRIBUTES:
-                LOG.warning(f"Unknown device attribute {att}: {val}")
+                LOG.warning("Unknown device attribute %s: %s", att, val)
                 continue
             elif att in HILO_LIST_ATTRIBUTES:
                 # This is where we generated the supported_attributes and settable_attributes
@@ -108,7 +108,7 @@ class HiloDevice:
 
     async def set_attribute(self, attribute: str, value: Union[str, int, None]) -> None:
         if dev_attribute := cast(DeviceAttribute, self._api.dev_atts(attribute)):
-            LOG.debug(f"{self._tag} Setting {dev_attribute} to {value}")
+            LOG.debug("%s Setting %s to %s", self._tag, dev_attribute, value)
             await self._set_attribute(dev_attribute, value)
             return
         LOG.warning(
@@ -134,7 +134,7 @@ class HiloDevice:
                 )
             )
         else:
-            LOG.warning(f"{self._tag} Invalid attribute {attribute} for device")
+            LOG.warning("%s Invalid attribute %s for device", self._tag, attribute)
 
     def get_attribute(self, attribute: str) -> Union[DeviceReading, None]:
         if dev_attribute := cast(DeviceAttribute, self._api.dev_atts(attribute)):
@@ -245,7 +245,7 @@ class DeviceReading:
             else ""
         )
         if not self.device_attribute:
-            LOG.warning(f"Received invalid reading for {self.device_id}: {kwargs}")
+            LOG.warning("Received invalid reading for %s: %s", self.device_id, kwargs)
 
     def __repr__(self) -> str:
         return f"<Reading {self.device_attribute.attr} {self.value}{self.unit_of_measurement}>"

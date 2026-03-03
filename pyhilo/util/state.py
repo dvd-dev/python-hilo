@@ -4,7 +4,9 @@ from __future__ import annotations
 
 import asyncio
 from datetime import datetime
+import os
 from os.path import isfile
+import tempfile
 from typing import Any, ForwardRef, TypedDict, TypeVar, get_type_hints
 
 import aiofiles
@@ -77,7 +79,7 @@ class StateDict(TypedDict, total=False):
 T = TypeVar("T", bound="StateDict")
 
 
-def _get_defaults(cls: type[T]) -> dict[str, Any]:
+def _get_defaults(cls: type[T]) -> T:
     """Generate a default dict based on typed dict
 
     This function recursively creates a nested dictionary structure that mirrors
@@ -117,22 +119,71 @@ def _get_defaults(cls: type[T]) -> dict[str, Any]:
     return new_dict  # type: ignore[return-value]
 
 
-async def get_state(state_yaml: str) -> StateDict:
+def _write_state(state_yaml: str, state: dict[str, Any] | StateDict) -> None:
+    "Write state atomically to a temp file, this prevents reading a file being written to"
+
+    dir_name = os.path.dirname(os.path.abspath(state_yaml))
+    content = yaml.dump(state)
+    with tempfile.NamedTemporaryFile(
+        mode="w", dir=dir_name, delete=False, suffix=".tmp"
+    ) as tmp:
+        tmp.write(content)
+        tmp_path = tmp.name
+    os.chmod(tmp_path, 0o644)
+    os.replace(tmp_path, state_yaml)
+
+
+async def get_state(state_yaml: str, _already_locked: bool = False) -> StateDict:
     """Read in state yaml.
 
     :param state_yaml: filename where to read the state
     :type state_yaml: ``str``
+    :param _already_locked: Whether the lock is already held by the caller (e.g. set_state).
+                            Prevents deadlock when corruption recovery needs to write defaults.
+    :type _already_locked: ``bool``
     :rtype: ``StateDict``
     """
     if not isfile(
         state_yaml
     ):  # noqa: PTH113 - isfile is fine and simpler in this case.
-        return _get_defaults(StateDict)  # type: ignore
-    async with aiofiles.open(state_yaml, mode="r") as yaml_file:
-        LOG.debug("Loading state from yaml")
-        content = await yaml_file.read()
-        state_yaml_payload: StateDict = yaml.safe_load(content)
-    return state_yaml_payload
+        return _get_defaults(StateDict)
+
+    try:
+        async with aiofiles.open(state_yaml, mode="r") as yaml_file:
+            LOG.debug("Loading state from yaml")
+            content = await yaml_file.read()
+
+        state_yaml_payload: StateDict | None = yaml.safe_load(content)
+
+        # Handle corrupted/empty YAML files
+        if state_yaml_payload is None or not isinstance(state_yaml_payload, dict):
+            LOG.warning(
+                "State file %s is corrupted or empty, reinitializing with defaults",
+                state_yaml,
+            )
+            defaults = _get_defaults(StateDict)
+            if _already_locked:
+                _write_state(state_yaml, defaults)
+            else:
+                async with lock:
+                    _write_state(state_yaml, defaults)
+            return defaults
+
+        return state_yaml_payload
+
+    except yaml.YAMLError as e:
+        LOG.error(
+            "Failed to parse state file %s: %s. Reinitializing with defaults.",
+            state_yaml,
+            e,
+        )
+        defaults = _get_defaults(StateDict)
+        if _already_locked:
+            _write_state(state_yaml, defaults)
+        else:
+            async with lock:
+                _write_state(state_yaml, defaults)
+        return defaults
 
 
 async def set_state(
@@ -143,6 +194,7 @@ async def set_state(
     ),
 ) -> None:
     """Save state yaml.
+
     :param state_yaml: filename where to read the state
     :type state_yaml: ``str``
     :param key: Key name
@@ -152,14 +204,11 @@ async def set_state(
     :rtype: ``StateDict``
     """
     async with lock:  # note ic-dev21: on lock le fichier pour être sûr de finir la job
-        current_state = await get_state(state_yaml) or {}
+        current_state = await get_state(state_yaml, _already_locked=True) or {}
         merged_state: dict[str, Any] = {key: {**current_state.get(key, {}), **state}}  # type: ignore[dict-item]
         new_state: dict[str, Any] = {**current_state, **merged_state}
-        async with aiofiles.open(state_yaml, mode="w") as yaml_file:
-            LOG.debug("Saving state to yaml file")
-            # TODO: Use asyncio.get_running_loop() and run_in_executor to write
-            # to the file in a non blocking manner. Currently, the file writes
-            # are properly async but the yaml dump is done synchronously on the
-            # main event loop.
-            content = yaml.dump(new_state)
-            await yaml_file.write(content)
+        LOG.debug("Saving state to yaml file")
+        # TODO: Use asyncio.get_running_loop() and run_in_executor to write
+        # to the file in a non blocking manner. Currently, yaml.dump is
+        # synchronous on the main event loop.
+        _write_state(state_yaml, new_state)
