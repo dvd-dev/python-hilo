@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta, timezone
 import logging
 import re
-from typing import Any, cast, get_type_hints
+from typing import Any, cast
 
 from pyhilo.util import camel_to_snake, from_utc_timestamp
 
