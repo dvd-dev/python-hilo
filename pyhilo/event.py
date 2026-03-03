@@ -118,7 +118,7 @@ class Event:
             except TypeError:
                 setattr(self, phase, value)
             self.phases_list.append(phase)
-        for phase in self.__annotations__:
+        for phase in type(self).__annotations__:
             if phase not in self.phases_list:
                 # On t'aime Carl
                 setattr(self, phase, datetime(2099, 12, 31, tzinfo=timezone.utc))
