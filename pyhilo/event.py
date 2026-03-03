@@ -3,7 +3,7 @@
 from datetime import datetime, timedelta, timezone
 import logging
 import re
-from typing import Any, cast
+from typing import Any, cast, get_type_hints
 
 from pyhilo.util import camel_to_snake, from_utc_timestamp
 
@@ -118,7 +118,7 @@ class Event:
             except TypeError:
                 setattr(self, phase, value)
             self.phases_list.append(phase)
-        for phase in self.__annotations__:
+        for phase in type(self).__annotations__:
             if phase not in self.phases_list:
                 # On t'aime Carl
                 setattr(self, phase, datetime(2099, 12, 31, tzinfo=timezone.utc))
