@@ -874,7 +874,7 @@ class API:
             "hilo_id": gql_device.get("hiloId", ""),
             "identifier": gql_device.get("physicalAddress", ""),
             "type": rest_type,
-            "name": f"{rest_type} {device_id}",
+            "name": gql_device.get("name", f"{rest_type} {device_id}"),  # Use GraphQL name or fallback
             "category": rest_type,
             "supportedAttributes": "",
             "settableAttributes": "",
@@ -977,6 +977,43 @@ class API:
             try:
                 LOG.debug("Fetching devices via GraphQL for URN: %s", self.urn)
                 devices = await self.get_devices_graphql(self.urn)
+                
+                # WORKAROUND: Fetch REST device IDs and names for attribute setting
+                # This is needed because:
+                # 1. The attribute endpoint still uses numeric IDs
+                # 2. GraphQL doesn't provide device names in the base query
+                try:
+                    url = self._get_url("Devices", location_id=location_id)
+                    rest_devices = await self.async_request("get", url)
+                    
+                    # Build mapping of identifier -> (id, name)
+                    device_mapping = {
+                        d.get("identifier"): {
+                            "id": d.get("id"),
+                            "name": d.get("name", "")
+                        }
+                        for d in rest_devices if d.get("identifier")
+                    }
+                    
+                    # Update GraphQL devices with real REST IDs and names
+                    for device in devices:
+                        identifier = device.get("identifier")
+                        if identifier in device_mapping:
+                            device["id"] = device_mapping[identifier]["id"]
+                            # Only update name if GraphQL didn't provide one
+                            if not device.get("name") or device.get("name").startswith(device.get("type", "")):
+                                device["name"] = device_mapping[identifier]["name"]
+                            LOG.debug(
+                                "Mapped device %s (id=%d, name=%s)",
+                                identifier,
+                                device["id"],
+                                device.get("name")
+                            )
+                
+                except Exception as e:
+                    LOG.warning("Failed to fetch device ID/name mapping from REST: %s", e)
+                    # Continue without mapping - devices will work read-only
+                
             except Exception as e:
                 LOG.warning(
                     "GraphQL device fetch failed, falling back to REST: %s", e
