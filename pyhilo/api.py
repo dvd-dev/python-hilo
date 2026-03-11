@@ -547,243 +547,45 @@ class API:
         req: list[dict[str, Any]] = await self.async_request("get", url)
         return (req[0]["id"], req[0]["locationHiloId"])
 
-    async def get_devices_graphql(self, location_hilo_id: str) -> list[dict[str, Any]]:
-        """Get list of all devices using GraphQL.
-        
-        This replaces the REST endpoint /api/Locations/{LocationId}/Devices
-        which is being deprecated.
-        
+    async def _call_graphql_query(
+        self, query: str, variables: dict[str, Any]
+    ) -> dict[str, Any]:
+        """Execute a GraphQL query and return the raw response data.
+
+        This is a simplified helper that returns raw GraphQL data without
+        going through the GraphqlValueMapper. Used for get_devices migration.
+
         Args:
-            location_hilo_id: The location Hilo ID (URN)
-            
+            query: GraphQL query string
+            variables: Query variables
+
         Returns:
-            List of device dictionaries in the same format as the REST endpoint
+            Raw GraphQL response data
         """
-        # GraphQL query to fetch all devices (using existing query from graphql.py)
-        query = """query getLocation($locationHiloId: String!) {
-            getLocation(id:$locationHiloId) {
-                hiloId
-                devices {
-                    deviceType
-                    hiloId
-                    physicalAddress
-                    connectionStatus
-                    ... on Gateway {
-                        connectionStatus
-                        controllerSoftwareVersion
-                        lastConnectionTime
-                        willBeConnectedToSmartMeter
-                        zigBeeChannel
-                        zigBeePairingModeEnhanced
-                        smartMeterZigBeeChannel
-                        smartMeterPairingStatus
-                    }
-                    ... on BasicSmartMeter {
-                        zigBeeChannel
-                        power {
-                            value
-                            kind
-                        }
-                    }
-                    ... on LowVoltageThermostat {
-                        coolTempSetpoint {
-                            value
-                        }
-                        fanMode
-                        fanSpeed
-                        mode
-                        currentState
-                        power {
-                            value
-                            kind
-                        }
-                        ambientHumidity
-                        gDState
-                        ambientTemperature {
-                            value
-                            kind
-                        }
-                        ambientTempSetpoint {
-                            value
-                            kind
-                        }
-                        version
-                        zigbeeVersion
-                        maxAmbientCoolSetPoint {
-                            value
-                            kind
-                        }
-                        minAmbientCoolSetPoint {
-                            value
-                            kind
-                        }
-                        maxAmbientTempSetpoint {
-                            value
-                            kind
-                        }
-                        minAmbientTempSetpoint {
-                            value
-                            kind
-                        }
-                        allowedModes
-                        fanAllowedModes
-                    }
-                    ... on BasicSwitch {
-                        state
-                        power {
-                            value
-                            kind
-                        }
-                    }
-                    ... on BasicLight {
-                        state
-                        hue
-                        level
-                        saturation
-                        colorTemperature
-                        lightType
-                    }
-                    ... on BasicEVCharger {
-                        status
-                        power {
-                            value
-                            kind
-                        }
-                    }
-                    ... on BasicChargeController {
-                        gDState
-                        version
-                        zigbeeVersion
-                        state
-                        power {
-                            value
-                            kind
-                        }
-                        ccrMode
-                        ccrAllowedModes
-                    }
-                    ... on HeatingFloorThermostat {
-                        ambientHumidity
-                        gDState
-                        version
-                        zigbeeVersion
-                        thermostatType
-                        floorMode
-                        power {
-                            value
-                            kind
-                        }
-                        ambientTemperature {
-                            value
-                            kind
-                        }
-                        ambientTempSetpoint {
-                            value
-                            kind
-                        }
-                        maxAmbientTempSetpoint {
-                            value
-                            kind
-                        }
-                        minAmbientTempSetpoint {
-                            value
-                            kind
-                        }
-                        floorLimit {
-                            value
-                        }
-                    }
-                    ... on WaterHeater {
-                        gDState
-                        version
-                        probeTemp {
-                            value
-                            kind
-                        }
-                        zigbeeVersion
-                        state
-                        ccrType
-                        alerts
-                        power {
-                            value
-                            kind
-                        }
-                    }
-                    ... on BasicDimmer {
-                        state
-                        level
-                        power {
-                            value
-                            kind
-                        }
-                    }
-                    ... on BasicThermostat {
-                        ambientHumidity
-                        gDState
-                        version
-                        zigbeeVersion
-                        ambientTemperature {
-                            value
-                            kind
-                        }
-                        ambientTempSetpoint {
-                            value
-                            kind
-                        }
-                        maxAmbientTempSetpoint {
-                            value
-                            kind
-                        }
-                        minAmbientTempSetpoint {
-                            value
-                            kind
-                        }
-                        maxAmbientTempSetpointLimit {
-                            value
-                            kind
-                        }
-                        minAmbientTempSetpointLimit {
-                            value
-                            kind
-                        }
-                        power {
-                            value
-                            kind
-                        }
-                    }
-                }
-            }
-        }"""
-        
-        # Get access token
         access_token = await self.async_get_access_token()
         url = f"https://{PLATFORM_HOST}/api/digital-twin/v3/graphql"
         headers = {"Authorization": f"Bearer {access_token}"}
-        
-        # Calculate query hash for Automatic Persisted Queries (APQ)
+
         query_hash = hashlib.sha256(query.encode("utf-8")).hexdigest()
-        
-        payload = {
+
+        payload: dict[str, Any] = {
             "extensions": {
                 "persistedQuery": {
                     "version": 1,
                     "sha256Hash": query_hash,
                 }
             },
-            "variables": {"locationHiloId": location_hilo_id},
+            "variables": variables,
         }
-        
-        # Make GraphQL request
+
         async with httpx.AsyncClient(http2=True) as client:
             try:
                 response = await client.post(url, json=payload, headers=headers)
-                
-                # Don't raise yet - need to check for PersistedQueryNotFound first
                 response_json = response.json()
             except Exception as e:
                 LOG.error("Unexpected error calling GraphQL API: %s", e)
                 raise
-            
+
             # Handle Persisted Query Not Found error (can come as 400 status)
             if "errors" in response_json:
                 for error in response_json["errors"]:
@@ -791,7 +593,9 @@ class API:
                         LOG.debug("Persisted query not found, retrying with full query")
                         payload["query"] = query
                         try:
-                            response = await client.post(url, json=payload, headers=headers)
+                            response = await client.post(
+                                url, json=payload, headers=headers
+                            )
                             response.raise_for_status()
                             response_json = response.json()
                         except Exception as e:
@@ -805,22 +609,52 @@ class API:
             elif response.status_code != 200:
                 # Non-GraphQL error
                 error_body = response.text
-                LOG.error("GraphQL API returned status %d: %s", response.status_code, error_body)
+                LOG.error(
+                    "GraphQL API returned status %d: %s",
+                    response.status_code,
+                    error_body,
+                )
                 response.raise_for_status()
-            
+
             if "data" not in response_json:
                 LOG.error("No data in GraphQL response: %s", response_json)
                 raise Exception("No data in GraphQL response")
-        
+
+            return cast(dict[str, Any], response_json["data"])
+
+    async def get_devices_graphql(self, location_hilo_id: str) -> list[dict[str, Any]]:
+        """Get list of all devices using GraphQL.
+
+        This replaces the REST endpoint /api/Locations/{LocationId}/Devices
+        which is being deprecated.
+
+        Uses the existing QUERY_GET_LOCATION from GraphQlHelper to avoid duplication.
+
+        Args:
+            location_hilo_id: The location Hilo ID (URN)
+
+        Returns:
+            List of device dictionaries in the same format as the REST endpoint
+        """
+        from pyhilo.graphql import GraphQlHelper
+
+        # Use the existing comprehensive GraphQL query from GraphQlHelper
+        query = GraphQlHelper.QUERY_GET_LOCATION
+
+        # Call GraphQL using our helper
+        data = await self._call_graphql_query(
+            query, {"locationHiloId": location_hilo_id}
+        )
+
         # Transform GraphQL response to REST format
-        graphql_devices = response_json["data"]["getLocation"]["devices"]
+        graphql_devices = data["getLocation"]["devices"]
         rest_devices = []
-        
+
         for idx, gql_device in enumerate(graphql_devices, start=2):
             rest_device = self._transform_graphql_device_to_rest(gql_device, idx)
             if rest_device:
                 rest_devices.append(rest_device)
-        
+
         LOG.debug("Fetched %d devices via GraphQL", len(rest_devices))
         return rest_devices
 
@@ -828,17 +662,17 @@ class API:
         self, gql_device: dict[str, Any], device_id: int
     ) -> dict[str, Any] | None:
         """Transform a GraphQL device object to REST format.
-        
+
         Args:
             gql_device: Device object from GraphQL
             device_id: Numeric device ID to assign
-            
+
         Returns:
             Device dictionary in REST format, or None if device type is Gateway
             (Gateway is handled separately by get_gateway())
         """
         device_type = gql_device.get("deviceType", "Unknown")
-        
+
         # Map GraphQL device types to REST device types
         type_mapping = {
             "Tstat": "Thermostat",
@@ -861,163 +695,146 @@ class API:
             "BasicChargeController": "Ccr",
             "Hub": "Gateway",
         }
-        
+
         rest_type = type_mapping.get(device_type, device_type)
-        
+
         # Skip Gateway - it's fetched separately
         if rest_type == "Gateway":
             return None
-        
+
         # Build the device dictionary
         rest_device = {
             "id": device_id,
             "hilo_id": gql_device.get("hiloId", ""),
             "identifier": gql_device.get("physicalAddress", ""),
             "type": rest_type,
-            "name": gql_device.get("name", f"{rest_type} {device_id}"),  # Use GraphQL name or fallback
+            "name": gql_device.get(
+                "name", f"{rest_type} {device_id}"
+            ),  # Use GraphQL name or fallback
             "category": rest_type,
             "supportedAttributes": "",
             "settableAttributes": "",
             "provider": 1,
         }
-        
+
         # Add all attributes from GraphQL device
         supported_attrs = []
         settable_attrs = []
-        
+
         # Common attributes
         if "connectionStatus" in gql_device:
-            rest_device["Disconnected"] = {
-                "value": gql_device["connectionStatus"] == 2
-            }
+            rest_device["Disconnected"] = {"value": gql_device["connectionStatus"] == 2}
             supported_attrs.append("Disconnected")
-        
+
         if "power" in gql_device and gql_device["power"]:
-            rest_device["Power"] = {
-                "value": gql_device["power"].get("value", 0)
-            }
+            rest_device["Power"] = {"value": gql_device["power"].get("value", 0)}
             supported_attrs.append("Power")
-        
+
         # Thermostat attributes
         if "ambientTemperature" in gql_device and gql_device["ambientTemperature"]:
             rest_device["CurrentTemperature"] = {
                 "value": gql_device["ambientTemperature"].get("value", 0)
             }
             supported_attrs.append("CurrentTemperature")
-        
+
         if "ambientTempSetpoint" in gql_device and gql_device["ambientTempSetpoint"]:
             rest_device["TargetTemperature"] = {
                 "value": gql_device["ambientTempSetpoint"].get("value", 0)
             }
             supported_attrs.append("TargetTemperature")
             settable_attrs.append("TargetTemperature")
-        
+
         if "ambientHumidity" in gql_device:
-            rest_device["CurrentHumidity"] = {
-                "value": gql_device["ambientHumidity"]
-            }
+            rest_device["CurrentHumidity"] = {"value": gql_device["ambientHumidity"]}
             supported_attrs.append("CurrentHumidity")
-        
+
         if "mode" in gql_device:
             rest_device["Mode"] = {"value": gql_device["mode"]}
             supported_attrs.append("Mode")
             settable_attrs.append("Mode")
-        
+
         if "gDState" in gql_device:
             rest_device["GDState"] = {"value": gql_device["gDState"]}
             supported_attrs.append("GDState")
-        
+
         # Light/Switch attributes
         if "state" in gql_device:
             rest_device["OnOff"] = {"value": gql_device["state"]}
             supported_attrs.append("OnOff")
             settable_attrs.append("OnOff")
-        
+
         if "level" in gql_device:
             rest_device["Intensity"] = {"value": gql_device["level"]}
             supported_attrs.append("Intensity")
             settable_attrs.append("Intensity")
-        
+
         if "hue" in gql_device:
             rest_device["Hue"] = {"value": gql_device["hue"]}
             supported_attrs.append("Hue")
             settable_attrs.append("Hue")
-        
+
         if "saturation" in gql_device:
             rest_device["Saturation"] = {"value": gql_device["saturation"]}
             supported_attrs.append("Saturation")
             settable_attrs.append("Saturation")
-        
+
         if "colorTemperature" in gql_device:
             rest_device["ColorTemperature"] = {"value": gql_device["colorTemperature"]}
             supported_attrs.append("ColorTemperature")
             settable_attrs.append("ColorTemperature")
-        
+
         # Version info
         if "version" in gql_device:
             rest_device["sw_version"] = gql_device["version"]
-        
+
         # Set the attributes strings
         rest_device["supportedAttributes"] = ", ".join(supported_attrs)
         rest_device["settableAttributes"] = ", ".join(settable_attrs)
-        
-        return rest_device
 
+        return rest_device
 
     async def get_devices(self, location_id: int) -> list[dict[str, Any]]:
         """Get list of all devices.
-        
+
         Now uses GraphQL instead of the deprecated REST endpoint.
         Falls back to REST if GraphQL fails or URN is not available.
         """
         devices: list[dict[str, Any]] = []
-        
+
         # Try GraphQL first if we have a URN
         if self.urn:
             try:
                 LOG.debug("Fetching devices via GraphQL for URN: %s", self.urn)
                 devices = await self.get_devices_graphql(self.urn)
-                
-                # WORKAROUND: Fetch REST device IDs and names for attribute setting
-                # This is needed because:
-                # 1. The attribute endpoint still uses numeric IDs
-                # 2. GraphQL doesn't provide device names in the base query
+
+                # WORKAROUND: Fetch REST device IDs for attribute setting
+                # This is needed because the attribute endpoint still uses numeric IDs
                 try:
                     url = self._get_url("Devices", location_id=location_id)
                     rest_devices = await self.async_request("get", url)
-                    
-                    # Build mapping of identifier -> (id, name)
-                    device_mapping = {
-                        d.get("identifier"): {
-                            "id": d.get("id"),
-                            "name": d.get("name", "")
-                        }
-                        for d in rest_devices if d.get("identifier")
+
+                    # Build mapping of identifier -> numeric id
+                    id_mapping = {
+                        d.get("identifier"): d.get("id")
+                        for d in rest_devices
+                        if d.get("identifier")
                     }
-                    
-                    # Update GraphQL devices with real REST IDs and names
+
+                    # Update GraphQL devices with real REST IDs
                     for device in devices:
                         identifier = device.get("identifier")
-                        if identifier in device_mapping:
-                            device["id"] = device_mapping[identifier]["id"]
-                            # Only update name if GraphQL didn't provide one
-                            if not device.get("name") or device.get("name").startswith(device.get("type", "")):
-                                device["name"] = device_mapping[identifier]["name"]
+                        if identifier in id_mapping:
+                            device["id"] = id_mapping[identifier]
                             LOG.debug(
-                                "Mapped device %s (id=%d, name=%s)",
-                                identifier,
-                                device["id"],
-                                device.get("name")
+                                "Mapped device %s to ID %d", identifier, device["id"]
                             )
-                
+
                 except Exception as e:
-                    LOG.warning("Failed to fetch device ID/name mapping from REST: %s", e)
+                    LOG.warning("Failed to fetch device ID mapping from REST: %s", e)
                     # Continue without mapping - devices will work read-only
-                
+
             except Exception as e:
-                LOG.warning(
-                    "GraphQL device fetch failed, falling back to REST: %s", e
-                )
+                LOG.warning("GraphQL device fetch failed, falling back to REST: %s", e)
                 # Fallback to REST
                 url = self._get_url("Devices", location_id=location_id)
                 LOG.debug("Devices URL is %s", url)
@@ -1028,14 +845,14 @@ class API:
             url = self._get_url("Devices", location_id=location_id)
             LOG.debug("Devices URL is %s", url)
             devices = await self.async_request("get", url)
-        
+
         # Add gateway device (still uses REST endpoint)
         devices.append(await self.get_gateway(location_id))
-        
+
         # Add devices from external callbacks
         for callback in self._get_device_callbacks:
             devices.append(callback())
-        
+
         return devices
 
     async def _set_device_attribute(
