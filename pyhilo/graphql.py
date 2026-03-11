@@ -1,8 +1,10 @@
 import asyncio
 import hashlib
 import json
+import ssl
 from typing import Any, Callable, Dict, List, Optional
 
+import certifi
 import httpx
 from httpx_sse import aconnect_sse
 
@@ -19,12 +21,16 @@ class GraphQlHelper:
         self._api = api
         self._devices = devices
         self.mapper: GraphqlValueMapper = GraphqlValueMapper()
-
+        self.ssl_context = None
         self.subscriptions: List[Optional[asyncio.Task]] = [None]
 
     async def async_init(self) -> None:
         """Initialize the Hilo "GraphQlHelper" class."""
         await self.call_get_location_query(self._devices.location_hilo_id)
+        loop = asyncio.get_running_loop()
+        self._ssl_context = await loop.run_in_executor(
+            None, lambda: ssl.create_default_context(cafile=certifi.where())
+        )
 
     QUERY_GET_LOCATION: str = """query getLocation($locationHiloId: String!) {
                 getLocation(id:$locationHiloId) {
@@ -548,7 +554,7 @@ class GraphQlHelper:
             "variables": {"locationHiloId": location_hilo_id},
         }
 
-        async with httpx.AsyncClient(http2=True) as client:
+        async with httpx.AsyncClient(http2=True, verify=self.ssl_context) as client:
             try:
                 response = await client.post(url, json=payload, headers=headers)
                 response.raise_for_status()
@@ -634,7 +640,9 @@ class GraphQlHelper:
 
                 retry_with_full_query = False
 
-                async with httpx.AsyncClient(http2=True, timeout=None) as client:
+                async with httpx.AsyncClient(
+                    http2=True, timeout=None, verify=self.ssl_context
+                ) as client:
                     async with aconnect_sse(
                         client, "POST", url, json=payload, headers=headers
                     ) as event_source:
