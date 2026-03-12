@@ -97,6 +97,8 @@ class API:
         self.ws_token: str = ""
         self.endpoint: str = ""
         self._urn: str | None = None
+        self._websocket_device_cache: list[dict[str, Any]] = []
+        self._device_cache_ready: asyncio.Event = asyncio.Event()
 
     @classmethod
     async def async_create(
@@ -796,13 +798,19 @@ class API:
     async def get_devices(self, location_id: int) -> list[dict[str, Any]]:
         """Get list of all devices.
 
-        Now uses GraphQL instead of the deprecated REST endpoint.
-        Falls back to REST if GraphQL fails or URN is not available.
+        Prioritizes websocket-cached device data (from DeviceListInitialValuesReceived)
+        over REST/GraphQL since the websocket provides everything we need.
+        Falls back to GraphQL, then REST if websocket data unavailable.
         """
         devices: list[dict[str, Any]] = []
 
-        # Try GraphQL first if we have a URN
-        if self.urn:
+        # Try to use cached websocket device data first
+        # The DeviceHub websocket sends DeviceListInitialValuesReceived with full device info
+        if self._websocket_device_cache:
+            LOG.debug("Using cached device list from websocket (%d devices)", len(self._websocket_device_cache))
+            devices = self._websocket_device_cache.copy()
+        # Try GraphQL if we have a URN and no websocket cache
+        elif self.urn:
             try:
                 LOG.debug("Fetching devices via GraphQL for URN: %s", self.urn)
                 devices = await self.get_devices_graphql(self.urn)
@@ -854,6 +862,42 @@ class API:
             devices.append(callback())
 
         return devices
+    
+    def cache_websocket_devices(self, device_list: list[dict[str, Any]]) -> None:
+        """Cache device list received from DeviceHub websocket.
+        
+        The DeviceListInitialValuesReceived message contains the full device list
+        with all the info we need (id, name, identifier, etc.) in REST format.
+        This eliminates the need to call the deprecated REST endpoint.
+        
+        Args:
+            device_list: List of devices from DeviceListInitialValuesReceived
+        """
+        self._websocket_device_cache = device_list
+        self._device_cache_ready.set()
+        LOG.debug("Cached %d devices from websocket", len(device_list))
+    
+    async def wait_for_device_cache(self, timeout: float = 10.0) -> bool:
+        """Wait for the websocket device cache to be populated.
+        
+        This should be called before devices.async_init() to ensure
+        device names and IDs are available from the websocket.
+        
+        Args:
+            timeout: Maximum time to wait in seconds (default: 10.0)
+            
+        Returns:
+            True if cache was populated, False if timeout occurred
+        """
+        try:
+            await asyncio.wait_for(self._device_cache_ready.wait(), timeout=timeout)
+            LOG.debug("Device cache ready after waiting")
+            return True
+        except asyncio.TimeoutError:
+            LOG.warning(
+                "Timeout waiting for websocket device cache, will use fallback method"
+            )
+            return False
 
     async def _set_device_attribute(
         self,
