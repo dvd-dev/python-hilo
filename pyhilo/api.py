@@ -847,6 +847,8 @@ class API:
                 url = self._get_url("Devices", location_id=location_id)
                 LOG.debug("Devices URL is %s", url)
                 devices = await self.async_request("get", url)
+        
+        #TODO: retirer bloc else, sert comme plus à rien
         else:
             # No URN available, use REST
             LOG.debug("No URN available, using REST endpoint")
