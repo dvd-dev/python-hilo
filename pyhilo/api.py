@@ -845,11 +845,8 @@ class API:
                     # Continue without mapping - devices will work read-only
 
             except Exception as e:
-                LOG.warning("GraphQL device fetch failed, falling back to REST: %s", e)
-                # Fallback to REST
-                url = self._get_url("Devices", location_id=location_id)
-                LOG.debug("Devices URL is %s", url)
-                devices = await self.async_request("get", url)
+                LOG.warning("Fallback GraphQL device fetch failed %s", e)
+
         else:
             # No URN available, use REST
             LOG.debug("No URN available, using REST endpoint")
