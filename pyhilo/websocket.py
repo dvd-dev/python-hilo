@@ -242,14 +242,6 @@ class WebsocketClient:
             self._ready_event.set()
             LOG.info("Websocket: Ready for data")
             return
-
-        # Cache device list from DeviceListInitialValuesReceived
-        if msg.get("target") == "DeviceListInitialValuesReceived":
-            if "arguments" in msg and len(msg["arguments"]) > 0:
-                device_list = msg["arguments"][0]
-                if isinstance(device_list, list) and self._api.api:
-                    self._api.api.cache_websocket_devices(device_list)
-
         event = websocket_event_from_payload(msg)
         for callback in self._event_callbacks:
             schedule_callback(callback, event)
@@ -444,7 +436,6 @@ class WebsocketConfig:
     """Configuration for a websocket connection"""
 
     endpoint: str
-    api: API | None = None
     url: Optional[str] = None
     token: Optional[str] = None
     connection_id: Optional[str] = None
@@ -462,7 +453,6 @@ class WebsocketManager:
         async_request: Callable[..., Any],
         state_yaml: str,
         set_state_callback: Callable[..., Any],
-        api: API,
     ) -> None:
         """Initialize the websocket manager.
 
@@ -471,20 +461,18 @@ class WebsocketManager:
             async_request: The async request method from the API class
             state_yaml: Path to the state file
             set_state_callback: Callback to save state
-            api: The API instance
         """
         self.session = session
         self.async_request = async_request
         self._state_yaml = state_yaml
         self._set_state = set_state_callback
-        self._api = api
         self._shared_token: Optional[str] = None
         # Initialize websocket configurations, more can be added here
         self.devicehub = WebsocketConfig(
-            endpoint=AUTOMATION_DEVICEHUB_ENDPOINT, session=session, api=api
+            endpoint=AUTOMATION_DEVICEHUB_ENDPOINT, session=session
         )
         self.challengehub = WebsocketConfig(
-            endpoint=AUTOMATION_CHALLENGE_ENDPOINT, session=session, api=api
+            endpoint=AUTOMATION_CHALLENGE_ENDPOINT, session=session
         )
 
     async def initialize_websockets(self) -> None:

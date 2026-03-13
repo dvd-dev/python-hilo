@@ -3,7 +3,6 @@ from __future__ import annotations
 import asyncio
 import base64
 from datetime import datetime, timedelta
-import hashlib
 import json
 import random
 import string
@@ -15,7 +14,6 @@ from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientResponseError
 import backoff
 from homeassistant.helpers.config_entry_oauth2_flow import OAuth2Session
-import httpx
 
 from pyhilo.const import (
     ANDROID_CLIENT_ENDPOINT,
@@ -42,7 +40,6 @@ from pyhilo.const import (
     FB_SDK_VERSION,
     HILO_READING_TYPES,
     LOG,
-    PLATFORM_HOST,
     REQUEST_RETRY,
     SUBSCRIPTION_KEY,
 )
@@ -97,8 +94,9 @@ class API:
         self.ws_token: str = ""
         self.endpoint: str = ""
         self._urn: str | None = None
-        self._websocket_device_cache: list[dict[str, Any]] = []
-        self._device_cache_ready: asyncio.Event = asyncio.Event()
+        # Device cache from websocket DeviceListInitialValuesReceived
+        self._device_cache: list[dict[str, Any]] = []
+        self._device_cache_event: asyncio.Event = asyncio.Event()
 
     @classmethod
     async def async_create(
@@ -421,7 +419,7 @@ class API:
 
         # Initialize WebsocketManager ic-dev21
         self.websocket_manager = WebsocketManager(
-            self.session, self.async_request, self._state_yaml, set_state, api=self
+            self.session, self.async_request, self._state_yaml, set_state
         )
         await self.websocket_manager.initialize_websockets()
 
@@ -549,362 +547,86 @@ class API:
         req: list[dict[str, Any]] = await self.async_request("get", url)
         return (req[0]["id"], req[0]["locationHiloId"])
 
-    async def _call_graphql_query(
-        self, query: str, variables: dict[str, Any]
-    ) -> dict[str, Any]:
-        """Execute a GraphQL query and return the raw response data.
+    def set_device_cache(self, devices: list[dict[str, Any]]) -> None:
+        """Store devices received from websocket DeviceListInitialValuesReceived.
 
-        This is a simplified helper that returns raw GraphQL data without
-        going through the GraphqlValueMapper. Used for get_devices migration.
-
-        Args:
-            query: GraphQL query string
-            variables: Query variables
-
-        Returns:
-            Raw GraphQL response data
+        This replaces the old REST API get_devices call. The websocket sends
+        device data with list-type attributes (supportedAttributesList, etc.)
+        which need to be converted to comma-separated strings to match the
+        format that HiloDevice.update() expects.
         """
-        access_token = await self.async_get_access_token()
-        url = f"https://{PLATFORM_HOST}/api/digital-twin/v3/graphql"
-        headers = {"Authorization": f"Bearer {access_token}"}
-
-        query_hash = hashlib.sha256(query.encode("utf-8")).hexdigest()
-
-        payload: dict[str, Any] = {
-            "extensions": {
-                "persistedQuery": {
-                    "version": 1,
-                    "sha256Hash": query_hash,
-                }
-            },
-            "variables": variables,
-        }
-
-        async with httpx.AsyncClient(http2=True) as client:
-            try:
-                response = await client.post(url, json=payload, headers=headers)
-                response_json = response.json()
-            except Exception as e:
-                LOG.error("Unexpected error calling GraphQL API: %s", e)
-                raise
-
-            # Handle Persisted Query Not Found error (can come as 400 status)
-            if "errors" in response_json:
-                for error in response_json["errors"]:
-                    if error.get("message") == "PersistedQueryNotFound":
-                        LOG.debug("Persisted query not found, retrying with full query")
-                        payload["query"] = query
-                        try:
-                            response = await client.post(
-                                url, json=payload, headers=headers
-                            )
-                            response.raise_for_status()
-                            response_json = response.json()
-                        except Exception as e:
-                            LOG.error("Error parsing response on retry: %s", e)
-                            raise
-                        break
-                else:
-                    # Other GraphQL errors
-                    LOG.error("GraphQL errors: %s", response_json["errors"])
-                    raise Exception(f"GraphQL errors: {response_json['errors']}")
-            elif response.status_code != 200:
-                # Non-GraphQL error
-                error_body = response.text
-                LOG.error(
-                    "GraphQL API returned status %d: %s",
-                    response.status_code,
-                    error_body,
-                )
-                response.raise_for_status()
-
-            if "data" not in response_json:
-                LOG.error("No data in GraphQL response: %s", response_json)
-                raise Exception("No data in GraphQL response")
-
-            return cast(dict[str, Any], response_json["data"])
-
-    async def get_devices_graphql(self, location_hilo_id: str) -> list[dict[str, Any]]:
-        """Get list of all devices using GraphQL.
-
-        This replaces the REST endpoint /api/Locations/{LocationId}/Devices
-        which is being deprecated.
-
-        Uses the existing QUERY_GET_LOCATION from GraphQlHelper to avoid duplication.
-
-        Args:
-            location_hilo_id: The location Hilo ID (URN)
-
-        Returns:
-            List of device dictionaries in the same format as the REST endpoint
-        """
-        from pyhilo.graphql import GraphQlHelper
-
-        # Use the existing comprehensive GraphQL query from GraphQlHelper
-        query = GraphQlHelper.QUERY_GET_LOCATION
-
-        # Call GraphQL using our helper
-        data = await self._call_graphql_query(
-            query, {"locationHiloId": location_hilo_id}
+        self._device_cache = [self._convert_ws_device(device) for device in devices]
+        LOG.debug(
+            "Device cache populated with %d devices from websocket",
+            len(self._device_cache),
         )
+        self._device_cache_event.set()
 
-        # Transform GraphQL response to REST format
-        graphql_devices = data["getLocation"]["devices"]
-        rest_devices = []
+    @staticmethod
+    def _convert_ws_device(ws_device: dict[str, Any]) -> dict[str, Any]:
+        """Convert a websocket device dict to the format generate_device expects.
 
-        for idx, gql_device in enumerate(graphql_devices, start=2):
-            rest_device = self._transform_graphql_device_to_rest(gql_device, idx)
-            if rest_device:
-                rest_devices.append(rest_device)
-
-        LOG.debug("Fetched %d devices via GraphQL", len(rest_devices))
-        return rest_devices
-
-    def _transform_graphql_device_to_rest(
-        self, gql_device: dict[str, Any], device_id: int
-    ) -> dict[str, Any] | None:
-        """Transform a GraphQL device object to REST format.
-
-        Args:
-            gql_device: Device object from GraphQL
-            device_id: Numeric device ID to assign
-
-        Returns:
-            Device dictionary in REST format, or None if device type is Gateway
-            (Gateway is handled separately by get_gateway())
+        The REST API returned supportedAttributes/settableAttributes as
+        comma-separated strings. The websocket returns supportedAttributesList/
+        settableAttributesList/supportedParametersList as Python lists.
+        We convert to the old format so HiloDevice.update() works unchanged.
         """
-        device_type = gql_device.get("deviceType", "Unknown")
+        device = dict(ws_device)
 
-        # Map GraphQL device types to REST device types
-        type_mapping = {
-            "Tstat": "Thermostat",
-            "BasicThermostat": "Thermostat",
-            "LowVoltageTstat": "Thermostat24V",
-            "HeatingFloor": "FloorThermostat",
-            "Cee": "Cee",
-            "Ccr": "Ccr",
-            "Switch": "LightSwitch",
-            "BasicSwitch": "LightSwitch",
-            "Dimmer": "LightDimmer",
-            "BasicDimmer": "LightDimmer",
-            "ColorBulb": "ColorBulb",
-            "WhiteBulb": "WhiteBulb",
-            "BasicLight": "WhiteBulb",
-            "Meter": "Meter",
-            "BasicSmartMeter": "Meter",
-            "ChargingPoint": "ChargingPoint",
-            "BasicEVCharger": "ChargingPoint",
-            "BasicChargeController": "Ccr",
-            "Hub": "Gateway",
+        # Convert list attributes to comma-separated strings
+        list_to_csv_mappings = {
+            "supportedAttributesList": "supportedAttributes",
+            "settableAttributesList": "settableAttributes",
+            "supportedParametersList": "supportedParameters",
         }
+        for list_key, csv_key in list_to_csv_mappings.items():
+            if list_key in device:
+                items = device.pop(list_key)
+                if isinstance(items, list):
+                    device[csv_key] = ", ".join(str(i) for i in items)
+                else:
+                    device[csv_key] = str(items) if items else ""
 
-        rest_type = type_mapping.get(device_type, device_type)
+        return device
 
-        # Skip Gateway - it's fetched separately
-        if rest_type == "Gateway":
-            return None
+    async def wait_for_device_cache(self, timeout: float = 30.0) -> None:
+        """Wait for the device cache to be populated from websocket.
 
-        # Build the device dictionary
-        rest_device = {
-            "id": device_id,
-            "hilo_id": gql_device.get("hiloId", ""),
-            "identifier": gql_device.get("physicalAddress", ""),
-            "type": rest_type,
-            "name": gql_device.get(
-                "name", f"{rest_type} {device_id}"
-            ),  # Use GraphQL name or fallback
-            "category": rest_type,
-            "supportedAttributes": "",
-            "settableAttributes": "",
-            "provider": 1,
-        }
-
-        # Add all attributes from GraphQL device
-        supported_attrs = []
-        settable_attrs = []
-
-        # Common attributes
-        if "connectionStatus" in gql_device:
-            rest_device["Disconnected"] = {"value": gql_device["connectionStatus"] == 2}
-            supported_attrs.append("Disconnected")
-
-        if "power" in gql_device and gql_device["power"]:
-            rest_device["Power"] = {"value": gql_device["power"].get("value", 0)}
-            supported_attrs.append("Power")
-
-        # Thermostat attributes
-        if "ambientTemperature" in gql_device and gql_device["ambientTemperature"]:
-            rest_device["CurrentTemperature"] = {
-                "value": gql_device["ambientTemperature"].get("value", 0)
-            }
-            supported_attrs.append("CurrentTemperature")
-
-        if "ambientTempSetpoint" in gql_device and gql_device["ambientTempSetpoint"]:
-            rest_device["TargetTemperature"] = {
-                "value": gql_device["ambientTempSetpoint"].get("value", 0)
-            }
-            supported_attrs.append("TargetTemperature")
-            settable_attrs.append("TargetTemperature")
-
-        if "ambientHumidity" in gql_device:
-            rest_device["CurrentHumidity"] = {"value": gql_device["ambientHumidity"]}
-            supported_attrs.append("CurrentHumidity")
-
-        if "mode" in gql_device:
-            rest_device["Mode"] = {"value": gql_device["mode"]}
-            supported_attrs.append("Mode")
-            settable_attrs.append("Mode")
-
-        if "gDState" in gql_device:
-            rest_device["GDState"] = {"value": gql_device["gDState"]}
-            supported_attrs.append("GDState")
-
-        # Light/Switch attributes
-        if "state" in gql_device:
-            rest_device["OnOff"] = {"value": gql_device["state"]}
-            supported_attrs.append("OnOff")
-            settable_attrs.append("OnOff")
-
-        if "level" in gql_device:
-            rest_device["Intensity"] = {"value": gql_device["level"]}
-            supported_attrs.append("Intensity")
-            settable_attrs.append("Intensity")
-
-        if "hue" in gql_device:
-            rest_device["Hue"] = {"value": gql_device["hue"]}
-            supported_attrs.append("Hue")
-            settable_attrs.append("Hue")
-
-        if "saturation" in gql_device:
-            rest_device["Saturation"] = {"value": gql_device["saturation"]}
-            supported_attrs.append("Saturation")
-            settable_attrs.append("Saturation")
-
-        if "colorTemperature" in gql_device:
-            rest_device["ColorTemperature"] = {"value": gql_device["colorTemperature"]}
-            supported_attrs.append("ColorTemperature")
-            settable_attrs.append("ColorTemperature")
-
-        # Version info
-        if "version" in gql_device:
-            rest_device["sw_version"] = gql_device["version"]
-
-        # Set the attributes strings
-        rest_device["supportedAttributes"] = ", ".join(supported_attrs)
-        rest_device["settableAttributes"] = ", ".join(settable_attrs)
-
-        return rest_device
-
-    async def get_devices(self, location_id: int) -> list[dict[str, Any]]:
-        """Get list of all devices.
-
-        Prioritizes websocket-cached device data (from DeviceListInitialValuesReceived)
-        over REST/GraphQL since the websocket provides everything we need.
-        Falls back to GraphQL, then REST if websocket data unavailable.
+        :param timeout: Maximum time to wait in seconds
+        :raises TimeoutError: If the device cache is not populated in time
         """
-        devices: list[dict[str, Any]] = []
-
-        # Try to use cached websocket device data first
-        # The DeviceHub websocket sends DeviceListInitialValuesReceived with full device info
-        if self._websocket_device_cache:
-            LOG.debug(
-                "Using cached device list from websocket (%d devices)",
-                len(self._websocket_device_cache),
-            )
-            devices = self._websocket_device_cache.copy()
-        # Try GraphQL if we have a URN and no websocket cache
-        elif self.urn:
-            try:
-                LOG.debug("Fetching devices via GraphQL for URN: %s", self.urn)
-                devices = await self.get_devices_graphql(self.urn)
-
-                # WORKAROUND: Fetch REST device IDs for attribute setting
-                # This is needed because the attribute endpoint still uses numeric IDs
-                try:
-                    url = self._get_url("Devices", location_id=location_id)
-                    rest_devices = await self.async_request("get", url)
-
-                    # Build mapping of identifier -> numeric id
-                    id_mapping = {
-                        d.get("identifier"): d.get("id")
-                        for d in rest_devices
-                        if d.get("identifier")
-                    }
-
-                    # Update GraphQL devices with real REST IDs
-                    for device in devices:
-                        identifier = device.get("identifier")
-                        if identifier in id_mapping:
-                            device["id"] = id_mapping[identifier]
-                            LOG.debug(
-                                "Mapped device %s to ID %d", identifier, device["id"]
-                            )
-
-                except Exception as e:
-                    LOG.warning("Failed to fetch device ID mapping from REST: %s", e)
-                    # Continue without mapping - devices will work read-only
-
-            except Exception as e:
-                LOG.warning("Fallback GraphQL device fetch failed %s", e)
-# TODO: ic-dev21 Remove this commented out block, it for reference only but will no longer work.
-#            # No URN available, use REST
-#            LOG.debug("No URN available, using REST endpoint")
-#            url = self._get_url("Devices", location_id=location_id)
-#            LOG.debug("Devices URL is %s", url)
-#            devices = await self.async_request("get", url)
-
-        # Add gateway device (still uses REST endpoint)
-        devices.append(await self.get_gateway(location_id))
-
-        # Add devices from external callbacks
-        for callback in self._get_device_callbacks:
-            devices.append(callback())
-
-        return devices
-
-    def cache_websocket_devices(self, device_list: list[dict[str, Any]]) -> None:
-        """Cache device list received from DeviceHub websocket.
-
-        The DeviceListInitialValuesReceived message contains the full device list
-        with all the info we need (id, name, identifier, etc.) in REST format.
-        This eliminates the need to call the deprecated REST endpoint.
-
-        Args:
-            device_list: List of devices from DeviceListInitialValuesReceived
-        """
-        self._websocket_device_cache = device_list
-        self._device_cache_ready.set()
-        LOG.debug("Cached %d devices from websocket", len(device_list))
-
-    async def wait_for_device_cache(self, timeout: float = 10.0) -> bool:
-        """Wait for the websocket device cache to be populated.
-
-        This should be called before devices.async_init() to ensure
-        device names and IDs are available from the websocket.
-
-        Args:
-            timeout: Maximum time to wait in seconds (default: 10.0)
-
-        Returns:
-            True if cache was populated, False if timeout occurred
-        """
-        import time
-
-        start_time = time.time()
-        LOG.debug("Waiting for websocket device cache (timeout: %.1fs)...", timeout)
-
+        if self._device_cache_event.is_set():
+            return
+        LOG.debug("Waiting for device cache from websocket (timeout=%ss)", timeout)
         try:
-            await asyncio.wait_for(self._device_cache_ready.wait(), timeout=timeout)
-            elapsed = time.time() - start_time
-            LOG.debug("Device cache ready after %.2f seconds", elapsed)
-            return True
+            await asyncio.wait_for(self._device_cache_event.wait(), timeout=timeout)
         except asyncio.TimeoutError:
-            elapsed = time.time() - start_time
-            LOG.warning(
-                "Timeout waiting for websocket device cache after %.2f seconds, will use fallback method",
-                elapsed,
+            LOG.error(
+                "Timed out waiting for device list from websocket after %ss",
+                timeout,
             )
-            return False
+            raise
+
+    def get_device_cache(self, location_id: int) -> list[dict[str, Any]]:
+        """Return cached devices from websocket.
+
+        :param location_id: Hilo location id (unused but kept for interface compat)
+        :return: List of device dicts ready for generate_device()
+        """
+        return list(self._device_cache)
+
+    def add_to_device_cache(self, devices: list[dict[str, Any]]) -> None:
+        """Append new devices to the existing cache (e.g. from DeviceAdded).
+
+        Converts websocket format and adds to the cache without replacing
+        existing entries. Skips devices already in cache (by id).
+        """
+        existing_ids = {d.get("id") for d in self._device_cache}
+        for device in devices:
+            converted = self._convert_ws_device(device)
+            if converted.get("id") not in existing_ids:
+                self._device_cache.append(converted)
+                LOG.debug("Added device %s to cache", converted.get("id"))
 
     async def _set_device_attribute(
         self,
