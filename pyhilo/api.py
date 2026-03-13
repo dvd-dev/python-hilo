@@ -846,13 +846,12 @@ class API:
 
             except Exception as e:
                 LOG.warning("Fallback GraphQL device fetch failed %s", e)
-
-        else:
-            # No URN available, use REST
-            LOG.debug("No URN available, using REST endpoint")
-            url = self._get_url("Devices", location_id=location_id)
-            LOG.debug("Devices URL is %s", url)
-            devices = await self.async_request("get", url)
+# TODO: ic-dev21 Remove this commented out block, it for reference only but will no longer work.
+#            # No URN available, use REST
+#            LOG.debug("No URN available, using REST endpoint")
+#            url = self._get_url("Devices", location_id=location_id)
+#            LOG.debug("Devices URL is %s", url)
+#            devices = await self.async_request("get", url)
 
         # Add gateway device (still uses REST endpoint)
         devices.append(await self.get_gateway(location_id))
