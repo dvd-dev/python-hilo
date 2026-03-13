@@ -807,7 +807,10 @@ class API:
         # Try to use cached websocket device data first
         # The DeviceHub websocket sends DeviceListInitialValuesReceived with full device info
         if self._websocket_device_cache:
-            LOG.debug("Using cached device list from websocket (%d devices)", len(self._websocket_device_cache))
+            LOG.debug(
+                "Using cached device list from websocket (%d devices)",
+                len(self._websocket_device_cache),
+            )
             devices = self._websocket_device_cache.copy()
         # Try GraphQL if we have a URN and no websocket cache
         elif self.urn:
@@ -862,37 +865,38 @@ class API:
             devices.append(callback())
 
         return devices
-    
+
     def cache_websocket_devices(self, device_list: list[dict[str, Any]]) -> None:
         """Cache device list received from DeviceHub websocket.
-        
+
         The DeviceListInitialValuesReceived message contains the full device list
         with all the info we need (id, name, identifier, etc.) in REST format.
         This eliminates the need to call the deprecated REST endpoint.
-        
+
         Args:
             device_list: List of devices from DeviceListInitialValuesReceived
         """
         self._websocket_device_cache = device_list
         self._device_cache_ready.set()
         LOG.debug("Cached %d devices from websocket", len(device_list))
-    
+
     async def wait_for_device_cache(self, timeout: float = 10.0) -> bool:
         """Wait for the websocket device cache to be populated.
-        
+
         This should be called before devices.async_init() to ensure
         device names and IDs are available from the websocket.
-        
+
         Args:
             timeout: Maximum time to wait in seconds (default: 10.0)
-            
+
         Returns:
             True if cache was populated, False if timeout occurred
         """
         import time
+
         start_time = time.time()
         LOG.debug("Waiting for websocket device cache (timeout: %.1fs)...", timeout)
-        
+
         try:
             await asyncio.wait_for(self._device_cache_ready.wait(), timeout=timeout)
             elapsed = time.time() - start_time
@@ -902,7 +906,7 @@ class API:
             elapsed = time.time() - start_time
             LOG.warning(
                 "Timeout waiting for websocket device cache after %.2f seconds, will use fallback method",
-                elapsed
+                elapsed,
             )
             return False
 

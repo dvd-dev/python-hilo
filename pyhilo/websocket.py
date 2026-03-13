@@ -242,14 +242,14 @@ class WebsocketClient:
             self._ready_event.set()
             LOG.info("Websocket: Ready for data")
             return
-        
+
         # Cache device list from DeviceListInitialValuesReceived
         if msg.get("target") == "DeviceListInitialValuesReceived":
             if "arguments" in msg and len(msg["arguments"]) > 0:
                 device_list = msg["arguments"][0]
                 if isinstance(device_list, list) and self._api.api:
                     self._api.api.cache_websocket_devices(device_list)
-        
+
         event = websocket_event_from_payload(msg)
         for callback in self._event_callbacks:
             schedule_callback(callback, event)
