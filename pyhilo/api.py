@@ -421,7 +421,7 @@ class API:
 
         # Initialize WebsocketManager ic-dev21
         self.websocket_manager = WebsocketManager(
-            self.session, self.async_request, self._state_yaml, set_state
+            self.session, self.async_request, self._state_yaml, set_state, api=self
         )
         await self.websocket_manager.initialize_websockets()
 
@@ -847,8 +847,6 @@ class API:
                 url = self._get_url("Devices", location_id=location_id)
                 LOG.debug("Devices URL is %s", url)
                 devices = await self.async_request("get", url)
-        
-        #TODO: retirer bloc else, sert comme plus à rien
         else:
             # No URN available, use REST
             LOG.debug("No URN available, using REST endpoint")
@@ -891,13 +889,20 @@ class API:
         Returns:
             True if cache was populated, False if timeout occurred
         """
+        import time
+        start_time = time.time()
+        LOG.debug("Waiting for websocket device cache (timeout: %.1fs)...", timeout)
+        
         try:
             await asyncio.wait_for(self._device_cache_ready.wait(), timeout=timeout)
-            LOG.debug("Device cache ready after waiting")
+            elapsed = time.time() - start_time
+            LOG.debug("Device cache ready after %.2f seconds", elapsed)
             return True
         except asyncio.TimeoutError:
+            elapsed = time.time() - start_time
             LOG.warning(
-                "Timeout waiting for websocket device cache, will use fallback method"
+                "Timeout waiting for websocket device cache after %.2f seconds, will use fallback method",
+                elapsed
             )
             return False
 
