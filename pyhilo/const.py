@@ -201,6 +201,7 @@ HILO_DEVICE_TYPES: Final = {
     "Cee": "Switch",
     "Thermostat24V": "Climate",
     "Tracker": "Sensor",
+    "SinopeWaterHeater": "Switch",
 }
 
 HILO_UNIT_CONVERSION: Final = {
