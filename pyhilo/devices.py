@@ -58,7 +58,13 @@ class Devices:
             device_identifier: Union[int, str] = reading.device_id
             if device_identifier == 0:
                 device_identifier = reading.hilo_id
-            if device := self.find_device(device_identifier):
+            device = self.find_device(device_identifier)
+            # If device_id was 0 and hilo_id lookup failed, this is likely
+            # a gateway reading that arrives before GatewayValuesReceived
+            # assigns the real ID. Fall back to the gateway device.
+            if device is None and reading.device_id == 0:
+                device = next((d for d in self.devices if d.type == "Gateway"), None)
+            if device:
                 device.update_readings(reading)
                 LOG.debug("%s Received %s", device, reading)
                 if device not in updated_devices:
@@ -93,27 +99,78 @@ class Devices:
         return dev
 
     async def update(self) -> None:
-        fresh_devices = await self._api.get_devices(self.location_id)
+        """Update device list from websocket cache + gateway from REST."""
+        # Get devices from websocket cache (already populated by DeviceListInitialValuesReceived)
+        cached_devices = self._api.get_device_cache(self.location_id)
         generated_devices = []
-        for raw_device in fresh_devices:
+        for raw_device in cached_devices:
             LOG.debug("Generating device %s", raw_device)
             dev = self.generate_device(raw_device)
             generated_devices.append(dev)
             if dev not in self.devices:
                 self.devices.append(dev)
+
+        # Append gateway from REST API (still available)
+        try:
+            gw = await self._api.get_gateway(self.location_id)
+            LOG.debug("Generating gateway device %s", gw)
+            gw_dev = self.generate_device(gw)
+            generated_devices.append(gw_dev)
+            if gw_dev not in self.devices:
+                self.devices.append(gw_dev)
+        except Exception as err:
+            LOG.error("Failed to get gateway: %s", err)
+
+        # Now add devices from external sources (e.g. unknown source tracker)
+        for callback in self._api._get_device_callbacks:
+            try:
+                cb_device = callback()
+                dev = self.generate_device(cb_device)
+                generated_devices.append(dev)
+                if dev not in self.devices:
+                    self.devices.append(dev)
+            except Exception as err:
+                LOG.error("Failed to generate callback device: %s", err)
+
         for device in self.devices:
             if device not in generated_devices:
                 LOG.debug("Device unpaired %s", device)
                 # Don't do anything with unpaired device for now.
-                # self.devices.remove(device)
 
     async def update_devicelist_from_signalr(
         self, values: list[dict[str, Any]]
     ) -> list[HiloDevice]:
-        # ic-dev21 not sure if this is dead code?
+        """Process device list received from SignalR websocket.
+
+        This is called when DeviceListInitialValuesReceived arrives.
+        It populates the API device cache and generates HiloDevice objects.
+        """
+        # Populate the API cache so future update() calls use this data
+        self._api.set_device_cache(values)
+
         new_devices = []
-        for raw_device in values:
-            LOG.debug("Generating device %s", raw_device)
+        for raw_device in self._api.get_device_cache(self.location_id):
+            LOG.debug("Generating device from SignalR %s", raw_device)
+            dev = self.generate_device(raw_device)
+            if dev not in self.devices:
+                self.devices.append(dev)
+                new_devices.append(dev)
+
+        return new_devices
+
+    async def add_device_from_signalr(
+        self, values: list[dict[str, Any]]
+    ) -> list[HiloDevice]:
+        """Process individual device additions from SignalR websocket.
+
+        This is called when DeviceAdded arrives. It appends to the existing
+        cache rather than replacing it.
+        """
+        self._api.add_to_device_cache(values)
+
+        new_devices = []
+        for raw_device in self._api.get_device_cache(self.location_id):
+            LOG.debug("Generating added device from SignalR %s", raw_device)
             dev = self.generate_device(raw_device)
             if dev not in self.devices:
                 self.devices.append(dev)
@@ -122,9 +179,16 @@ class Devices:
         return new_devices
 
     async def async_init(self) -> None:
-        """Initialize the Hilo "manager" class."""
-        LOG.info("Initialising after websocket is connected")
+        """Initialize the Hilo "manager" class.
+
+        Gets location IDs from REST API, then waits for the websocket
+        to deliver the device list via DeviceListInitialValuesReceived.
+        The gateway is appended from REST.
+        """
+        LOG.info("Initialising: getting location IDs")
         location_ids = await self._api.get_location_ids()
         self.location_id = location_ids[0]
         self.location_hilo_id = location_ids[1]
-        await self.update()
+        # Device list will be populated when DeviceListInitialValuesReceived
+        # arrives on the websocket. The hilo integration's async_init will
+        # call wait_for_device_cache() and then update() after subscribing.

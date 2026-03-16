@@ -94,6 +94,9 @@ class API:
         self.ws_token: str = ""
         self.endpoint: str = ""
         self._urn: str | None = None
+        # Device cache from websocket DeviceListInitialValuesReceived
+        self._device_cache: list[dict[str, Any]] = []
+        self._device_cache_event: asyncio.Event = asyncio.Event()
 
     @classmethod
     async def async_create(
@@ -544,17 +547,86 @@ class API:
         req: list[dict[str, Any]] = await self.async_request("get", url)
         return (req[0]["id"], req[0]["locationHiloId"])
 
-    async def get_devices(self, location_id: int) -> list[dict[str, Any]]:
-        """Get list of all devices"""
-        url = self._get_url("Devices", location_id=location_id)
-        LOG.debug("Devices URL is %s", url)
-        devices: list[dict[str, Any]] = await self.async_request("get", url)
-        devices.append(await self.get_gateway(location_id))
-        # Now it's time to add devices coming from external sources like hass
-        # integration.
-        for callback in self._get_device_callbacks:
-            devices.append(callback())
-        return devices
+    def set_device_cache(self, devices: list[dict[str, Any]]) -> None:
+        """Store devices received from websocket DeviceListInitialValuesReceived.
+
+        This replaces the old REST API get_devices call. The websocket sends
+        device data with list-type attributes (supportedAttributesList, etc.)
+        which need to be converted to comma-separated strings to match the
+        format that HiloDevice.update() expects.
+        """
+        self._device_cache = [self._convert_ws_device(device) for device in devices]
+        LOG.debug(
+            "Device cache populated with %d devices from websocket",
+            len(self._device_cache),
+        )
+        self._device_cache_event.set()
+
+    @staticmethod
+    def _convert_ws_device(ws_device: dict[str, Any]) -> dict[str, Any]:
+        """Convert a websocket device dict to the format generate_device expects.
+
+        The REST API returned supportedAttributes/settableAttributes as
+        comma-separated strings. The websocket returns supportedAttributesList/
+        settableAttributesList/supportedParametersList as Python lists.
+        We convert to the old format so HiloDevice.update() works unchanged.
+        """
+        device = dict(ws_device)
+
+        # Convert list attributes to comma-separated strings
+        list_to_csv_mappings = {
+            "supportedAttributesList": "supportedAttributes",
+            "settableAttributesList": "settableAttributes",
+            "supportedParametersList": "supportedParameters",
+        }
+        for list_key, csv_key in list_to_csv_mappings.items():
+            if list_key in device:
+                items = device.pop(list_key)
+                if isinstance(items, list):
+                    device[csv_key] = ", ".join(str(i) for i in items)
+                else:
+                    device[csv_key] = str(items) if items else ""
+
+        return device
+
+    async def wait_for_device_cache(self, timeout: float = 30.0) -> None:
+        """Wait for the device cache to be populated from websocket.
+
+        :param timeout: Maximum time to wait in seconds
+        :raises TimeoutError: If the device cache is not populated in time
+        """
+        if self._device_cache_event.is_set():
+            return
+        LOG.debug("Waiting for device cache from websocket (timeout=%ss)", timeout)
+        try:
+            await asyncio.wait_for(self._device_cache_event.wait(), timeout=timeout)
+        except asyncio.TimeoutError:
+            LOG.error(
+                "Timed out waiting for device list from websocket after %ss",
+                timeout,
+            )
+            raise
+
+    def get_device_cache(self, location_id: int) -> list[dict[str, Any]]:
+        """Return cached devices from websocket.
+
+        :param location_id: Hilo location id (unused but kept for interface compat)
+        :return: List of device dicts ready for generate_device()
+        """
+        return list(self._device_cache)
+
+    def add_to_device_cache(self, devices: list[dict[str, Any]]) -> None:
+        """Append new devices to the existing cache (e.g. from DeviceAdded).
+
+        Converts websocket format and adds to the cache without replacing
+        existing entries. Skips devices already in cache (by id).
+        """
+        existing_ids = {d.get("id") for d in self._device_cache}
+        for device in devices:
+            converted = self._convert_ws_device(device)
+            if converted.get("id") not in existing_ids:
+                self._device_cache.append(converted)
+                LOG.debug("Added device %s to cache", converted.get("id"))
 
     async def _set_device_attribute(
         self,
