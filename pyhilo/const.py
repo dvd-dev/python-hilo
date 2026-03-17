@@ -252,6 +252,7 @@ HILO_PROVIDERS: Final = {
     1: "Hilo",
     2: "Netatmo",
     3: "OneLink",
+    9: "Sinope",
 }
 
 JASCO_MODELS: Final = [
