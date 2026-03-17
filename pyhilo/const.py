@@ -252,6 +252,11 @@ HILO_PROVIDERS: Final = {
     1: "Hilo",
     2: "Netatmo",
     3: "OneLink",
+    5: "Elmec",
+    6: "Resideo",
+    7: "Resideo TCC",
+    8: "Mysa",
+    9: "Sinope",
 }
 
 JASCO_MODELS: Final = [
