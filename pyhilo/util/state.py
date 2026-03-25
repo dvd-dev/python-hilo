@@ -34,23 +34,6 @@ class AndroidDeviceDict(TypedDict):
     device_id: int
 
 
-class WebsocketTransportsDict(TypedDict):
-    """Represents a dictionary containing Websocket connection information."""
-
-    transport: str
-    transfer_formats: list[str]
-
-
-class WebsocketDict(TypedDict, total=False):
-    """Represents a dictionary containing registration information."""
-
-    token: str
-    connection_id: str
-    full_ws_url: str
-    url: str
-    available_transports: list[WebsocketTransportsDict]
-
-
 class RegistrationDict(TypedDict, total=False):
     """Represents a dictionary containing registration information."""
 
@@ -73,7 +56,6 @@ class StateDict(TypedDict, total=False):
     registration: RegistrationDict
     firebase: FirebaseDict
     android: AndroidDeviceDict
-    websocket: WebsocketDict
 
 
 T = TypeVar("T", bound="StateDict")
@@ -189,9 +171,7 @@ async def get_state(state_yaml: str, _already_locked: bool = False) -> StateDict
 async def set_state(
     state_yaml: str,
     key: str,
-    state: (
-        TokenDict | RegistrationDict | FirebaseDict | AndroidDeviceDict | WebsocketDict
-    ),
+    state: TokenDict | RegistrationDict | FirebaseDict | AndroidDeviceDict,
 ) -> None:
     """Save state yaml.
 

@@ -27,37 +27,37 @@ class RequestError(HiloError):
     pass
 
 
-class WebsocketError(HiloError):
-    """An error related to generic websocket errors."""
+class SignalRError(HiloError):
+    """An error related to generic SignalR errors."""
 
     pass
 
 
-class CannotConnectError(WebsocketError):
-    """Define a error when the websocket can't be connected to."""
+class CannotConnectError(SignalRError):
+    """Define a error when the SignalR hub can't be connected to."""
 
     pass
 
 
-class ConnectionClosedError(WebsocketError):
-    """Define a error when the websocket closes unexpectedly."""
+class ConnectionClosedError(SignalRError):
+    """Define a error when the SignalR hub closes unexpectedly."""
 
     pass
 
 
-class ConnectionFailedError(WebsocketError):
-    """Define a error when the websocket connection fails."""
+class ConnectionFailedError(SignalRError):
+    """Define a error when the SignalR connection fails."""
 
     pass
 
 
-class InvalidMessageError(WebsocketError):
-    """Define a error related to an invalid message from the websocket server."""
+class InvalidMessageError(SignalRError):
+    """Define a error related to an invalid message from the SignalR server."""
 
     pass
 
 
-class NotConnectedError(WebsocketError):
-    """Define a error when the websocket isn't properly connected to."""
+class NotConnectedError(SignalRError):
+    """Define a error when the SignalR hub isn't properly connected to."""
 
     pass

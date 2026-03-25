@@ -23,7 +23,7 @@ class Devices:
 
     @property
     def attributes_list(self) -> list[Union[int, dict[int, list[str]]]]:
-        """This is sent to websocket to subscribe to the device attributes updates
+        """This is sent to the SignalR hub to subscribe to the device attributes updates
 
         :return: Dict of devices (key) with their attributes.
         :rtype: list
@@ -99,8 +99,8 @@ class Devices:
         return dev
 
     async def update(self) -> None:
-        """Update device list from websocket cache + gateway from REST."""
-        # Get devices from websocket cache (already populated by DeviceListInitialValuesReceived)
+        """Update device list from SignalR cache + gateway from REST."""
+        # Get devices from SignalR cache (already populated by DeviceListInitialValuesReceived)
         cached_devices = self._api.get_device_cache(self.location_id)
         generated_devices = []
         for raw_device in cached_devices:
@@ -140,7 +140,7 @@ class Devices:
     async def update_devicelist_from_signalr(
         self, values: list[dict[str, Any]]
     ) -> list[HiloDevice]:
-        """Process device list received from SignalR websocket.
+        """Process device list received from SignalR hub.
 
         This is called when DeviceListInitialValuesReceived arrives.
         It populates the API device cache and generates HiloDevice objects.
@@ -161,7 +161,7 @@ class Devices:
     async def add_device_from_signalr(
         self, values: list[dict[str, Any]]
     ) -> list[HiloDevice]:
-        """Process individual device additions from SignalR websocket.
+        """Process individual device additions from SignalR hub.
 
         This is called when DeviceAdded arrives. It appends to the existing
         cache rather than replacing it.
@@ -181,7 +181,7 @@ class Devices:
     async def async_init(self) -> None:
         """Initialize the Hilo "manager" class.
 
-        Gets location IDs from REST API, then waits for the websocket
+        Gets location IDs from REST API, then waits for the SignalR hub
         to deliver the device list via DeviceListInitialValuesReceived.
         The gateway is appended from REST.
         """
@@ -190,5 +190,5 @@ class Devices:
         self.location_id = location_ids[0]
         self.location_hilo_id = location_ids[1]
         # Device list will be populated when DeviceListInitialValuesReceived
-        # arrives on the websocket. The hilo integration's async_init will
+        # arrives on the SignalR hub. The hilo integration's async_init will
         # call wait_for_device_cache() and then update() after subscribing.

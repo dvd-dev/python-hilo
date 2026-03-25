@@ -620,6 +620,95 @@ class GraphQlHelper:
             location_hilo_id,
         )
 
+    # Seconds without any SSE event before treating the connection as stalled.
+    # Hilo's server sends periodic keepalive comments; 180 s is a safe margin.
+    _SSE_KEEPALIVE_TIMEOUT = 180
+    # Reconnection back-off: starts at _BACKOFF_BASE, doubles each failure, caps at _BACKOFF_MAX.
+    _BACKOFF_BASE = 5
+    _BACKOFF_MAX = 300  # 5 minutes
+
+    def _parse_sse_message(self, sse: Any) -> Optional[Dict[str, Any]]:
+        """Parse raw SSE event data; returns None if it should be skipped."""
+        if not sse.data:
+            return None
+        try:
+            result: Dict[str, Any] = json.loads(sse.data)
+            return result
+        except json.JSONDecodeError:
+            return None
+
+    def _handle_sse_message(
+        self,
+        data: Dict[str, Any],
+        handler: Callable[[Dict[str, Any]], str],
+        callback: Optional[Callable[[str], None]],
+    ) -> tuple:
+        """Dispatch a parsed SSE message. Returns (retry_apq, had_success)."""
+        if "errors" in data:
+            if any(
+                e.get("message") == "PersistedQueryNotFound" for e in data["errors"]
+            ):
+                return True, False
+            LOG.error("GraphQL Subscription Errors: %s", data["errors"])
+            return False, False
+        if "data" in data:
+            LOG.debug("Received subscription result %s", data["data"])
+            handler_result = handler(data["data"])
+            if callback:
+                callback(handler_result)
+            return False, True
+        return False, False
+
+    async def _drain_sse_events(
+        self,
+        event_source: Any,
+        handler: Callable[[Dict[str, Any]], str],
+        callback: Optional[Callable[[str], None]],
+    ) -> tuple:
+        """Read events until the stream closes. Returns (retry_apq, had_success)."""
+        had_success = False
+        sse_iter = event_source.aiter_sse()
+        while True:
+            try:
+                sse = await asyncio.wait_for(
+                    sse_iter.__anext__(),
+                    timeout=self._SSE_KEEPALIVE_TIMEOUT,
+                )
+            except StopAsyncIteration:
+                break
+            except asyncio.TimeoutError:
+                LOG.info(
+                    "SSE keepalive timeout (%ss without data), reconnecting...",
+                    self._SSE_KEEPALIVE_TIMEOUT,
+                )
+                raise
+            data = self._parse_sse_message(sse)
+            if data is None:
+                continue
+            retry, success = self._handle_sse_message(data, handler, callback)
+            if retry:
+                return True, had_success
+            if success:
+                had_success = True
+        return False, had_success
+
+    async def _run_sse_connection(
+        self,
+        url: str,
+        headers: Dict[str, str],
+        payload: Dict[str, Any],
+        handler: Callable[[Dict[str, Any]], str],
+        callback: Optional[Callable[[str], None]],
+    ) -> tuple:
+        """Open one SSE connection and drain it. Returns (retry_apq, had_success)."""
+        async with httpx.AsyncClient(
+            http2=True, timeout=None, verify=self._ssl_context
+        ) as client:
+            async with aconnect_sse(
+                client, "POST", url, json=payload, headers=headers
+            ) as event_source:
+                return await self._drain_sse_events(event_source, handler, callback)
+
     async def _listen_to_sse(
         self,
         query: str,
@@ -630,70 +719,62 @@ class GraphQlHelper:
     ) -> None:
         query_hash = hashlib.sha256(query.encode("utf-8")).hexdigest()
         payload: Dict[str, Any] = {
-            "extensions": {
-                "persistedQuery": {
-                    "version": 1,
-                    "sha256Hash": query_hash,
-                }
-            },
+            "extensions": {"persistedQuery": {"version": 1, "sha256Hash": query_hash}},
             "variables": variables,
         }
+        backoff_delay = self._BACKOFF_BASE
 
         while True:
             try:
                 access_token = await self._get_access_token()
                 url = f"https://{PLATFORM_HOST}/api/digital-twin/v3/graphql"
                 headers = {"Authorization": f"Bearer {access_token}"}
-
-                retry_with_full_query = False
-
-                async with httpx.AsyncClient(
-                    http2=True, timeout=None, verify=self._ssl_context
-                ) as client:
-                    async with aconnect_sse(
-                        client, "POST", url, json=payload, headers=headers
-                    ) as event_source:
-                        async for sse in event_source.aiter_sse():
-                            if not sse.data:
-                                continue
-                            try:
-                                data = json.loads(sse.data)
-                            except json.JSONDecodeError:
-                                continue
-
-                            if "errors" in data:
-                                if any(
-                                    e.get("message") == "PersistedQueryNotFound"
-                                    for e in data["errors"]
-                                ):
-                                    retry_with_full_query = True
-                                    break
-                                LOG.error(
-                                    "GraphQL Subscription Errors: %s", data["errors"]
-                                )
-                                continue
-
-                            if "data" in data:
-                                LOG.debug(
-                                    "Received subscription result %s", data["data"]
-                                )
-                                handler_result = handler(data["data"])
-                                if callback:
-                                    callback(handler_result)
-
-                if retry_with_full_query:
+                retry_apq, had_success = await self._run_sse_connection(
+                    url, headers, payload, handler, callback
+                )
+                if had_success:
+                    backoff_delay = self._BACKOFF_BASE
+                if retry_apq:
                     payload["query"] = query
                     continue
+                # Server closed cleanly — brief pause before reconnecting.
+                LOG.debug(
+                    "SSE connection closed by server. Reconnecting in 5 seconds..."
+                )
+                await asyncio.sleep(5)
+
+            except asyncio.TimeoutError:
+                # Keepalive timeout: the connection was recently live, so start
+                # the next reconnect cycle with the base delay (not accumulated).
+                backoff_delay = self._BACKOFF_BASE
+                LOG.debug(
+                    "Reconnecting after keepalive timeout in %s seconds...",
+                    backoff_delay,
+                )
+                await asyncio.sleep(backoff_delay)
+                backoff_delay = min(backoff_delay * 2, self._BACKOFF_MAX)
+                if "query" in payload:
+                    del payload["query"]
+                if location_hilo_id:
+                    try:
+                        await self.call_get_location_query(location_hilo_id)
+                        LOG.debug("call_get_location_query success after reconnect")
+                    except Exception as e2:
+                        LOG.error(
+                            "exception while RE-connecting, retrying: %s",
+                            e2,
+                        )
 
             except Exception as e:
                 LOG.debug(
-                    "Subscription connection lost: %s. Reconnecting in 5 seconds...", e
+                    "Subscription connection lost: %s. Reconnecting in %s seconds...",
+                    e,
+                    backoff_delay,
                 )
-                await asyncio.sleep(5)
-                # Reset payload to APQ only on reconnect
+                await asyncio.sleep(backoff_delay)
+                backoff_delay = min(backoff_delay * 2, self._BACKOFF_MAX)
                 if "query" in payload:
                     del payload["query"]
-
                 if location_hilo_id:
                     try:
                         await self.call_get_location_query(location_hilo_id)
