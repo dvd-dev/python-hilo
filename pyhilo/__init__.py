@@ -6,9 +6,9 @@ from pyhilo.device import HiloDevice
 from pyhilo.device.switch import Switch
 from pyhilo.devices import Devices
 from pyhilo.event import Event
-from pyhilo.exceptions import HiloError, InvalidCredentialsError, WebsocketError
+from pyhilo.exceptions import HiloError, InvalidCredentialsError, SignalRError
+from pyhilo.signalr import SignalREvent
 from pyhilo.util import from_utc_timestamp, time_diff
-from pyhilo.websocket import WebsocketEvent
 
 __all__ = [
     "API",
@@ -17,10 +17,10 @@ __all__ = [
     "Event",
     "HiloError",
     "InvalidCredentialsError",
-    "WebsocketError",
+    "SignalRError",
     "from_utc_timestamp",
     "time_diff",
-    "WebsocketEvent",
+    "SignalREvent",
     "UNMONITORED_DEVICES",
     "Switch",
 ]

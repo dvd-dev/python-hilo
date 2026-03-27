@@ -45,14 +45,8 @@ from pyhilo.const import (
 )
 from pyhilo.device import DeviceAttribute, HiloDevice, get_device_attributes
 from pyhilo.exceptions import InvalidCredentialsError, RequestError
-from pyhilo.util.state import (
-    StateDict,
-    WebsocketDict,
-    WebsocketTransportsDict,
-    get_state,
-    set_state,
-)
-from pyhilo.websocket import WebsocketClient, WebsocketManager
+from pyhilo.signalr import SignalRHub, SignalRManager
+from pyhilo.util.state import AndroidDeviceDict, StateDict, get_state, set_state
 
 
 class API:
@@ -74,7 +68,6 @@ class API:
     ) -> None:
         """Initialize"""
         self._backoff_refresh_lock_api = asyncio.Lock()
-        self._backoff_refresh_lock_ws = asyncio.Lock()
         self._request_retries = request_retries
         self._state_yaml: str = DEFAULT_STATE_FILE
         self.state: StateDict = {}
@@ -82,19 +75,12 @@ class API:
         self.device_attributes = get_device_attributes()
         self.session: ClientSession = session
         self._oauth_session = oauth_session
-        self.websocket_devices: WebsocketClient
-        # Backward compatibility during transition to websocket for challenges. Currently the HA Hilo integration
-        # uses the .websocket attribute. Re-added this attribute and point to the same object as websocket_devices.
-        # Should be removed once the transition to the challenge websocket is completed everywhere.
-        self.websocket: WebsocketClient
-        self.websocket_challenges: WebsocketClient
+        self.signalr_devices: SignalRHub
+        self.signalr_challenges: SignalRHub
         self.log_traces = log_traces
         self._get_device_callbacks: list[Callable[..., Any]] = []
-        self.ws_url: str = ""
-        self.ws_token: str = ""
-        self.endpoint: str = ""
         self._urn: str | None = None
-        # Device cache from websocket DeviceListInitialValuesReceived
+        # Device cache from SignalR DeviceListInitialValuesReceived
         self._device_cache: list[dict[str, Any]] = []
         self._device_cache_event: asyncio.Event = asyncio.Event()
 
@@ -146,7 +132,7 @@ class API:
             await self._oauth_session.async_ensure_token_valid()
 
         access_token = str(self._oauth_session.token["access_token"])
-        LOG.debug("Websocket access token is %s", access_token)
+        LOG.debug("SignalR access token is %s", access_token)
 
         urn = self.urn
         LOG.debug("Extracted URN: %s", urn)
@@ -356,19 +342,7 @@ class API:
         err: ClientResponseError = err_info[1].with_traceback(err_info[2])  # type: ignore
 
         if err.status in (401, 403):
-            LOG.warning("Refreshing websocket token %s", err.request_info.url)
-            if (
-                "client/negotiate" in str(err.request_info.url)
-                and err.request_info.method == "POST"
-            ):
-                LOG.info(
-                    "401 detected on websocket, refreshing websocket token. Old url: {self.ws_url} Old Token: {self.ws_token}"
-                )
-                LOG.info("401 detected on %s", err.request_info.url)
-                async with self._backoff_refresh_lock_ws:
-                    await self.refresh_ws_token()
-                    await self.get_websocket_params()
-                return
+            LOG.warning("Refreshing API token on %s", err.request_info.url)
 
     @staticmethod
     def _handle_on_giveup(_: dict[str, Any]) -> None:
@@ -413,57 +387,13 @@ class API:
 
     async def _async_post_init(self) -> None:
         """Perform some post-init actions."""
-        LOG.debug("Websocket _async_post_init running")
+        LOG.debug("SignalR _async_post_init running")
         await self._get_fid()
         await self._get_device_token()
 
-        # Initialize WebsocketManager ic-dev21
-        self.websocket_manager = WebsocketManager(
-            self.session, self.async_request, self._state_yaml, set_state
-        )
-        await self.websocket_manager.initialize_websockets()
-
-        # Create both websocket clients
-        # ic-dev21 need to work on this as it can't lint as is, may need to
-        # instantiate differently
-        # TODO: fix type ignore after refactor
-        self.websocket_devices = WebsocketClient(self.websocket_manager.devicehub)  # type: ignore
-
-        # For backward compatibility during the transition to challengehub websocket
-        self.websocket = self.websocket_devices
-        self.websocket_challenges = WebsocketClient(self.websocket_manager.challengehub)  # type: ignore
-
-    async def refresh_ws_token(self) -> None:
-        """Refresh the websocket token."""
-        await self.websocket_manager.refresh_token(self.websocket_manager.devicehub)
-        await self.websocket_manager.refresh_token(self.websocket_manager.challengehub)
-
-    async def get_websocket_params(self) -> None:
-        """Retrieves and constructs WebSocket connection parameters from the negotiation endpoint."""
-        uri = parse.urlparse(self.ws_url)
-        LOG.debug("Getting websocket params")
-        LOG.debug("Getting uri %s", uri)
-        resp: dict[str, Any] = await self.async_request(
-            "post",
-            f"{uri.path}negotiate?{uri.query}",
-            host=uri.netloc,
-            headers={
-                "authorization": f"Bearer {self.ws_token}",
-            },
-        )
-        conn_id: str = resp.get("connectionId", "")
-        self.full_ws_url = f"{self.ws_url}&id={conn_id}&access_token={self.ws_token}"
-        LOG.debug("Getting full ws URL %s", self.full_ws_url)
-        transport_dict: list[WebsocketTransportsDict] = resp.get(
-            "availableTransports", []
-        )
-        websocket_dict: WebsocketDict = {
-            "connection_id": conn_id,
-            "available_transports": transport_dict,
-            "full_ws_url": self.full_ws_url,
-        }
-        LOG.debug("Calling set_state from get_websocket_params")
-        await set_state(self._state_yaml, "websocket", websocket_dict)
+        signalr_manager = SignalRManager(self.async_request)
+        self.signalr_devices = signalr_manager.build_hub("/DeviceHub")
+        self.signalr_challenges = signalr_manager.build_hub("/ChallengeHub")
 
     async def fb_install(self, fb_id: str) -> None:
         """Registers a Firebase installation and stores the authentication token state."""
@@ -535,9 +465,7 @@ class API:
         await set_state(
             self._state_yaml,
             "android",
-            {
-                "token": token,
-            },
+            cast(AndroidDeviceDict, {"token": token}),
         )
 
     async def get_location_ids(self) -> tuple[int, str]:
@@ -548,26 +476,26 @@ class API:
         return (req[0]["id"], req[0]["locationHiloId"])
 
     def set_device_cache(self, devices: list[dict[str, Any]]) -> None:
-        """Store devices received from websocket DeviceListInitialValuesReceived.
+        """Store devices received from SignalR DeviceListInitialValuesReceived.
 
-        This replaces the old REST API get_devices call. The websocket sends
+        This replaces the old REST API get_devices call. SignalR sends
         device data with list-type attributes (supportedAttributesList, etc.)
         which need to be converted to comma-separated strings to match the
         format that HiloDevice.update() expects.
         """
         self._device_cache = [self._convert_ws_device(device) for device in devices]
         LOG.debug(
-            "Device cache populated with %d devices from websocket",
+            "Device cache populated with %d devices from SignalR",
             len(self._device_cache),
         )
         self._device_cache_event.set()
 
     @staticmethod
     def _convert_ws_device(ws_device: dict[str, Any]) -> dict[str, Any]:
-        """Convert a websocket device dict to the format generate_device expects.
+        """Convert a SignalR device dict to the format generate_device expects.
 
         The REST API returned supportedAttributes/settableAttributes as
-        comma-separated strings. The websocket returns supportedAttributesList/
+        comma-separated strings. SignalR returns supportedAttributesList/
         settableAttributesList/supportedParametersList as Python lists.
         We convert to the old format so HiloDevice.update() works unchanged.
         """
@@ -590,25 +518,25 @@ class API:
         return device
 
     async def wait_for_device_cache(self, timeout: float = 30.0) -> None:
-        """Wait for the device cache to be populated from websocket.
+        """Wait for the device cache to be populated from SignalR.
 
         :param timeout: Maximum time to wait in seconds
         :raises TimeoutError: If the device cache is not populated in time
         """
         if self._device_cache_event.is_set():
             return
-        LOG.debug("Waiting for device cache from websocket (timeout=%ss)", timeout)
+        LOG.debug("Waiting for device cache from SignalR (timeout=%ss)", timeout)
         try:
             await asyncio.wait_for(self._device_cache_event.wait(), timeout=timeout)
         except asyncio.TimeoutError:
             LOG.error(
-                "Timed out waiting for device list from websocket after %ss",
+                "Timed out waiting for device list from SignalR after %ss",
                 timeout,
             )
             raise
 
     def get_device_cache(self, location_id: int) -> list[dict[str, Any]]:
-        """Return cached devices from websocket.
+        """Return cached devices from SignalR.
 
         :param location_id: Hilo location id (unused but kept for interface compat)
         :return: List of device dicts ready for generate_device()
@@ -618,7 +546,7 @@ class API:
     def add_to_device_cache(self, devices: list[dict[str, Any]]) -> None:
         """Append new devices to the existing cache (e.g. from DeviceAdded).
 
-        Converts websocket format and adds to the cache without replacing
+        Converts SignalR format and adds to the cache without replacing
         existing entries. Skips devices already in cache (by id).
         """
         existing_ids = {d.get("id") for d in self._device_cache}
