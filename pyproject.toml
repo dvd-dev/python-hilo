@@ -1,21 +1,76 @@
-[build-system]
-requires = ["setuptools >= 35.0.2", "wheel >= 0.29.0", "poetry-core>=1.0.0"]
-build-backend = "poetry.core.masonry.api"
+[project]
+name = "python-hilo"
+version = "2026.3.5"
+description = "A Python3, async interface to the Hilo API"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+    { name = "David Vallee Delisle", email = "me@dvd.dev" },
+]
+maintainers = [
+    { name = "David Vallee Delisle", email = "me@dvd.dev" },
+]
+classifiers = [
+    "License :: OSI Approved :: MIT License",
+    "Framework :: aiohttp",
+    "Topic :: Home Automation",
+    "Programming Language :: Python",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: Implementation :: CPython",
+    "Programming Language :: Python :: Implementation :: PyPy",
+]
+dependencies = [
+    "aiohttp>=3.8.0",
+    "aiofiles>=23.2.1",
+    "pysignalr>=1.3.0",
+    "backoff>=1.11.1",
+    "python-dateutil>=2.8.2",
+    "pyyaml>=6.0.2",
+    "httpx[http2]>=0.27.0",
+    "httpx-sse>=0.4.0",
+]
 
-[tool.isort]
-combine_as_imports = true
-default_section = "THIRDPARTY"
-force_grid_wrap = 0
-force_sort_within_sections = true
-forced_separate = "tests"
-include_trailing_comma = true
-indent = "    "
-known_first_party = "examples,script,pyhilo,tests"
-line_length = 88
-multi_line_output = 3
-not_skip = "__init__.py"
-sections = "FUTURE,STDLIB,INBETWEENS,THIRDPARTY,FIRSTPARTY,LOCALFOLDER"
-use_parentheses = true
+[project.urls]
+Repository = "https://github.com/dvd-dev/python-hilo"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.0.0",
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.24.0",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+
+[tool.hatch.build.targets.wheel]
+packages = ["pyhilo"]
+
+[tool.ruff]
+line-length = 88
+target-version = "py311"
+exclude = [".git", "__pycache__", ".venv", "docs/source/conf.py", "old", "build", "dist"]
+
+[tool.ruff.lint]
+select = ["B", "C", "C90", "E", "F", "W", "T20", "I"]
+ignore = ["E203", "E266", "E501", "F811"]
+
+[tool.ruff.lint.mccabe]
+max-complexity = 18
+
+[tool.ruff.lint.isort]
+combine-as-imports = true
+force-sort-within-sections = true
+known-first-party = ["examples", "script", "pyhilo", "tests"]
+forced-separate = ["tests"]
+split-on-trailing-comma = true
 
 [tool.mypy]
 check_untyped_defs = true
@@ -37,86 +92,3 @@ warn_unreachable = true
 warn_unused_configs = true
 warn_unused_ignores = true
 exclude = ".venv/.*"
-
-[tool.poetry]
-name = "python-hilo"
-version = "2026.3.5"
-description = "A Python3, async interface to the Hilo API"
-readme = "README.md"
-authors = ["David Vallee Delisle <me@dvd.dev>"]
-maintainers = ["David Vallee Delisle <me@dvd.dev>"]
-license = "MIT"
-repository = "https://github.com/dvd-dev/python-hilo"
-packages = [
-    { include = "pyhilo" },
-]
-classifiers = [
-    "License :: OSI Approved :: MIT License",
-    "Framework :: aiohttp",
-    "Topic :: Home Automation",
-    "Programming Language :: Python",
-    "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
-    "Programming Language :: Python :: 3.10",
-    "Programming Language :: Python :: 3.11",
-    "Programming Language :: Python :: Implementation :: CPython",
-    "Programming Language :: Python :: Implementation :: PyPy",
-]
-
-[tool.poetry.dependencies]
-aiohttp = ">=3.8.0"
-aiofiles = ">=23.2.1"
-pysignalr = ">=1.3.0"
-aiosignal = ">=1.2.0"
-async-timeout = ">=4.0.0"
-attrs = ">=21.2.0"
-backoff = ">=1.11.1"
-python-dateutil = ">=2.8.2"
-python = "^3.9.0"
-voluptuous = ">=0.13.1"
-pyyaml = "^6.0.2"
-httpx = {version = ">=0.27.0", extras = ["http2"]}
-httpx-sse = ">=0.4.0"
-
-[poetry.group.dev.dependencies]
-Sphinx = "^7.1.2"
-aresponses = "^3.0.0"
-asynctest = "^0.13.0"
-pre-commit = "^4.0.0"
-pytest = "^8.0.0"
-pytest-aiohttp = "^1.0.4"
-pytest-cov = "^6.0.0"
-sphinx-rtd-theme = "^3.0.0"
-types-pytz = "^2025.1.0"
-
-[tool.pylint.BASIC]
-expected-line-ending-format = "LF"
-
-[tool.pylint."MESSAGES CONTROL"]
-# Reasons disabled:
-# bad-continuation - Invalid attack on black
-# cyclic-import - Imports under TYPE_CHECKING still get evaluated
-# unnecessary-pass - This can hurt readability
-disable = [
-  "bad-continuation",
-  "cyclic-import",
-  "unnecessary-pass"
-]
-
-[tool.pylint.REPORTS]
-score = false
-
-[tool.pylint.SIMILARITIES]
-# Minimum lines number of a similarity.
-# We set this higher because of some cases where V2 and V3 functionality are
-# similar, but abstracting them isn't feasible.
-min-similarity-lines = 4
-
-# Ignore comments when computing similarities.
-ignore-comments = true
-
-# Ignore docstrings when computing similarities.
-ignore-docstrings = true
-
-# Ignore imports when computing similarities.
-ignore-imports = true

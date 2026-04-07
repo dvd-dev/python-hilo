@@ -9,15 +9,15 @@ repos:
           - --format=custom
           - --configfile=.bandit.yaml
         files: ^pyhilo/.+\.py$
-  - repo: https://github.com/psf/black
-    rev: 24.1.1
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.15.9
     hooks:
-      - id: black
-        args:
-          - --safe
-          - --quiet
-        language_version: python3
-        files: ^((pyhilo|tests)/.+)?[^/]+\.py$
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^pyhilo/.+\.py$
+      - id: ruff-format
+        args: [--quiet]
+        files: ^pyhilo/.+\.py$
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.6
     hooks:
@@ -27,19 +27,6 @@ repos:
           - --quiet-level=4
           - -L ba,hass,manuel,connexion
         exclude_types: [json]
-  - repo: https://github.com/PyCQA/flake8
-    rev: 7.0.0
-    hooks:
-      - id: flake8
-        additional_dependencies:
-          - flake8-docstrings==1.7.0
-          - pydocstyle==6.3.0
-        files: ^pyhilo/.+\.py$
-  - repo: https://github.com/pycqa/isort
-    rev: 5.13.2
-    hooks:
-      - id: isort
-        files: ^(pyhilo|tests)/.+\.py$
   - repo: https://github.com/pre-commit/mirrors-mypy
     rev: v1.19.1
     hooks:
