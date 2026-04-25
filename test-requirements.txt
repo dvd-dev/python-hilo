@@ -1,1 +1,1 @@
-types-python-dateutil>=2.3.3
+types-python-dateutil>=2.9.0.20260124
