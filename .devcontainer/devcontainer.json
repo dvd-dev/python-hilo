@@ -49,5 +49,5 @@
   },
   "image": "mcr.microsoft.com/devcontainers/python:3.11-bookworm",
   "name": "A Python3, async interface to the Hilo API",
-  "postCreateCommand": "uv sync && uv run pre-commit install"
+  "postCreateCommand": "uv sync --group dev --group test && uv run pre-commit install"
 }

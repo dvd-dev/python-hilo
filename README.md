@@ -41,7 +41,7 @@ You need at least:
 To install all packages, including all development requirements:
 
 ```bash
-uv sync
+uv sync --group dev --group test
 ```
 
 As this repository uses the [pre-commit][pre-commit] framework, all changes
@@ -78,8 +78,6 @@ check [the contributor's page][contributors].
 [license-shield]: https://img.shields.io/github/license/dvd-dev/python-hilo.svg
 [devcontainer-shield]: https://img.shields.io/static/v1?label=Dev%20Containers&message=Open&color=blue&logo=visualstudiocode
 [devcontainer]: https://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/dvd-dev/python-hilo
-[poetry-install]: https://python-poetry.org/docs/#installation
-[poetry]: https://python-poetry.org
 [pre-commit]: https://pre-commit.com/
 [uv]: https://docs.astral.sh/uv/
 [ruff]: https://docs.astral.sh/ruff/

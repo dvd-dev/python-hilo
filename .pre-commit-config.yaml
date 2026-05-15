@@ -1,7 +1,7 @@
 ---
 repos:
   - repo: https://github.com/PyCQA/bandit
-    rev: '1.7.9'
+    rev: '1.9.2'
     hooks:
       - id: bandit
         args:
@@ -12,14 +12,14 @@ repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.15.9
     hooks:
-      - id: ruff
-        args: [--fix, --exit-non-zero-on-fix]
-        files: ^pyhilo/.+\.py$
       - id: ruff-format
         args: [--quiet]
         files: ^pyhilo/.+\.py$
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        files: ^pyhilo/.+\.py$
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.6
+    rev: v2.4.1
     hooks:
       - id: codespell
         args:
@@ -38,9 +38,13 @@ repos:
           - types-PyYAML
 
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-json
+        # Exclude .devcontainer.json and .vscode since it uses JSONC
+        exclude: (.vscode|.devcontainer)
+      - id: check-yaml
+      - id: trailing-whitespace
       - id: no-commit-to-branch
         args:
           - --branch=dev
@@ -51,7 +55,7 @@ repos:
 #      - id: pydocstyle
 #        files: ^((pyhilo|tests)/.+)?[^/]+\.py$
   - repo: https://github.com/gruntwork-io/pre-commit
-    rev: v0.1.12
+    rev: v0.1.30
     hooks:
       - id: shellcheck
         files: ^script/.+

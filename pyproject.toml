@@ -41,17 +41,37 @@ build-backend = "hatchling.build"
 
 [dependency-groups]
 dev = [
-    "pre-commit>=4.0.0",
+    "pre-commit>=4.6.0",
+]
+test = [
     "pytest>=8.0.0",
     "pytest-asyncio>=0.24.0",
+    "pytest-cov>=5.0.0",
+    "ruff>=0.15.12",
 ]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 asyncio_mode = "auto"
+addopts = [
+    "--strict",
+    "--cov=pyhilo",
+]
 
 [tool.hatch.build.targets.wheel]
 packages = ["pyhilo"]
+
+[tool.coverage.run]
+source = ["pyhilo"]
+
+[tool.coverage.report]
+show_missing = true
+exclude_lines = [
+    "pragma: no cover",
+    "raise NotImplemented()",
+    "if __name__ == .__main__.:",
+    "main()",
+]
 
 [tool.ruff]
 line-length = 88
