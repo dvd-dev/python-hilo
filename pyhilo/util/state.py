@@ -125,9 +125,7 @@ async def get_state(state_yaml: str, _already_locked: bool = False) -> StateDict
     :type _already_locked: ``bool``
     :rtype: ``StateDict``
     """
-    if not isfile(
-        state_yaml
-    ):  # noqa: PTH113 - isfile is fine and simpler in this case.
+    if not isfile(state_yaml):  # noqa: PTH113 - isfile is fine and simpler in this case.
         return _get_defaults(StateDict)
 
     try:
