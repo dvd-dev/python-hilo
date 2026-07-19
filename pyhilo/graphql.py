@@ -590,6 +590,9 @@ class GraphQlHelper:
                 return
 
             if "data" in response_json:
+                devices = response_json["data"].get("getLocation", {}).get("devices", [])
+                gateways = [d for d in devices if d.get("deviceType") in ("Gateway", "Hub")]
+                LOG.debug("Gateway devices in getLocation response: %s", json.dumps(gateways, indent=2))
                 self._handle_query_result(response_json["data"])
 
     async def subscribe_to_device_updated(

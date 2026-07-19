@@ -720,6 +720,7 @@ class API:
         url = self._get_url("Gateways/Info", location_id=location_id)
         LOG.debug("Gateway URL is %s", url)
         req = await self.async_request("get", url)
+        LOG.debug("Gateway REST response: %s", json.dumps(req, indent=2))
         saved_attrs = [
             "zigBeePairingActivated",
             "zigBeeChannel",
