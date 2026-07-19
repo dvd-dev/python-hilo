@@ -111,15 +111,15 @@ class Devices:
                 self.devices.append(dev)
 
         # Append gateway from REST API (still available)
-        try:
-            gw = await self._api.get_gateway(self.location_id)
-            LOG.debug("Generating gateway device %s", gw)
-            gw_dev = self.generate_device(gw)
-            generated_devices.append(gw_dev)
-            if gw_dev not in self.devices:
-                self.devices.append(gw_dev)
-        except Exception as err:
-            LOG.error("Failed to get gateway: %s", err)
+        # try:
+        #     gw = await self._api.get_gateway(self.location_id)
+        #     LOG.debug("Generating gateway device %s", gw)
+        #     gw_dev = self.generate_device(gw)
+        #     generated_devices.append(gw_dev)
+        #     if gw_dev not in self.devices:
+        #         self.devices.append(gw_dev)
+        # except Exception as err:
+        #     LOG.error("Failed to get gateway: %s", err)
 
         # Now add devices from external sources (e.g. unknown source tracker)
         for callback in self._api._get_device_callbacks:
