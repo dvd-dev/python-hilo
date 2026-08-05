@@ -1,5 +1,5 @@
 from datetime import datetime, timezone
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 
@@ -381,3 +381,51 @@ class TestLowVoltageAttributes:
             assert registered[hilo_attribute] == fallback
             assert registered[hilo_attribute].value_type == fallback.value_type
             assert registered[hilo_attribute].attr == fallback.attr
+
+
+class TestSetAttributes:
+    """Batch writes bypass settable_attributes on purpose."""
+
+    def _make_device(self):
+        api = MagicMock()
+        api.dev_atts.side_effect = lambda attribute, value_type=None: next(
+            (
+                a
+                for a in get_device_attributes()
+                if a.hilo_attribute == attribute or a.attr == attribute
+            ),
+            attribute,
+        )
+        api._set_device_attributes = AsyncMock()
+        device = HiloDevice(api, id=1, hilo_id="h-1", location_id=10, name="T", type="Thermostat24V")
+        return device, api
+
+    async def test_sends_one_request_with_hilo_names(self):
+        device, api = self._make_device()
+        await device.set_attributes(
+            {"thermostat24_v_mode": "COOL", "TargetTemperature": 21}
+        )
+        api._set_device_attributes.assert_awaited_once_with(
+            device, {"Thermostat24VMode": "COOL", "TargetTemperature": 21}
+        )
+
+    async def test_ignores_settable_attributes(self):
+        device, api = self._make_device()
+        device.settable_attributes = [DeviceAttribute("Disconnected", "null")]
+        await device.set_attributes({"thermostat24_v_mode": "HEAT"})
+        api._set_device_attributes.assert_awaited_once()
+
+    async def test_does_not_update_readings_optimistically(self):
+        device, api = self._make_device()
+        await device.set_attributes({"thermostat24_v_mode": "HEAT"})
+        assert device.readings == []
+
+    async def test_unknown_attribute_is_skipped(self):
+        device, api = self._make_device()
+        await device.set_attributes({"NotAnAttribute": 1, "FanMode": "AUTO"})
+        api._set_device_attributes.assert_awaited_once_with(device, {"FanMode": "AUTO"})
+
+    async def test_no_request_when_nothing_resolves(self):
+        device, api = self._make_device()
+        await device.set_attributes({"NotAnAttribute": 1})
+        api._set_device_attributes.assert_not_awaited()

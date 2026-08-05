@@ -569,6 +569,18 @@ class API:
         LOG.debug("Device Attribute URL is %s", url)
         await self.async_request("put", url, json={key.hilo_attribute: value})
 
+    async def _set_device_attributes(
+        self,
+        device: HiloDevice,
+        attributes: dict[str, Union[str, float, int, None]],
+    ) -> None:
+        """Sets several device attributes in a single request."""
+        url = self._get_url(
+            f"Devices/{device.id}/Attributes", location_id=device.location_id
+        )
+        LOG.debug("Device Attributes URL is %s", url)
+        await self.async_request("put", url, json=attributes)
+
     async def get_event_notifications(self, location_id: int) -> dict[str, Any]:
         """This will return events notifications
         Event types:
