@@ -325,3 +325,59 @@ class TestHiloDevice:
         d = HiloDevice(api, id=1)
         result = d.get_attribute("nonexistent")
         assert result is None
+
+
+class TestLowVoltageAttributes:
+    """The 24 V thermostat attributes must resolve through dev_atts()."""
+
+    LOW_VOLTAGE_ATTRIBUTES = {
+        "Thermostat24VMode": "thermostat24_v_mode",
+        "Thermostat24VAllowedMode": "thermostat24_v_allowed_mode",
+        "Thermostat24VAllowedFanMode": "thermostat24_v_allowed_fan_mode",
+        "FanMode": "fan_mode",
+        "FanSpeed": "fan_speed",
+        "CurrentState": "current_state",
+        "CoolTemperatureSet": "cool_temperature_set",
+        "MinCoolSetpoint": "min_cool_setpoint",
+        "MaxCoolSetpoint": "max_cool_setpoint",
+    }
+
+    def test_all_are_registered(self):
+        for hilo_attribute in self.LOW_VOLTAGE_ATTRIBUTES:
+            assert hilo_attribute in HILO_READING_TYPES
+
+    def test_snake_case_names(self):
+        attributes = {a.hilo_attribute: a.attr for a in get_device_attributes()}
+        for hilo_attribute, snake in self.LOW_VOLTAGE_ATTRIBUTES.items():
+            assert attributes[hilo_attribute] == snake
+
+    def test_cool_setpoints_are_celsius(self):
+        attributes = {a.hilo_attribute: a.value_type for a in get_device_attributes()}
+        for hilo_attribute in (
+            "CoolTemperatureSet",
+            "MinCoolSetpoint",
+            "MaxCoolSetpoint",
+        ):
+            assert attributes[hilo_attribute] == "°C"
+
+    def test_textual_attributes_are_unchanged_by_registration(self):
+        """Registering the textual attributes is a no-op except for lookup.
+
+        GraphqlValueMapper.build_attribute() already sends valueType "null" for
+        every 24 V attribute, so the fallback in dev_atts() already builds a
+        DeviceAttribute with that type. Registering must produce exactly the
+        same object, otherwise this is a behaviour change and not a fix.
+        """
+        registered = {a.hilo_attribute: a for a in get_device_attributes()}
+        for hilo_attribute in (
+            "Thermostat24VMode",
+            "Thermostat24VAllowedMode",
+            "Thermostat24VAllowedFanMode",
+            "FanMode",
+            "FanSpeed",
+            "CurrentState",
+        ):
+            fallback = DeviceAttribute(hilo_attribute, "null")
+            assert registered[hilo_attribute] == fallback
+            assert registered[hilo_attribute].value_type == fallback.value_type
+            assert registered[hilo_attribute].attr == fallback.attr
