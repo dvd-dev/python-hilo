@@ -1,4 +1,4 @@
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 from pyhilo.const import HILO_READING_TYPES
 from pyhilo.device import DeviceAttribute, DeviceReading, get_device_attributes
@@ -94,3 +94,57 @@ class TestLowVoltageProperties:
     def test_humidity_is_an_int(self):
         device = _climate(Thermostat24VMode="COOL", Humidity=57)
         assert device.current_humidity == 57
+
+
+class TestSetLowVoltageState:
+    def _device(self):
+        device = _climate(
+            Thermostat24VMode="COOL",
+            TargetTemperature=19,
+            CoolTemperatureSet=24,
+            FanMode="ON",
+        )
+        device.set_attributes = AsyncMock()
+        return device
+
+    async def test_changing_one_value_still_sends_the_triplet(self):
+        device = self._device()
+        await device.async_set_low_voltage_state(cool_setpoint=22)
+        device.set_attributes.assert_awaited_once_with(
+            {
+                "Thermostat24VMode": "COOL",
+                "TargetTemperature": 19.0,
+                "CoolTemperatureSet": 22,
+            }
+        )
+
+    async def test_mode_change_keeps_current_setpoints(self):
+        device = self._device()
+        await device.async_set_low_voltage_state(mode="HEAT")
+        device.set_attributes.assert_awaited_once_with(
+            {
+                "Thermostat24VMode": "HEAT",
+                "TargetTemperature": 19.0,
+                "CoolTemperatureSet": 24.0,
+            }
+        )
+
+    async def test_fan_mode_is_added_to_the_triplet(self):
+        device = self._device()
+        await device.async_set_low_voltage_state(fan_mode="AUTO")
+        device.set_attributes.assert_awaited_once_with(
+            {
+                "Thermostat24VMode": "COOL",
+                "TargetTemperature": 19.0,
+                "CoolTemperatureSet": 24.0,
+                "FanMode": "AUTO",
+            }
+        )
+
+    async def test_absent_values_are_not_sent(self):
+        device = _climate(Thermostat24VMode="HEAT", TargetTemperature=21)
+        device.set_attributes = AsyncMock()
+        await device.async_set_low_voltage_state(target_temperature=22)
+        device.set_attributes.assert_awaited_once_with(
+            {"Thermostat24VMode": "HEAT", "TargetTemperature": 22}
+        )

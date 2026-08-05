@@ -190,3 +190,34 @@ class Climate(HiloDevice):
         """Ambient humidity, when the device reports it."""
         value = self._optional_float("humidity")
         return None if value is None else int(value)
+
+    async def async_set_low_voltage_state(
+        self,
+        mode: str | None = None,
+        target_temperature: float | None = None,
+        cool_setpoint: float | None = None,
+        fan_mode: str | None = None,
+    ) -> None:
+        """Write the mode and both setpoints together.
+
+        24 V thermostats reject partial writes: the mode and both setpoints
+        have to be sent in one request even when only one of them changed.
+        Arguments left out keep their current value; values the device does
+        not report at all are omitted from the payload.
+        """
+        payload: dict[str, Any] = {
+            "Thermostat24VMode": mode if mode is not None else self.mode,
+            "TargetTemperature": (
+                target_temperature
+                if target_temperature is not None
+                else self._optional_float("target_temperature")
+            ),
+            "CoolTemperatureSet": (
+                cool_setpoint if cool_setpoint is not None else self.cool_setpoint
+            ),
+        }
+        if fan_mode is not None:
+            payload["FanMode"] = fan_mode
+        payload = {k: v for k, v in payload.items() if v is not None}
+        LOG.info("%s Setting low voltage state to %s", self._tag, payload)
+        await self.set_attributes(payload)
