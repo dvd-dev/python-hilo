@@ -4,7 +4,12 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyhilo.const import HILO_READING_TYPES
-from pyhilo.device import DeviceAttribute, DeviceReading, HiloDevice, get_device_attributes
+from pyhilo.device import (
+    DeviceAttribute,
+    DeviceReading,
+    HiloDevice,
+    get_device_attributes,
+)
 
 
 class TestDeviceAttribute:
@@ -97,7 +102,9 @@ class TestDeviceReading:
 
     def test_inequality_different_attr(self):
         r1 = self._make_reading(device_attribute=DeviceAttribute("Power", "Watt"))
-        r2 = self._make_reading(device_attribute=DeviceAttribute("Intensity", "Percentage"))
+        r2 = self._make_reading(
+            device_attribute=DeviceAttribute("Intensity", "Percentage")
+        )
         assert r1 != r2
 
     def test_repr(self):
@@ -227,13 +234,19 @@ class TestHiloDevice:
         d = HiloDevice(api, id=1)
         da = DeviceAttribute("Power", "Watt")
         r1 = DeviceReading(
-            deviceId=1, hiloId="h-1", locationId=10,
-            timeStampUTC="2024-01-15T10:30:00Z", value=100.0,
+            deviceId=1,
+            hiloId="h-1",
+            locationId=10,
+            timeStampUTC="2024-01-15T10:30:00Z",
+            value=100.0,
             device_attribute=da,
         )
         r2 = DeviceReading(
-            deviceId=1, hiloId="h-1", locationId=10,
-            timeStampUTC="2024-01-15T11:00:00Z", value=200.0,
+            deviceId=1,
+            hiloId="h-1",
+            locationId=10,
+            timeStampUTC="2024-01-15T11:00:00Z",
+            value=200.0,
             device_attribute=da,
         )
         d.update_readings(r1)
@@ -397,7 +410,9 @@ class TestSetAttributes:
             attribute,
         )
         api._set_device_attributes = AsyncMock()
-        device = HiloDevice(api, id=1, hilo_id="h-1", location_id=10, name="T", type="Thermostat24V")
+        device = HiloDevice(
+            api, id=1, hilo_id="h-1", location_id=10, name="T", type="Thermostat24V"
+        )
         return device, api
 
     async def test_sends_one_request_with_hilo_names(self):
