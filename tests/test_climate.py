@@ -1,6 +1,6 @@
 from unittest.mock import AsyncMock, MagicMock
 
-from pyhilo.const import HILO_READING_TYPES
+from pyhilo.const import HILO_READING_TYPES, STATE_UNKNOWN
 from pyhilo.device import DeviceAttribute, DeviceReading, get_device_attributes
 from pyhilo.device.climate import Climate, as_list
 
@@ -60,6 +60,9 @@ class TestLowVoltageDetection:
     def test_device_reporting_a_mode_is_low_voltage(self):
         assert _climate(Thermostat24VMode="COOL").is_low_voltage is True
 
+    def test_device_reporting_unknown_mode_is_not_low_voltage(self):
+        assert _climate(Thermostat24VMode=STATE_UNKNOWN).is_low_voltage is False
+
 
 class TestLowVoltageProperties:
     def test_reads_mode_and_vocabularies(self):
@@ -98,6 +101,15 @@ class TestLowVoltageProperties:
     def test_humidity_rounds_rather_than_truncates(self):
         device = _climate(Thermostat24VMode="COOL", Humidity=57.8)
         assert device.current_humidity == 58
+
+    def test_unknown_state_is_treated_as_absent(self):
+        device = _climate(
+            Thermostat24VMode="COOL",
+            FanMode=STATE_UNKNOWN,
+            CurrentState=STATE_UNKNOWN,
+        )
+        assert device.fan_mode is None
+        assert device.current_state is None
 
 
 class TestSetTemperature:
