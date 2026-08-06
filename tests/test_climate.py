@@ -96,6 +96,24 @@ class TestLowVoltageProperties:
         assert device.current_humidity == 57
 
 
+class TestSetTemperature:
+    async def test_low_voltage_device_delegates_to_low_voltage_state(self):
+        device = _climate(Thermostat24VMode="COOL", TargetTemperature=19)
+        device.async_set_low_voltage_state = AsyncMock()
+        await device.async_set_temperature(21)
+        device.async_set_low_voltage_state.assert_awaited_once_with(
+            target_temperature=21
+        )
+
+    async def test_non_low_voltage_device_still_uses_set_attribute(self):
+        device = _climate(TargetTemperature=19)
+        device.set_attribute = AsyncMock()
+        device.async_set_low_voltage_state = AsyncMock()
+        await device.async_set_temperature(21)
+        device.set_attribute.assert_awaited_once_with("target_temperature", "21")
+        device.async_set_low_voltage_state.assert_not_awaited()
+
+
 class TestSetLowVoltageState:
     def _device(self):
         device = _climate(
