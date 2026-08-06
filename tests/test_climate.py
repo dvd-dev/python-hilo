@@ -95,6 +95,10 @@ class TestLowVoltageProperties:
         device = _climate(Thermostat24VMode="COOL", Humidity=57)
         assert device.current_humidity == 57
 
+    def test_humidity_rounds_rather_than_truncates(self):
+        device = _climate(Thermostat24VMode="COOL", Humidity=57.8)
+        assert device.current_humidity == 58
+
 
 class TestSetTemperature:
     async def test_low_voltage_device_delegates_to_low_voltage_state(self):

@@ -190,9 +190,14 @@ class Climate(HiloDevice):
 
     @property
     def current_humidity(self) -> int | None:
-        """Ambient humidity, when the device reports it."""
+        """Ambient humidity, rounded to the nearest percent.
+
+        GraphqlValueMapper reports 0 for a device without a humidity sensor,
+        not None, so a reading of 0 is a real (if degenerate) value rather
+        than an absent one.
+        """
         value = self._optional_float("humidity")
-        return None if value is None else int(value)
+        return None if value is None else round(value)
 
     async def async_set_low_voltage_state(
         self,
