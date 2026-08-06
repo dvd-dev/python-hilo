@@ -99,8 +99,8 @@ class Devices:
         return dev
 
     async def update(self) -> None:
-        """Update device list from SignalR cache + gateway from REST."""
-        # Get devices from SignalR cache (already populated by DeviceListInitialValuesReceived)
+        """Update device list from SignalR cache"""
+        # Get devices from SignalR cache (already populated by DeviceListInitialValuesReceived
         cached_devices = self._api.get_device_cache(self.location_id)
         generated_devices = []
         for raw_device in cached_devices:
