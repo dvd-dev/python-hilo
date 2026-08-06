@@ -1,5 +1,7 @@
 from unittest.mock import AsyncMock, MagicMock
 
+import pytest
+
 from pyhilo.const import HILO_READING_TYPES, STATE_UNKNOWN
 from pyhilo.device import DeviceAttribute, DeviceReading, get_device_attributes
 from pyhilo.device.climate import Climate, as_list
@@ -182,3 +184,13 @@ class TestSetLowVoltageState:
         device.set_attributes.assert_awaited_once_with(
             {"Thermostat24VMode": "HEAT", "TargetTemperature": 22}
         )
+
+    async def test_unreported_mode_without_explicit_mode_raises(self):
+        """A device that hasn't reported Thermostat24VMode can't be written to
+        without an explicit mode: silently dropping the key would send only
+        the setpoints, the exact partial write this method must prevent."""
+        device = _climate(TargetTemperature=19, CoolTemperatureSet=24)
+        device.set_attributes = AsyncMock()
+        with pytest.raises(ValueError):
+            await device.async_set_low_voltage_state(cool_setpoint=22)
+        device.set_attributes.assert_not_awaited()

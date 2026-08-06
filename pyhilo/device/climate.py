@@ -216,9 +216,21 @@ class Climate(HiloDevice):
         have to be sent in one request even when only one of them changed.
         Arguments left out keep their current value; values the device does
         not report at all are omitted from the payload.
+
+        Raises:
+            ValueError: The mode isn't given and the device hasn't reported
+                one either. Silently dropping Thermostat24VMode from the
+                payload in that case would send setpoints without a mode,
+                exactly the partial write this method exists to prevent.
         """
-        payload: dict[str, Any] = {
-            "Thermostat24VMode": mode if mode is not None else self.low_voltage_mode,
+        resolved_mode = mode if mode is not None else self.low_voltage_mode
+        if resolved_mode is None:
+            raise ValueError(
+                f"{self._tag} Cannot set low voltage state: no mode was given "
+                "and the device has not reported one. Pass mode explicitly."
+            )
+        payload: dict[str, str | int | float | None] = {
+            "Thermostat24VMode": resolved_mode,
             "TargetTemperature": (
                 target_temperature
                 if target_temperature is not None
