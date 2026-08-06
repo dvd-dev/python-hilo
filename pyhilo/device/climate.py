@@ -139,7 +139,7 @@ class Climate(HiloDevice):
         return self.get_value(LOW_VOLTAGE_MODE, None) is not None
 
     @property
-    def mode(self) -> str | None:
+    def low_voltage_mode(self) -> str | None:
         """Operating mode reported by a 24 V thermostat, in Hilo's vocabulary."""
         value = self.get_value(LOW_VOLTAGE_MODE, None)
         return None if value is None else str(value)
@@ -206,7 +206,7 @@ class Climate(HiloDevice):
         not report at all are omitted from the payload.
         """
         payload: dict[str, Any] = {
-            "Thermostat24VMode": mode if mode is not None else self.mode,
+            "Thermostat24VMode": mode if mode is not None else self.low_voltage_mode,
             "TargetTemperature": (
                 target_temperature
                 if target_temperature is not None

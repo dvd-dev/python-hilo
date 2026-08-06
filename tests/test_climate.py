@@ -69,7 +69,7 @@ class TestLowVoltageProperties:
             Thermostat24VAllowedFanMode=["ON", "AUTO"],
             FanMode="ON",
         )
-        assert device.mode == "COOL"
+        assert device.low_voltage_mode == "COOL"
         assert device.allowed_modes == ["HEAT", "OFF", "COOL"]
         assert device.allowed_fan_modes == ["ON", "AUTO"]
         assert device.fan_mode == "ON"
