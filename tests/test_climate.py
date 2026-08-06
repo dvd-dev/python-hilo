@@ -54,6 +54,9 @@ class TestAsList:
     def test_empty_list_stays_empty(self):
         assert as_list([]) == []
 
+    def test_unknown_state_is_empty(self):
+        assert as_list(STATE_UNKNOWN) == []
+
 
 class TestLowVoltageDetection:
     def test_baseboard_is_not_low_voltage(self):
@@ -95,6 +98,10 @@ class TestLowVoltageProperties:
         assert device.cool_setpoint is None
         assert device.min_cool_setpoint is None
         assert device.current_humidity is None
+
+    def test_unknown_state_numeric_value_is_none(self):
+        device = _climate(Thermostat24VMode="HEAT", CoolTemperatureSet=STATE_UNKNOWN)
+        assert device.cool_setpoint is None
 
     def test_humidity_is_an_int(self):
         device = _climate(Thermostat24VMode="COOL", Humidity=57)
@@ -194,3 +201,38 @@ class TestSetLowVoltageState:
         with pytest.raises(ValueError):
             await device.async_set_low_voltage_state(cool_setpoint=22)
         device.set_attributes.assert_not_awaited()
+
+    async def test_two_optional_values_in_one_call(self):
+        device = self._device()
+        await device.async_set_low_voltage_state(mode="HEAT", cool_setpoint=18)
+        device.set_attributes.assert_awaited_once_with(
+            {
+                "Thermostat24VMode": "HEAT",
+                "TargetTemperature": 19.0,
+                "CoolTemperatureSet": 18,
+            }
+        )
+
+
+class TestSetLowVoltageStateReachesTheApi:
+    """async_set_low_voltage_state() and set_attributes() are each tested in
+    isolation elsewhere; this covers the join between them, with only the
+    API mocked, so a regression in either seam shows up here."""
+
+    async def test_payload_reaches_the_api_hilo_cased(self):
+        device = _climate(
+            Thermostat24VMode="COOL",
+            TargetTemperature=19,
+            CoolTemperatureSet=24,
+        )
+        device._api._set_device_attributes = AsyncMock()
+        await device.async_set_low_voltage_state(cool_setpoint=22, fan_mode="AUTO")
+        device._api._set_device_attributes.assert_awaited_once_with(
+            device,
+            {
+                "Thermostat24VMode": "COOL",
+                "TargetTemperature": 19.0,
+                "CoolTemperatureSet": 22,
+                "FanMode": "AUTO",
+            },
+        )
