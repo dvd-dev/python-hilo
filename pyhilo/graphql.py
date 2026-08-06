@@ -590,9 +590,16 @@ class GraphQlHelper:
                 return
 
             if "data" in response_json:
-                devices = response_json["data"].get("getLocation", {}).get("devices", [])
-                gateways = [d for d in devices if d.get("deviceType") in ("Gateway", "Hub")]
-                LOG.debug("Gateway devices in getLocation response: %s", json.dumps(gateways, indent=2))
+                devices = (
+                    response_json["data"].get("getLocation", {}).get("devices", [])
+                )
+                gateways = [
+                    d for d in devices if d.get("deviceType") in ("Gateway", "Hub")
+                ]
+                LOG.debug(
+                    "Gateway devices in getLocation response: %s",
+                    json.dumps(gateways, indent=2),
+                )
                 self._handle_query_result(response_json["data"])
 
     async def subscribe_to_device_updated(
@@ -828,14 +835,15 @@ class GraphQlHelper:
             "supportedAttributes": "zigBeePairingActivated, zigBeeChannel, firmwareVersion, onlineStatus, lastStatusTime, disconnected",
             "settableAttributes": "",
             "Disconnected": {"value": connection_status != "CONNECTED"},
-            "zigBeePairingActivated": {"value": bool(raw_device.get("zigBeePairingModeEnhanced"))},
+            "zigBeePairingActivated": {
+                "value": bool(raw_device.get("zigBeePairingModeEnhanced"))
+            },
             "zigBeeChannel": {"value": raw_device.get("zigBeeChannel")},
             "firmwareVersion": {"value": raw_device.get("controllerSoftwareVersion")},
             "onlineStatus": {"value": connection_status},
             "lastStatusTime": {"value": raw_device.get("lastConnectionTime")},
             "disconnected": {"value": connection_status != "CONNECTED"},
         }
-
 
     def _handle_device_subscription_result(self, result: Dict[str, Any]) -> str:
         device_value: Dict[str, Any] = result["onAnyDeviceUpdated"]["device"]
