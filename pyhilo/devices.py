@@ -99,8 +99,8 @@ class Devices:
         return dev
 
     async def update(self) -> None:
-        """Update device list from SignalR cache + gateway from REST."""
-        # Get devices from SignalR cache (already populated by DeviceListInitialValuesReceived)
+        """Update device list from SignalR cache"""
+        # Get devices from SignalR cache (already populated by DeviceListInitialValuesReceived
         cached_devices = self._api.get_device_cache(self.location_id)
         generated_devices = []
         for raw_device in cached_devices:
@@ -110,18 +110,6 @@ class Devices:
             if dev not in self.devices:
                 self.devices.append(dev)
 
-        # Append gateway from REST API (still available)
-        try:
-            gw = await self._api.get_gateway(self.location_id)
-            LOG.debug("Generating gateway device %s", gw)
-            gw_dev = self.generate_device(gw)
-            generated_devices.append(gw_dev)
-            if gw_dev not in self.devices:
-                self.devices.append(gw_dev)
-        except Exception as err:
-            LOG.error("Failed to get gateway: %s", err)
-
-        # Now add devices from external sources (e.g. unknown source tracker)
         for callback in self._api._get_device_callbacks:
             try:
                 cb_device = callback()
