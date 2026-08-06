@@ -115,6 +115,9 @@ class Climate(HiloDevice):
         Args:
             temperature: The desired target temperature.
         """
+        if self.is_low_voltage:
+            await self.async_set_low_voltage_state(target_temperature=temperature)
+            return
         if temperature != self.target_temperature:
             LOG.info("%s Setting temperature to %s", self._tag, temperature)
             await self.set_attribute("target_temperature", str(temperature))
