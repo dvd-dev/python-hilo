@@ -132,6 +132,13 @@ class Climate(HiloDevice):
         except (TypeError, ValueError):
             return None
 
+    def _optional_str(self, attribute: str) -> str | None:
+        """Return a textual reading, or None when absent or unusable."""
+        value = self.get_value(attribute, None)
+        if value is None or value == STATE_UNKNOWN:
+            return None
+        return str(value)
+
     @property
     def is_low_voltage(self) -> bool:
         """Whether this is a low voltage (24 V) thermostat.
@@ -139,13 +146,12 @@ class Climate(HiloDevice):
         Baseboard thermostats report none of the 24 V attributes and therefore
         keep their heat-only behaviour.
         """
-        return self.get_value(LOW_VOLTAGE_MODE, None) is not None
+        return self.low_voltage_mode is not None
 
     @property
     def low_voltage_mode(self) -> str | None:
         """Operating mode reported by a 24 V thermostat, in Hilo's vocabulary."""
-        value = self.get_value(LOW_VOLTAGE_MODE, None)
-        return None if value is None else str(value)
+        return self._optional_str(LOW_VOLTAGE_MODE)
 
     @property
     def allowed_modes(self) -> list[str]:
@@ -155,8 +161,7 @@ class Climate(HiloDevice):
     @property
     def fan_mode(self) -> str | None:
         """Current fan mode, when the device reports one."""
-        value = self.get_value("fan_mode", None)
-        return None if value is None else str(value)
+        return self._optional_str("fan_mode")
 
     @property
     def allowed_fan_modes(self) -> list[str]:
@@ -170,8 +175,7 @@ class Climate(HiloDevice):
         Exposed for consumers, but deliberately not mapped to hvac_action yet:
         its vocabulary has not been observed in enough operating conditions.
         """
-        value = self.get_value("current_state", None)
-        return None if value is None else str(value)
+        return self._optional_str("current_state")
 
     @property
     def cool_setpoint(self) -> float | None:
