@@ -715,7 +715,6 @@ class API:
 
         return all_seasons
 
-
     async def get_weather(self, location_id: int) -> dict[str, Any]:
         """This will return the current weather like in the app
         https://api.hiloenergie.com/Automation/v1/api/Locations/XXXX/Weather
