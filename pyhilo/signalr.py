@@ -72,7 +72,7 @@ class SignalRHub:
     Lifecycle:
       ``run()``        — negotiate fresh token, build client, block until disconnect
       ``invoke()``     — send a hub method invocation
-      ``disconnect()`` — stop the transport cleanly
+      ``disconnect()`` — cancel the task awaiting ``run()`` to stop cleanly
     """
 
     def __init__(
@@ -85,6 +85,7 @@ class SignalRHub:
         """
         self._negotiate = negotiate_callback
         self._client: Optional[SignalRClient] = None
+        self._task: Optional[asyncio.Task] = None
         self._connect_callbacks: list[Callable[..., Any]] = []
         self._disconnect_callbacks: list[Callable[..., Any]] = []
         self._event_callbacks: list[Callable[..., Any]] = []
@@ -177,10 +178,12 @@ class SignalRHub:
         self._client.on_close(self._on_close)
         self._client.on_error(self._on_error)
 
+        self._task = asyncio.current_task()
         try:
             await self._client.run()
         finally:
             self._client = None
+            self._task = None
 
     async def invoke(self, method: str, args: list[Any]) -> None:
         """Invoke a hub method on the server.
@@ -195,10 +198,23 @@ class SignalRHub:
         await self._client.send(method, args)
 
     async def disconnect(self) -> None:
-        """Request the client to stop."""
-        if self._client is not None:
+        """Request the client to stop.
+
+        ``pysignalr.SignalRClient`` has no ``stop()``/``close()`` method --
+        its ``run()`` coroutine blocks until the connection ends and is
+        meant to be cancelled by the caller (see pysignalr's
+        ``WebsocketTransport.run()``, an unconditional reconnect loop with
+        no external stop hook). Cancel the task that's awaiting ``run()``
+        instead of calling a nonexistent client method.
+        """
+        task = self._task
+        if task is not None:
             LOG.info("SignalRHub: disconnecting")
-            await self._client.stop()
+            task.cancel()
+            try:
+                await task
+            except asyncio.CancelledError:
+                pass
 
     # ------------------------------------------------------------------
     # Internal pysignalr hooks
