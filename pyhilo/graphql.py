@@ -590,6 +590,16 @@ class GraphQlHelper:
                 return
 
             if "data" in response_json:
+                devices = (
+                    response_json["data"].get("getLocation", {}).get("devices", [])
+                )
+                gateways = [
+                    d for d in devices if d.get("deviceType") in ("Gateway", "Hub")
+                ]
+                LOG.debug(
+                    "Gateway devices in getLocation response: %s",
+                    json.dumps(gateways, indent=2),
+                )
                 self._handle_query_result(response_json["data"])
 
     async def subscribe_to_device_updated(
@@ -790,12 +800,55 @@ class GraphQlHelper:
         return await self._api.async_get_access_token()
 
     def _handle_query_result(self, result: Dict[str, Any]) -> None:
-        """This receives query results and maps them to the proper device."""
+        """Handle the result of the GraphQL query for location and devices."""
         devices_values: List[Dict[str, Any]] = result["getLocation"]["devices"]
+
+        for raw_device in devices_values:
+            if raw_device.get("deviceType") in ("Gateway", "Hub"):
+                if self._devices.find_device(1) is None:
+                    gw = self._build_gateway_dict(raw_device)
+                    LOG.debug("Creating gateway device from GraphQL: %s", gw)
+                    gw_dev = self._devices.generate_device(gw)
+                    if gw_dev not in self._devices.devices:
+                        self._devices.devices.append(gw_dev)
+
         attributes = self.mapper.map_query_values(devices_values)
         self._devices.parse_values_received(attributes)
 
+    def _build_gateway_dict(self, raw_device: Dict[str, Any]) -> Dict[str, Any]:
+        """Build a dictionary representing the gateway device from raw GraphQL data."""
+        hilo_id = raw_device.get("hiloId", "")
+        parts = hilo_id.split(":")
+        mac = parts[3] if len(parts) > 3 else None
+        if mac is None:
+            LOG.warning("Unable to extract MAC from hiloId: %s", hilo_id)
+
+        connection_status = raw_device.get("connectionStatus")
+        return {
+            "name": "Hilo Gateway",
+            "type": "Gateway",
+            "category": "Gateway",
+            "id": 1,
+            "identifier": mac,
+            "sdi": mac,
+            "provider": 1,
+            "model_number": "EQ000017",
+            "sw_version": raw_device.get("controllerSoftwareVersion"),
+            "supportedAttributes": "zigBeePairingActivated, zigBeeChannel, firmwareVersion, onlineStatus, lastStatusTime, disconnected",
+            "settableAttributes": "",
+            "Disconnected": {"value": connection_status != "CONNECTED"},
+            "zigBeePairingActivated": {
+                "value": bool(raw_device.get("zigBeePairingModeEnhanced"))
+            },
+            "zigBeeChannel": {"value": raw_device.get("zigBeeChannel")},
+            "firmwareVersion": {"value": raw_device.get("controllerSoftwareVersion")},
+            "onlineStatus": {"value": connection_status},
+            "lastStatusTime": {"value": raw_device.get("lastConnectionTime")},
+            "disconnected": {"value": connection_status != "CONNECTED"},
+        }
+
     def _handle_device_subscription_result(self, result: Dict[str, Any]) -> str:
+        """Handle the result of the GraphQL subscription for device updates."""
         device_value: Dict[str, Any] = result["onAnyDeviceUpdated"]["device"]
         attributes = self.mapper.map_device_subscription_values(device_value)
         updated_device = self._devices.parse_values_received(attributes)
@@ -804,6 +857,7 @@ class GraphQlHelper:
         return str(device_value.get("hiloId"))
 
     def _handle_location_subscription_result(self, result: Dict[str, Any]) -> str:
+        """Handle the result of the GraphQL subscription for location updates."""
         location_value: Dict[str, Any] = result["onAnyLocationUpdated"]["location"]
         attributes = self.mapper.map_location_subscription_values(location_value)
         updated_device = self._devices.parse_values_received(attributes)

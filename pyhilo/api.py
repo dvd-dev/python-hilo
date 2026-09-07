@@ -715,38 +715,6 @@ class API:
 
         return all_seasons
 
-    async def get_gateway(self, location_id: int) -> dict[str, Any]:
-        """Gets info about the Hilo hub (gateway)"""
-        url = self._get_url("Gateways/Info", location_id=location_id)
-        LOG.debug("Gateway URL is %s", url)
-        req = await self.async_request("get", url)
-        saved_attrs = [
-            "zigBeePairingActivated",
-            "zigBeeChannel",
-            "firmwareVersion",
-            "onlineStatus",
-            "lastStatusTime",
-            "disconnected",
-        ]
-
-        gw = {
-            "name": "Hilo Gateway",
-            "Disconnected": {"value": not req[0].get("onlineStatus") == "Online"},
-            "type": "Gateway",
-            "category": "Gateway",
-            "supportedAttributes": ", ".join(saved_attrs),
-            "settableAttributes": "",
-            "id": 1,
-            "identifier": req[0].get("dsn"),
-            "sdi": req[0].get("sdi"),
-            "provider": 1,
-            "model_number": "EQ000017",
-            "sw_version": req[0].get("firmwareVersion"),
-        }
-        for attr in saved_attrs:
-            gw[attr] = {"value": req[0].get(attr)}
-        return gw
-
     async def get_weather(self, location_id: int) -> dict[str, Any]:
         """This will return the current weather like in the app
         https://api.hiloenergie.com/Automation/v1/api/Locations/XXXX/Weather
