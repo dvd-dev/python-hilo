@@ -800,6 +800,7 @@ class GraphQlHelper:
         return await self._api.async_get_access_token()
 
     def _handle_query_result(self, result: Dict[str, Any]) -> None:
+        """Handle the result of the GraphQL query for location and devices."""
         devices_values: List[Dict[str, Any]] = result["getLocation"]["devices"]
 
         for raw_device in devices_values:
@@ -815,6 +816,7 @@ class GraphQlHelper:
         self._devices.parse_values_received(attributes)
 
     def _build_gateway_dict(self, raw_device: Dict[str, Any]) -> Dict[str, Any]:
+        """Build a dictionary representing the gateway device from raw GraphQL data."""
         hilo_id = raw_device.get("hiloId", "")
         parts = hilo_id.split(":")
         mac = parts[3] if len(parts) > 3 else None
@@ -846,6 +848,7 @@ class GraphQlHelper:
         }
 
     def _handle_device_subscription_result(self, result: Dict[str, Any]) -> str:
+        """Handle the result of the GraphQL subscription for device updates."""
         device_value: Dict[str, Any] = result["onAnyDeviceUpdated"]["device"]
         attributes = self.mapper.map_device_subscription_values(device_value)
         updated_device = self._devices.parse_values_received(attributes)
@@ -854,6 +857,7 @@ class GraphQlHelper:
         return str(device_value.get("hiloId"))
 
     def _handle_location_subscription_result(self, result: Dict[str, Any]) -> str:
+        """Handle the result of the GraphQL subscription for location updates."""
         location_value: Dict[str, Any] = result["onAnyLocationUpdated"]["location"]
         attributes = self.mapper.map_location_subscription_values(location_value)
         updated_device = self._devices.parse_values_received(attributes)
