@@ -1,6 +1,6 @@
 [project]
 name = "python-hilo"
-version = "2026.3.5"
+version = "2026.9.1"
 description = "A Python3, async interface to the Hilo API"
 readme = "README.md"
 requires-python = ">=3.11"
