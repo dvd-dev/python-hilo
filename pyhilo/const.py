@@ -5,13 +5,13 @@ import uuid
 
 import aiohttp
 
-# THe instance ID is random and unique to a specific instance/run.
+# The instance ID is random and unique to a specific instance/run.
 # Helps identifying multiple instances behind the same public IP, can be useful to the Hilo/HQ devs for debugging purposes
 INSTANCE_ID: Final = str(uuid.uuid4())[24:]
 LOG: Final = logging.getLogger(__package__)
 DEFAULT_STATE_FILE: Final = "hilo_state.yaml"
 REQUEST_RETRY: Final = 9
-PYHILO_VERSION: Final = "2026.3.05"
+PYHILO_VERSION: Final = "2026.9.01"
 # TODO: Find a way to keep previous line in sync with pyproject.toml automatically
 
 CONTENT_TYPE_FORM: Final = "application/x-www-form-urlencoded"
