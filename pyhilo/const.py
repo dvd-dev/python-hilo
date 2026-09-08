@@ -283,6 +283,7 @@ UNMONITORED_DEVICES: Final = [
     "43080",
     "43094",
     "43100",
+    "TH6250WF",
 ]
 
 STATE_UNKNOWN: Final = "unknown"
