@@ -136,6 +136,40 @@ class HiloDevice:
         else:
             LOG.warning("%s Invalid attribute %s for device", self._tag, attribute)
 
+    async def set_attributes(
+        self, attributes: Dict[str, Union[str, int, float, None]]
+    ) -> None:
+        """Send several attributes to the device in a single request.
+
+        Some devices reject partial writes: 24 V thermostats require the mode
+        and both setpoints to be sent together, even when only one of them
+        changed.
+
+        This differs from set_attribute() on two deliberate points:
+
+        - it does not check settable_attributes. Hilo advertises only
+          ['Disconnected'] as settable on those thermostats, while the API does
+          accept and apply the write.
+        - it does not update the readings optimistically. The new values come
+          back through the normal read path, which makes a read-back an actual
+          confirmation rather than an echo.
+        """
+        payload: Dict[str, Union[str, int, float, None]] = {}
+        for attribute, value in attributes.items():
+            dev_attribute = self._api.dev_atts(attribute)
+            if not isinstance(dev_attribute, DeviceAttribute):
+                LOG.warning(
+                    "%s Unable to set attribute %s: Unknown attribute",
+                    self._tag,
+                    attribute,
+                )
+                continue
+            payload[dev_attribute.hilo_attribute] = value
+        if not payload:
+            return
+        LOG.debug("%s Setting attributes %s", self._tag, payload)
+        await self._api._set_device_attributes(self, payload)
+
     def get_attribute(self, attribute: str) -> Union[DeviceReading, None]:
         if dev_attribute := cast(DeviceAttribute, self._api.dev_atts(attribute)):
             return self._get_attribute(dev_attribute)
