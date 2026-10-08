@@ -1,6 +1,7 @@
 ---
 name: Draft a release note
 
+# yamllint disable-line rule:truthy
 on:
   push:
     branches:
@@ -21,22 +22,17 @@ jobs:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@v7
         with:
+          # Full history so that all existing tags are available
           fetch-depth: 0
 
+      # Release Drafter's version resolver only understands SemVer, so the next
+      # CalVer version (YYYY.M.N) is computed by scripts/release.py and passed in.
       - name: 📅 Calculate next CalVer version
         id: calver
         run: |
-          VERSION=$(python3 -c '
-          import re, subprocess, datetime
-          tags = subprocess.check_output(["git", "tag", "-l"]).decode().splitlines()
-          now = datetime.datetime.now(datetime.timezone.utc)
-          pattern = re.compile(rf"^v?{now.year}\.{now.month}\.(\d+)$")
-          patches = [int(m.group(1)) for tag in tags if (m := pattern.match(tag.strip()))]
-          next_patch = max(patches) + 1 if patches else 1
-          print(f"{now.year}.{now.month}.{next_patch}")
-          ')
-          echo "Calculated next CalVer: ${VERSION}"
-          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          version="$(python3 scripts/release.py --next-version)"
+          echo "Calculated next CalVer: ${version}"
+          echo "version=${version}" >> "$GITHUB_OUTPUT"
 
       - name: 🚀 Run release-drafter
         uses: release-drafter/release-drafter@v7

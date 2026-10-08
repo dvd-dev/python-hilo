@@ -49,24 +49,11 @@ jobs:
         env:
           RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag_name }}
         run: |
-          tag="${RELEASE_TAG}"
-          if [ -z "${tag}" ]; then
+          if [ -z "${RELEASE_TAG}" ]; then
             echo "Error: No release tag found or provided."
             exit 1
           fi
-          version="${tag#v}"
-          version="${version#V}"
-          echo "Setting package version to: ${version}"
-          uv version "${version}" --no-sync
-          python3 -c '
-          import sys, re
-          version = sys.argv[1]
-          with open("pyhilo/const.py", "r") as f:
-              content = f.read()
-          content = re.sub(r"PYHILO_VERSION: Final = .*", f"PYHILO_VERSION: Final = \"{version}\"", content)
-          with open("pyhilo/const.py", "w") as f:
-              f.write(content)
-          ' "${version}"
+          python3 scripts/release.py --set-version "${RELEASE_TAG}"
 
       - name: 🏗 Build package
         run: uv build
