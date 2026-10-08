@@ -24,6 +24,7 @@ jobs:
         with:
           # Full history so that all existing tags are available
           fetch-depth: 0
+          persist-credentials: false
 
       # Release Drafter's version resolver only understands SemVer, so the next
       # CalVer version (YYYY.M.N) is computed by scripts/release.py and passed in.

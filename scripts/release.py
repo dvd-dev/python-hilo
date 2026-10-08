@@ -49,7 +49,9 @@ def get_next_version(reference_date: datetime | None = None) -> str:
     except (subprocess.SubprocessError, FileNotFoundError):
         tags = []
 
-    pattern = re.compile(rf"^v?{re.escape(prefix)}\.([0-9]+)(?:b[0-9]+)?$")
+    # Only match final/stable releases so pre-releases (e.g. v2026.10.1b1)
+    # do not consume the stable patch number for draft releases.
+    pattern = re.compile(rf"^v?{re.escape(prefix)}\.([0-9]+)$")
     patches = [int(m.group(1)) for tag in tags if (m := pattern.match(tag.strip()))]
     next_patch = max(patches, default=0) + 1
     return f"{prefix}.{next_patch}"
@@ -60,25 +62,31 @@ def set_package_version(tag_or_version: str, root_dir: Path = ROOT) -> str:
     version = clean_version_from_tag(tag_or_version)
 
     pyproject_path = root_dir / "pyproject.toml"
-    if pyproject_path.is_file():
-        content = pyproject_path.read_text(encoding="utf-8")
-        new_content = re.sub(
-            r'(?m)^version = "[^"]*"',
-            f'version = "{version}"',
-            content,
-            count=1,
-        )
-        pyproject_path.write_text(new_content, encoding="utf-8")
+    if not pyproject_path.is_file():
+        raise FileNotFoundError(f"Missing {pyproject_path}")
+    content = pyproject_path.read_text(encoding="utf-8")
+    new_content, count = re.subn(
+        r'(?m)^version = "[^"]*"',
+        f'version = "{version}"',
+        content,
+        count=1,
+    )
+    if count == 0:
+        raise ValueError(f"Could not find 'version' field in {pyproject_path}")
+    pyproject_path.write_text(new_content, encoding="utf-8")
 
     const_path = root_dir / "pyhilo" / "const.py"
-    if const_path.is_file():
-        content = const_path.read_text(encoding="utf-8")
-        new_content = re.sub(
-            r'PYHILO_VERSION: Final = "[^"]*"',
-            f'PYHILO_VERSION: Final = "{version}"',
-            content,
-        )
-        const_path.write_text(new_content, encoding="utf-8")
+    if not const_path.is_file():
+        raise FileNotFoundError(f"Missing {const_path}")
+    content = const_path.read_text(encoding="utf-8")
+    new_content, count = re.subn(
+        r'PYHILO_VERSION: Final = "[^"]*"',
+        f'PYHILO_VERSION: Final = "{version}"',
+        content,
+    )
+    if count == 0:
+        raise ValueError(f"Could not find 'PYHILO_VERSION' constant in {const_path}")
+    const_path.write_text(new_content, encoding="utf-8")
 
     return version
 

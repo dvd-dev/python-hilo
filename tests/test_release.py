@@ -11,6 +11,7 @@ import pytest
 from scripts.release import (
     clean_version_from_tag,
     get_next_version,
+    main,
     set_package_version,
 )
 
@@ -52,7 +53,8 @@ def test_clean_version_from_tag_invalid(invalid_tag: str) -> None:
         ("", "2026.10.1"),
         ("v2026.10.1\n", "2026.10.2"),
         ("v2026.10.1\nv2026.10.2\n", "2026.10.3"),
-        ("v2026.10.1\nv2026.10.1b1\n", "2026.10.2"),
+        ("v2026.10.1b1\n", "2026.10.1"),
+        ("v2026.10.1\nv2026.10.2b1\n", "2026.10.2"),
         ("v2026.9.5\n", "2026.10.1"),
     ],
 )
@@ -63,8 +65,8 @@ def test_get_next_version(existing_tags: str, expected_version: str) -> None:
         assert get_next_version(reference_date=ref_date) == expected_version
 
 
-def test_set_package_version(tmp_path: Path) -> None:
-    """Test updating pyproject.toml and pyhilo/const.py versions."""
+def test_set_package_version_success(tmp_path: Path) -> None:
+    """Test successfully updating pyproject.toml and pyhilo/const.py versions."""
     pyproject = tmp_path / "pyproject.toml"
     pyproject.write_text(
         '[project]\nname = "python-hilo"\nversion = "2026.9.1"\n', encoding="utf-8"
@@ -81,3 +83,29 @@ def test_set_package_version(tmp_path: Path) -> None:
     assert 'PYHILO_VERSION: Final = "2026.10.1"' in const_file.read_text(
         encoding="utf-8"
     )
+
+
+def test_set_package_version_missing_files(tmp_path: Path) -> None:
+    """Test that missing target files raise FileNotFoundError."""
+    with pytest.raises(FileNotFoundError, match="Missing"):
+        set_package_version("v2026.10.1", root_dir=tmp_path)
+
+
+def test_set_package_version_missing_pattern(tmp_path: Path) -> None:
+    """Test that unmatched version patterns raise ValueError."""
+    pyproject = tmp_path / "pyproject.toml"
+    pyproject.write_text('[project]\nname = "python-hilo"\n', encoding="utf-8")
+
+    with pytest.raises(ValueError, match="Could not find 'version' field"):
+        set_package_version("v2026.10.1", root_dir=tmp_path)
+
+
+def test_main_cli(capsys: pytest.CaptureFixture[str]) -> None:
+    """Test main CLI entrypoint flags."""
+    with patch("scripts.release.get_next_version", return_value="2026.10.1"):
+        main(["--next-version"])
+        assert capsys.readouterr().out == "2026.10.1\n"
+
+    with patch("scripts.release.set_package_version", return_value="2026.10.1"):
+        main(["--set-version", "v2026.10.1"])
+        assert capsys.readouterr().out == "Updated package version to 2026.10.1\n"
