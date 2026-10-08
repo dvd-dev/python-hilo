@@ -1,0 +1,71 @@
+---
+name: Release
+
+# yamllint disable-line rule:truthy
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag to publish (e.g. v2026.10.1)"
+        required: true
+        type: string
+
+env:
+  DEFAULT_PYTHON: "3.13"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Releasing to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: release
+      url: https://pypi.org/p/python-hilo
+    permissions:
+      attestations: write
+      contents: read
+      id-token: write
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag_name }}
+          persist-credentials: false
+
+      - name: 🏗 Set up Python ${{ env.DEFAULT_PYTHON }}
+        id: python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON }}
+
+      - name: 🏗 Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+
+      - name: 🧪 Run tests
+        run: |
+          uv sync --group test
+          uv run pytest
+
+      - name: 🏗 Set package version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag_name }}
+        run: |
+          if [ -z "${RELEASE_TAG}" ]; then
+            echo "Error: No release tag found or provided."
+            exit 1
+          fi
+          python3 scripts/release.py --set-version "${RELEASE_TAG}"
+
+      - name: 🏗 Build package
+        run: uv build
+
+      - name: 🚀 Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+          print-hash: true
