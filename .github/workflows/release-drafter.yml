@@ -1,14 +1,49 @@
+---
 name: Draft a release note
+
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
 jobs:
   draft_release:
     name: Release Drafter
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: read
     steps:
-      - name: Run release-drafter
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: 📅 Calculate next CalVer version
+        id: calver
+        run: |
+          VERSION=$(python3 -c '
+          import re, subprocess, datetime
+          tags = subprocess.check_output(["git", "tag", "-l"]).decode().splitlines()
+          now = datetime.datetime.now(datetime.timezone.utc)
+          pattern = re.compile(rf"^v?{now.year}\.{now.month}\.(\d+)$")
+          patches = [int(m.group(1)) for tag in tags if (m := pattern.match(tag.strip()))]
+          next_patch = max(patches) + 1 if patches else 1
+          print(f"{now.year}.{now.month}.{next_patch}")
+          ')
+          echo "Calculated next CalVer: ${VERSION}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=v${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: 🚀 Run release-drafter
         uses: release-drafter/release-drafter@v7.7.0
+        with:
+          name: "v${{ steps.calver.outputs.version }}"
+          tag: "${{ steps.calver.outputs.tag }}"
+          version: "${{ steps.calver.outputs.version }}"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

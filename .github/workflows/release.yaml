@@ -1,0 +1,78 @@
+---
+name: Release
+
+# yamllint disable-line rule:truthy
+on:
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag_name:
+        description: "Release tag to publish (e.g. v2026.10.1)"
+        required: false
+        type: string
+
+env:
+  DEFAULT_PYTHON: "3.13"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    name: Releasing to PyPI
+    runs-on: ubuntu-latest
+    environment:
+      name: release
+      url: https://pypi.org/p/python-hilo
+    permissions:
+      attestations: write
+      contents: write
+      id-token: write
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      - name: 🏗 Set up Python ${{ env.DEFAULT_PYTHON }}
+        id: python
+        uses: actions/setup-python@v7.0.0
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON }}
+
+      - name: 🏗 Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+
+      - name: 🏗 Set package version
+        env:
+          RELEASE_TAG: ${{ github.event.release.tag_name || inputs.tag_name }}
+        run: |
+          tag="${RELEASE_TAG}"
+          if [ -z "${tag}" ]; then
+            echo "Error: No release tag found or provided."
+            exit 1
+          fi
+          version="${tag#v}"
+          version="${version#V}"
+          echo "Setting package version to: ${version}"
+          uv version "${version}" --no-sync
+          python3 -c '
+          import sys, re
+          version = sys.argv[1]
+          with open("pyhilo/const.py", "r") as f:
+              content = f.read()
+          content = re.sub(r"PYHILO_VERSION: Final = .*", f"PYHILO_VERSION: Final = \"{version}\"", content)
+          with open("pyhilo/const.py", "w") as f:
+              f.write(content)
+          ' "${version}"
+
+      - name: 🏗 Build package
+        run: uv build
+
+      - name: 🚀 Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          verbose: true
+          print-hash: true
