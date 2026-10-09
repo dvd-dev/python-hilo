@@ -94,6 +94,13 @@ class HiloDevice:
                 elif att == "model_number":
                     att = "model"
                 new_val = val  # type: ignore
+                if att == "identifier" and new_val is None:
+                    # The cloud returns a null serial for some devices (observed
+                    # for the Hilo gateway since ~2026-09-10). Consumers build
+                    # unique ids as f"{device.identifier.lower()}-..." and crash
+                    # on None, so coerce back to the historic empty-string value
+                    # that existing device registries were built from.
+                    new_val = ""
             setattr(self, att, new_val)
         if self.model:
             self.model = self.model.replace("Model_", "")

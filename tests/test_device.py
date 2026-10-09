@@ -1,10 +1,13 @@
-from datetime import datetime, timezone
+from datetime import datetime
 from unittest.mock import MagicMock
 
-import pytest
-
 from pyhilo.const import HILO_READING_TYPES
-from pyhilo.device import DeviceAttribute, DeviceReading, HiloDevice, get_device_attributes
+from pyhilo.device import (
+    DeviceAttribute,
+    DeviceReading,
+    HiloDevice,
+    get_device_attributes,
+)
 
 
 class TestDeviceAttribute:
@@ -97,7 +100,9 @@ class TestDeviceReading:
 
     def test_inequality_different_attr(self):
         r1 = self._make_reading(device_attribute=DeviceAttribute("Power", "Watt"))
-        r2 = self._make_reading(device_attribute=DeviceAttribute("Intensity", "Percentage"))
+        r2 = self._make_reading(
+            device_attribute=DeviceAttribute("Intensity", "Percentage")
+        )
         assert r1 != r2
 
     def test_repr(self):
@@ -227,13 +232,19 @@ class TestHiloDevice:
         d = HiloDevice(api, id=1)
         da = DeviceAttribute("Power", "Watt")
         r1 = DeviceReading(
-            deviceId=1, hiloId="h-1", locationId=10,
-            timeStampUTC="2024-01-15T10:30:00Z", value=100.0,
+            deviceId=1,
+            hiloId="h-1",
+            locationId=10,
+            timeStampUTC="2024-01-15T10:30:00Z",
+            value=100.0,
             device_attribute=da,
         )
         r2 = DeviceReading(
-            deviceId=1, hiloId="h-1", locationId=10,
-            timeStampUTC="2024-01-15T11:00:00Z", value=200.0,
+            deviceId=1,
+            hiloId="h-1",
+            locationId=10,
+            timeStampUTC="2024-01-15T11:00:00Z",
+            value=200.0,
             device_attribute=da,
         )
         d.update_readings(r1)
@@ -325,3 +336,11 @@ class TestHiloDevice:
         d = HiloDevice(api, id=1)
         result = d.get_attribute("nonexistent")
         assert result is None
+
+    def test_identifier_none_coerces_to_empty_string(self):
+        """The cloud returns a null identifier for some devices (observed for
+        the Hilo gateway since ~2026-09-10); consumers build unique ids from
+        device.identifier and must not receive None."""
+        api = _mock_api()
+        d = HiloDevice(api, id=1, identifier=None)
+        assert d.identifier == ""
