@@ -100,7 +100,10 @@ class HiloDevice:
                     # unique ids as f"{device.identifier.lower()}-..." and crash
                     # on None, so coerce back to the historic empty-string value
                     # that existing device registries were built from.
-                    new_val = ""
+                    # mypy: the declared kwargs type excludes None, but the
+                    # cloud really does send nulls — which is exactly the case
+                    # being guarded here, hence the ignore below.
+                    new_val = ""  # type: ignore[unreachable]
             setattr(self, att, new_val)
         if self.model:
             self.model = self.model.replace("Model_", "")
