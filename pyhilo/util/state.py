@@ -115,6 +115,15 @@ def _write_state(state_yaml: str, state: dict[str, Any] | StateDict) -> None:
     os.replace(tmp_path, state_yaml)
 
 
+async def _async_write_state(
+    state_yaml: str, state: dict[str, Any] | StateDict
+) -> None:
+    """Run _write_state in a worker thread so it doesn't block the event loop."""
+    await asyncio.get_running_loop().run_in_executor(
+        None, _write_state, state_yaml, state
+    )
+
+
 async def get_state(state_yaml: str, _already_locked: bool = False) -> StateDict:
     """Read in state yaml.
 
@@ -143,10 +152,10 @@ async def get_state(state_yaml: str, _already_locked: bool = False) -> StateDict
             )
             defaults = _get_defaults(StateDict)
             if _already_locked:
-                _write_state(state_yaml, defaults)
+                await _async_write_state(state_yaml, defaults)
             else:
                 async with lock:
-                    _write_state(state_yaml, defaults)
+                    await _async_write_state(state_yaml, defaults)
             return defaults
 
         return state_yaml_payload
@@ -159,10 +168,10 @@ async def get_state(state_yaml: str, _already_locked: bool = False) -> StateDict
         )
         defaults = _get_defaults(StateDict)
         if _already_locked:
-            _write_state(state_yaml, defaults)
+            await _async_write_state(state_yaml, defaults)
         else:
             async with lock:
-                _write_state(state_yaml, defaults)
+                await _async_write_state(state_yaml, defaults)
         return defaults
 
 
@@ -186,7 +195,4 @@ async def set_state(
         merged_state: dict[str, Any] = {key: {**current_state.get(key, {}), **state}}  # type: ignore[dict-item]
         new_state: dict[str, Any] = {**current_state, **merged_state}
         LOG.debug("Saving state to yaml file")
-        # TODO: Use asyncio.get_running_loop() and run_in_executor to write
-        # to the file in a non blocking manner. Currently, yaml.dump is
-        # synchronous on the main event loop.
-        _write_state(state_yaml, new_state)
+        await _async_write_state(state_yaml, new_state)
