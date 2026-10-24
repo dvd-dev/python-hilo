@@ -66,11 +66,12 @@ class API:
         oauth_session: Any = None,
         request_retries: int = REQUEST_RETRY,
         log_traces: bool = False,
+        state_yaml: str = DEFAULT_STATE_FILE,
     ) -> None:
         """Initialize"""
         self._backoff_refresh_lock_api = asyncio.Lock()
         self._request_retries = request_retries
-        self._state_yaml: str = DEFAULT_STATE_FILE
+        self._state_yaml: str = state_yaml
         self.state: StateDict = {}
         self.async_request = self._wrap_request_method(self._request_retries)
         self.device_attributes = get_device_attributes()
@@ -106,6 +107,7 @@ class API:
         oauth_session: Any = None,
         request_retries: int = REQUEST_RETRY,
         log_traces: bool = False,
+        state_yaml: str = DEFAULT_STATE_FILE,
     ) -> API:
         """Get an authenticated API object.
         :param session: The ``aiohttp`` ``ClientSession`` session used for all HTTP requests
@@ -116,6 +118,7 @@ class API:
             ``OAuth2Session``, adapted internally.
         :param request_retries: The default number of request retries to use
         :type request_retries: ``int``
+        :param state_yaml: Path of the file where the API state (tokens, etc.) is saved.
         :rtype: :meth:`pyhilo.api.API`
         """
         api = cls(
@@ -124,6 +127,7 @@ class API:
             oauth_session=oauth_session,
             request_retries=request_retries,
             log_traces=log_traces,
+            state_yaml=state_yaml,
         )
         # Test token before post init
         await api.async_get_access_token()
