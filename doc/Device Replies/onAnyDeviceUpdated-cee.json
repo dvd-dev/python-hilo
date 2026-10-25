@@ -1,0 +1,33 @@
+{
+  "data": {
+    "onAnyDeviceUpdated": {
+      "deviceType": "cee",
+      "locationHiloId": "urn:hilo:crm:00000-abcdef:0",
+      "transmissionTime": "2026-10-24T19:46:35.207Z",
+      "operationId": "00000000-0000-0000-0000-000000000002",
+      "status": "REPORT",
+      "device": {
+        "deviceType": "cee",
+        "hiloId": "urn:hilo:philo:4a5b6c7d8e9f0001:0",
+        "physicalAddress": "4A5B6C7D8E9F0001",
+        "connectionStatus": "CONNECTED",
+        "gDState": "EXCLUDED",
+        "version": "45",
+        "probeTemp": {
+          "value": 54,
+          "kind": "DEGREE_CELSIUS"
+        },
+        "zigbeeVersion": "45",
+        "state": "ON",
+        "ccrType": "WATER_HEATER",
+        "alerts": [
+          "0"
+        ],
+        "power": {
+          "value": 0,
+          "kind": "WATT"
+        }
+      }
+    }
+  }
+}
