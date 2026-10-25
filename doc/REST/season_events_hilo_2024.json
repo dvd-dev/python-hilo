@@ -1,0 +1,36 @@
+{
+  "season": 2024,
+  "events": [
+    {
+      "id": 303,
+      "startDateUtc": "2025-03-03T09:00:00+00:00",
+      "period": "AM",
+      "reportId": 1000000,
+      "reward": 20.39,
+      "energySavingsWh": 37081.6845703125,
+      "status": "Success",
+      "isPreseasonEvent": false
+    },
+    {
+      "id": 302,
+      "startDateUtc": "2025-02-19T09:00:00+00:00",
+      "period": "AM",
+      "reportId": 1000001,
+      "reward": 21.85,
+      "energySavingsWh": 39730.3349609375,
+      "status": "Success",
+      "isPreseasonEvent": false
+    },
+    {
+      "id": 301,
+      "startDateUtc": "2025-02-18T09:00:00+00:00",
+      "period": "AM",
+      "reportId": 1000002,
+      "reward": 23.91,
+      "energySavingsWh": 43477.09521484375,
+      "status": "Success",
+      "isPreseasonEvent": false
+    }
+  ],
+  "periodId": "SGlsb3x1cm46aGlsbzpjcm06MDAwMDAtYWJjZGVmOjB8MjAyMi0wNi0yMlQxOTo1MDozOC4wMDAwMDAwWg=="
+}
