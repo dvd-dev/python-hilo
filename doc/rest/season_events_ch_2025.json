@@ -1,0 +1,42 @@
+{
+  "season": 2025,
+  "events": [
+    {
+      "id": 378,
+      "startDateUtc": "2026-03-18T08:00:00+00:00",
+      "period": "AM",
+      "reward": 11.68,
+      "energySavingsWh": 20570,
+      "status": "Success",
+      "isPreseasonEvent": false,
+      "isCredited": true,
+      "isFlatRate": false,
+      "isInsufficientReduction": false
+    },
+    {
+      "id": 377,
+      "startDateUtc": "2026-03-03T09:00:00+00:00",
+      "period": "AM",
+      "reward": 17.95,
+      "energySavingsWh": 31620,
+      "status": "Success",
+      "isPreseasonEvent": false,
+      "isCredited": true,
+      "isFlatRate": false,
+      "isInsufficientReduction": false
+    },
+    {
+      "id": 373,
+      "startDateUtc": "2026-02-08T09:00:00+00:00",
+      "period": "AM",
+      "reward": 20.56,
+      "energySavingsWh": 36220,
+      "status": "Success",
+      "isPreseasonEvent": false,
+      "isCredited": true,
+      "isFlatRate": false,
+      "isInsufficientReduction": false
+    }
+  ],
+  "periodId": "Q0h8dXJuOmhpbG86Y3JtOjAwMDAwLWFiY2RlZjowfDIwMjUtMTEtMDFUMTM6MDE6MTcuODA4Nzc4NVo="
+}
