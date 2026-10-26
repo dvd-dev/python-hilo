@@ -47,7 +47,7 @@
     "ghcr.io/devcontainers/features/github-cli:1": {},
     "ghcr.io/jsburckhardt/devcontainer-features/uv:1": {}
   },
-  "image": "mcr.microsoft.com/devcontainers/python:3.11-bookworm",
+  "image": "mcr.microsoft.com/devcontainers/python:3-3.14-bookworm",
   "name": "A Python3, async interface to the Hilo API",
   "postCreateCommand": "uv sync --group dev --group test && uv run pre-commit install"
 }

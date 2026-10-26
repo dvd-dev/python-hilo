@@ -6,7 +6,7 @@
 [![Build Status][build-shield]][build]
 [![Open in Dev Containers][devcontainer-shield]][devcontainer]
 
-`python-hilo` (aka `pyhilo`) is a Python 3.11, `asyncio`-driven interface to the unofficial
+`python-hilo` (aka `pyhilo`) is a Python 3.13+, `asyncio`-driven interface to the unofficial
 Hilo API from Hydro Quebec. This is meant to be integrated into Home Assistant but can also
 be used as a standalone library.
 
@@ -35,7 +35,7 @@ for formatting and linting.
 
 You need at least:
 
-- Python 3.11+
+- Python 3.13+
 - [uv][uv]
 
 To install all packages, including all development requirements:

@@ -19,7 +19,7 @@ This repository contains `pyhilo`, a standalone asynchronous Python client libra
 
 - **Strict Decoupling from Home Assistant**:
   - This library MUST NEVER import `homeassistant` or depend on Home Assistant Core modules, constants, or types.
-  - The library must be 100% installable, testable, and runnable independently in any standard Python 3.12+ environment.
+  - The library must be 100% installable, testable, and runnable independently in any standard Python 3.13+ environment.
 - **Authentication Contract**:
   - Expose an abstract base class `AbstractAuth` (`pyhilo.auth`):
     ```python
