@@ -8,7 +8,7 @@ on:
   pull_request:
 
 env:
-  DEFAULT_PYTHON: 3.13
+  DEFAULT_PYTHON: "3.14"
 
 jobs:
   pre-commit:
@@ -36,21 +36,25 @@ jobs:
 
   tests:
     runs-on: "ubuntu-latest"
-    name: Tests
+    name: Tests (${{ matrix.python-version }})
+    strategy:
+      matrix:
+        # Mirrors the Hilo integration, which still supports Home Assistant releases on 3.13.
+        python-version: ["3.13", "3.14"]
     steps:
       - name: Check out the repository
         uses: actions/checkout@v7
 
-      - name: Set up Python ${{ env.DEFAULT_PYTHON }}
+      - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v7.0.0
         with:
-          python-version: ${{ env.DEFAULT_PYTHON }}
+          python-version: ${{ matrix.python-version }}
 
       - name: Install uv
         uses: astral-sh/setup-uv@v10.2.0
 
       - name: Install dependencies
-        run: uv sync --group test
+        run: uv sync --python ${{ matrix.python-version }} --group test
 
       - name: Run tests
-        run: uv run pytest -v
+        run: uv run --python ${{ matrix.python-version }} pytest -v
