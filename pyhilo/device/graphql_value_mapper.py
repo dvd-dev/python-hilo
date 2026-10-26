@@ -76,7 +76,7 @@ class GraphqlValueMapper:
 
     def _build_smart_meter(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
         attributes = []
-        if device.get("zigbeeChannel") is not None:
+        if device.get("zigBeeChannel") is not None:
             attributes.append(
                 self.build_attribute(
                     device["hiloId"], "ZigbeeChannel", device["zigBeeChannel"]
