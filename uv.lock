@@ -957,7 +957,7 @@ wheels = [
 
 [[package]]
 name = "python-hilo"
-version = "2026.10.1"
+version = "2026.10.2"
 source = { editable = "." }
 dependencies = [
     { name = "aiofiles" },
