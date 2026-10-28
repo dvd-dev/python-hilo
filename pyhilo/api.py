@@ -491,6 +491,12 @@ class API:
         req: list[dict[str, Any]] = await self.async_request("get", url)
         return (req[0]["id"], req[0]["locationHiloId"])
 
+    async def get_rate_plan(self, location_id: int) -> str:
+        """Return the current rate plan name of a location (e.g. "Flex", "D", "CH")."""
+        url = f"{API_AUTOMATION_ENDPOINT}/Locations/{location_id}"
+        location: dict[str, Any] = await self.async_request("get", url)
+        return str(location["ratePlan"]["current"])
+
     def set_device_cache(self, devices: list[dict[str, Any]]) -> None:
         """Store devices received from SignalR DeviceListInitialValuesReceived.
 
