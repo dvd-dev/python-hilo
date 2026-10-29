@@ -1,9 +1,9 @@
 [project]
 name = "python-hilo"
-version = "2026.9.1"
+version = "2026.10.2"
 description = "A Python3, async interface to the Hilo API"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.13"
 license = "MIT"
 authors = [
     { name = "David Vallee Delisle", email = "me@dvd.dev" },
@@ -17,7 +17,8 @@ classifiers = [
     "Topic :: Home Automation",
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Programming Language :: Python :: Implementation :: CPython",
     "Programming Language :: Python :: Implementation :: PyPy",
 ]
@@ -75,7 +76,7 @@ exclude_lines = [
 
 [tool.ruff]
 line-length = 88
-target-version = "py311"
+target-version = "py313"
 exclude = [".git", "__pycache__", ".venv", "docs/source/conf.py", "old", "build", "dist"]
 
 [tool.ruff.lint]
@@ -102,7 +103,7 @@ disallow_untyped_defs = true
 follow_imports = "silent"
 ignore_missing_imports = true
 no_implicit_optional = true
-python_version = "3.11"
+python_version = "3.13"
 show_error_codes = true
 strict_equality = true
 warn_incomplete_stub = true

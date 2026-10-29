@@ -13,8 +13,8 @@ from urllib import parse
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import ClientResponseError
 import backoff
-from homeassistant.helpers.config_entry_oauth2_flow import OAuth2Session
 
+from pyhilo.auth import AbstractAuth, _LegacyOAuthSessionAuth
 from pyhilo.const import (
     ANDROID_CLIENT_ENDPOINT,
     ANDROID_CLIENT_HEADERS,
@@ -62,19 +62,22 @@ class API:
         self,
         *,
         session: ClientSession,
-        oauth_session: OAuth2Session,
+        auth: AbstractAuth | None = None,
+        oauth_session: Any = None,
         request_retries: int = REQUEST_RETRY,
         log_traces: bool = False,
+        state_yaml: str = DEFAULT_STATE_FILE,
     ) -> None:
         """Initialize"""
         self._backoff_refresh_lock_api = asyncio.Lock()
         self._request_retries = request_retries
-        self._state_yaml: str = DEFAULT_STATE_FILE
+        self._state_yaml: str = state_yaml
         self.state: StateDict = {}
         self.async_request = self._wrap_request_method(self._request_retries)
         self.device_attributes = get_device_attributes()
         self.session: ClientSession = session
-        self._oauth_session = oauth_session
+        self._auth = self._resolve_auth(auth, oauth_session)
+        self._access_token: str | None = None
         self.signalr_devices: SignalRHub
         self.signalr_challenges: SignalRHub
         self.log_traces = log_traces
@@ -84,29 +87,47 @@ class API:
         self._device_cache: list[dict[str, Any]] = []
         self._device_cache_event: asyncio.Event = asyncio.Event()
 
+    @staticmethod
+    def _resolve_auth(auth: AbstractAuth | None, oauth_session: Any) -> AbstractAuth:
+        """Pick the auth provider, adapting the deprecated ``oauth_session``."""
+        if auth is not None and oauth_session is not None:
+            raise ValueError("Pass either auth or oauth_session, not both")
+        if auth is not None:
+            return auth
+        if oauth_session is not None:
+            return _LegacyOAuthSessionAuth(oauth_session)
+        raise ValueError("An auth provider is required")
+
     @classmethod
     async def async_create(
         cls,
         *,
         session: ClientSession,
-        oauth_session: OAuth2Session,
+        auth: AbstractAuth | None = None,
+        oauth_session: Any = None,
         request_retries: int = REQUEST_RETRY,
         log_traces: bool = False,
+        state_yaml: str = DEFAULT_STATE_FILE,
     ) -> API:
         """Get an authenticated API object.
         :param session: The ``aiohttp`` ``ClientSession`` session used for all HTTP requests
         :type session: ``aiohttp.client.ClientSession``
-        :param oauth_session: The session to make requests authenticated with OAuth2.
-        :type oauth_session: ``config_entry_oauth2_flow.OAuth2Session``
+        :param auth: Provides valid access tokens for API requests.
+        :type auth: :class:`pyhilo.auth.AbstractAuth`
+        :param oauth_session: Deprecated, use ``auth`` instead. A Home Assistant
+            ``OAuth2Session``, adapted internally.
         :param request_retries: The default number of request retries to use
         :type request_retries: ``int``
+        :param state_yaml: Path of the file where the API state (tokens, etc.) is saved.
         :rtype: :meth:`pyhilo.api.API`
         """
         api = cls(
             session=session,
+            auth=auth,
             oauth_session=oauth_session,
             request_retries=request_retries,
             log_traces=log_traces,
+            state_yaml=state_yaml,
         )
         # Test token before post init
         await api.async_get_access_token()
@@ -128,16 +149,12 @@ class API:
 
     async def async_get_access_token(self) -> str:
         """Return a valid access token."""
-        if not self._oauth_session.valid_token:
-            await self._oauth_session.async_ensure_token_valid()
-
-        access_token = str(self._oauth_session.token["access_token"])
-        LOG.debug("SignalR access token is %s", access_token)
+        self._access_token = await self._auth.async_get_access_token()
 
         urn = self.urn
         LOG.debug("Extracted URN: %s", urn)
 
-        return str(self._oauth_session.token["access_token"])
+        return self._access_token
 
     @property
     def urn(self) -> str | None:
@@ -146,10 +163,9 @@ class API:
             return self._urn
 
         try:
-            if not self._oauth_session.valid_token:
+            if not self._access_token:
                 return None
-            token = self._oauth_session.token["access_token"]
-            payload_part = token.split(".")[1]
+            payload_part = self._access_token.split(".")[1]
             # Add padding if necessary
             padding = 4 - len(payload_part) % 4
             if padding != 4:
@@ -474,6 +490,12 @@ class API:
         LOG.debug("LocationId URL is %s", url)
         req: list[dict[str, Any]] = await self.async_request("get", url)
         return (req[0]["id"], req[0]["locationHiloId"])
+
+    async def get_rate_plan(self, location_id: int) -> str:
+        """Return the current rate plan name of a location (e.g. "Flex", "D", "CH")."""
+        url = f"{API_AUTOMATION_ENDPOINT}/Locations/{location_id}"
+        location: dict[str, Any] = await self.async_request("get", url)
+        return str(location["ratePlan"]["current"])
 
     def set_device_cache(self, devices: list[dict[str, Any]]) -> None:
         """Store devices received from SignalR DeviceListInitialValuesReceived.

@@ -14,10 +14,10 @@ repos:
     hooks:
       - id: ruff-format
         args: [--quiet]
-        files: ^pyhilo/.+\.py$
+        files: ^(pyhilo|tests)/.+\.py$
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
-        files: ^pyhilo/.+\.py$
+        files: ^(pyhilo|tests)/.+\.py$
   - repo: https://github.com/codespell-project/codespell
     rev: v2.4.1
     hooks:

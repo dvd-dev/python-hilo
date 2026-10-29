@@ -1,12 +1,10 @@
 import os
 
-import pytest
-
 from pyhilo.util.state import (
+    AndroidDeviceDict,
+    FirebaseDict,
     StateDict,
     TokenDict,
-    FirebaseDict,
-    AndroidDeviceDict,
     _get_defaults,
     _write_state,
     get_state,
@@ -107,22 +105,56 @@ class TestGetState:
 class TestSetState:
     async def test_set_creates_file(self, tmp_path):
         state_file = str(tmp_path / "state.yaml")
-        await set_state(state_file, "firebase", {"fid": "test-fid", "name": None, "token": {"access": None, "refresh": None, "expires_at": None}})
+        await set_state(
+            state_file,
+            "firebase",
+            {
+                "fid": "test-fid",
+                "name": None,
+                "token": {"access": None, "refresh": None, "expires_at": None},
+            },
+        )
         result = await get_state(state_file)
         assert result["firebase"]["fid"] == "test-fid"
 
     async def test_set_merges_with_existing(self, tmp_path):
         state_file = str(tmp_path / "state.yaml")
-        await set_state(state_file, "firebase", {"fid": "first", "name": None, "token": {"access": None, "refresh": None, "expires_at": None}})
-        await set_state(state_file, "android", {"token": "device-token", "device_id": 0})
+        await set_state(
+            state_file,
+            "firebase",
+            {
+                "fid": "first",
+                "name": None,
+                "token": {"access": None, "refresh": None, "expires_at": None},
+            },
+        )
+        await set_state(
+            state_file, "android", {"token": "device-token", "device_id": 0}
+        )
         result = await get_state(state_file)
         assert result["firebase"]["fid"] == "first"
         assert result["android"]["token"] == "device-token"
 
     async def test_set_merges_within_key(self, tmp_path):
         state_file = str(tmp_path / "state.yaml")
-        await set_state(state_file, "firebase", {"fid": "first", "name": None, "token": {"access": None, "refresh": None, "expires_at": None}})
-        await set_state(state_file, "firebase", {"fid": "second", "name": "updated", "token": {"access": "tok", "refresh": None, "expires_at": None}})
+        await set_state(
+            state_file,
+            "firebase",
+            {
+                "fid": "first",
+                "name": None,
+                "token": {"access": None, "refresh": None, "expires_at": None},
+            },
+        )
+        await set_state(
+            state_file,
+            "firebase",
+            {
+                "fid": "second",
+                "name": "updated",
+                "token": {"access": "tok", "refresh": None, "expires_at": None},
+            },
+        )
         result = await get_state(state_file)
         assert result["firebase"]["fid"] == "second"
         assert result["firebase"]["name"] == "updated"

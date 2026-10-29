@@ -1,6 +1,7 @@
 """Define the hilo package."""
 
 from pyhilo.api import API
+from pyhilo.auth import AbstractAuth
 from pyhilo.const import UNMONITORED_DEVICES
 from pyhilo.device import HiloDevice
 from pyhilo.device.switch import Switch
@@ -12,6 +13,7 @@ from pyhilo.util import from_utc_timestamp, time_diff
 
 __all__ = [
     "API",
+    "AbstractAuth",
     "Devices",
     "HiloDevice",
     "Event",
