@@ -174,11 +174,14 @@ class GraphqlValueMapper:
                 device["hiloId"], "ZigbeeVersion", device["zigbeeVersion"]
             )
         )
-        attributes.append(
-            self.build_attribute(
-                device["hiloId"], "Humidity", device.get("ambientHumidity") or 0
+        # Some models (e.g. the HT402) have no humidity sensor and always
+        # report 0, so only keep a real, non-zero reading.
+        if device.get("ambientHumidity"):
+            attributes.append(
+                self.build_attribute(
+                    device["hiloId"], "Humidity", device["ambientHumidity"]
+                )
             )
-        )
         if device.get("allowedModes") is not None:
             attributes.append(
                 self.build_attribute(
