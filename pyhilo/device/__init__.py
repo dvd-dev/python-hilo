@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Dict, Union, cast
 
 from pyhilo.const import (
@@ -62,7 +62,7 @@ class HiloDevice:
                     "deviceId": self.id,
                     "hiloId": self.hilo_id,
                     "locationId": self.location_id,
-                    "timeStampUTC": datetime.utcnow().isoformat(),
+                    "timeStampUTC": datetime.now(UTC).isoformat(),
                     "value": value,
                     "device_attribute": DeviceAttribute(orig_att, reading_att),
                 }
@@ -127,7 +127,7 @@ class HiloDevice:
                     **{
                         "deviceId": self.id,
                         "locationId": self.location_id,
-                        "timeStampUTC": datetime.utcnow().isoformat(),
+                        "timeStampUTC": datetime.now(UTC).isoformat(),
                         "value": value,
                         "device_attribute": attribute,
                     }  # type: ignore
