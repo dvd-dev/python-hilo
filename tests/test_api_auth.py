@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyhilo import API, AbstractAuth
+from pyhilo.api import redact_headers
 from pyhilo.const import API_HOSTNAME
 
 URN = "urn:hilo:crm:abc-123"
@@ -133,3 +134,47 @@ async def test_deprecated_oauth_session_still_works(
     assert await api.async_get_access_token() == TOKEN
     oauth_session.async_ensure_token_valid.assert_awaited_once()
     assert api.urn == URN
+
+
+async def test_trace_log_does_not_contain_access_token(
+    mock_session: MagicMock,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    auth = AsyncMock(spec=AbstractAuth)
+    auth.async_get_access_token.return_value = TOKEN
+    api = API(session=mock_session, auth=auth)
+    api.log_traces = True
+
+    with caplog.at_level(logging.DEBUG):
+        await api._async_request("get", "/first")
+
+    assert "[TRACE] Headers" in caplog.text
+    assert TOKEN not in caplog.text
+
+
+@pytest.mark.parametrize(
+    "header",
+    [
+        pytest.param("authorization", id="authorization"),
+        pytest.param("Authorization", id="authorization-capitalized"),
+        pytest.param("Ocp-Apim-Subscription-Key", id="subscription-key"),
+        pytest.param("x-goog-api-key", id="google-api-key"),
+        pytest.param("X-Goog-Firebase-Installations-Auth", id="firebase-auth"),
+    ],
+)
+def test_redact_headers_masks_credentials(header: str) -> None:
+    assert redact_headers({header: "secret"}) == {header: "***"}
+
+
+def test_redact_headers_keeps_non_sensitive_values() -> None:
+    headers = {"Host": API_HOSTNAME, "User-Agent": "pyhilo"}
+
+    assert redact_headers(headers) == headers
+
+
+def test_redact_headers_leaves_request_headers_untouched() -> None:
+    headers = {"authorization": "Bearer secret"}
+
+    redact_headers(headers)
+
+    assert headers == {"authorization": "Bearer secret"}

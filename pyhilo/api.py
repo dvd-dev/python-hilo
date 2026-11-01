@@ -48,6 +48,23 @@ from pyhilo.exceptions import InvalidCredentialsError, RequestError
 from pyhilo.signalr import SignalRHub, SignalRManager
 from pyhilo.util.state import AndroidDeviceDict, StateDict, get_state, set_state
 
+SENSITIVE_HEADERS: frozenset[str] = frozenset(
+    {
+        "authorization",
+        "ocp-apim-subscription-key",
+        "x-goog-api-key",
+        "x-goog-firebase-installations-auth",
+    }
+)
+
+
+def redact_headers(headers: dict[str, str]) -> dict[str, str]:
+    """Return a copy of headers safe to log, with credential values masked."""
+    return {
+        key: "***" if key.lower() in SENSITIVE_HEADERS else value
+        for key, value in headers.items()
+    }
+
 
 class API:
     """An API object to interact with the Hilo cloud.
@@ -288,7 +305,7 @@ class API:
         data: dict[str, Any] = {}
         url = parse.urljoin(f"https://{host}", endpoint)
         if self.log_traces:
-            LOG.debug("[TRACE] Headers: %s", kwargs["headers"])
+            LOG.debug("[TRACE] Headers: %s", redact_headers(kwargs["headers"]))
             LOG.debug("[TRACE] Async request: %s %s", method, url)
 
         async with self.session.request(method, url, **kwargs) as resp:
