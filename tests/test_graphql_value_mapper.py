@@ -33,10 +33,10 @@ def test_smart_meter_maps_zigbee_channel() -> None:
         pytest.param(None, [], id="null"),
     ],
 )
-def test_thermostat_humidity_skips_missing_sensor(
+def test_thermostat_humidity_reports_only_real_readings(
     ambient_humidity: float | None, expected: list[float]
 ) -> None:
-    """Models without a humidity sensor report 0, which must not surface as 0%."""
+    """Non-zero humidity is kept; 0 (no sensor, e.g. HT402) or null is dropped."""
     device = _device("onAnyDeviceUpdated-tstat.json")
     device["ambientHumidity"] = ambient_humidity
 
