@@ -94,3 +94,33 @@ def test_hub_disconnected_follows_connection_status(
 ) -> None:
     """The gateway's Disconnected attribute is derived from the string status."""
     assert _disconnected_values(_hub(connection_status)) == {expected}
+
+
+@pytest.mark.parametrize(
+    ("ambient_humidity", "expected"),
+    [
+        pytest.param(45.5, [45.5], id="reading"),
+        pytest.param(0, [], id="no-sensor-zero"),
+        pytest.param(None, [], id="null"),
+    ],
+)
+def test_thermostat_humidity_skips_missing_sensor(
+    ambient_humidity: float | None, expected: list[float]
+) -> None:
+    """Models without a humidity sensor report 0, which must not surface as 0%."""
+    device = _device("onAnyDeviceUpdated-tstat.json")
+    device["ambientHumidity"] = ambient_humidity
+
+    attributes = GraphqlValueMapper().map_device_subscription_values(device)
+
+    assert [a["value"] for a in attributes if a["attribute"] == "Humidity"] == expected
+
+
+def test_thermostat_humidity_absent_field() -> None:
+    """Payloads that omit ambientHumidity produce no Humidity attribute."""
+    device = _device("onAnyDeviceUpdated-tstat.json")
+    del device["ambientHumidity"]
+
+    attributes = GraphqlValueMapper().map_device_subscription_values(device)
+
+    assert not [a for a in attributes if a["attribute"] == "Humidity"]
