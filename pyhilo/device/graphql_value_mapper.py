@@ -84,7 +84,9 @@ class GraphqlValueMapper:
             )
         attributes.append(
             self.build_attribute(
-                device["hiloId"], "Disconnected", device["connectionStatus"] == 2
+                device["hiloId"],
+                "Disconnected",
+                device["connectionStatus"] == "DISCONNECTED",
             ),
         )
         if device.get("power") is not None:
@@ -105,7 +107,9 @@ class GraphqlValueMapper:
         )
         attributes.append(
             self.build_attribute(
-                device["hiloId"], "Disconnected", device["connectionStatus"] == 2
+                device["hiloId"],
+                "Disconnected",
+                device["connectionStatus"] == "DISCONNECTED",
             )
         )  # Offline
         attributes.append(
@@ -451,7 +455,7 @@ class GraphqlValueMapper:
             self.build_attribute(
                 device["hiloId"],
                 "Disconnected",
-                device["connectionStatus"] == "Disconnected",
+                device["connectionStatus"] == "DISCONNECTED",
             ),
         ]
 
