@@ -41,6 +41,33 @@ def _climate(**readings):
     return device
 
 
+class TestHvacAction:
+    @pytest.mark.parametrize(
+        "current_state, expected",
+        [
+            pytest.param("HEATING", "heating", id="heating"),
+            pytest.param("COOLING", "cooling", id="cooling"),
+            pytest.param("OFF", "idle", id="off-is-idle"),
+            pytest.param(None, "idle", id="unreported-is-idle"),
+        ],
+    )
+    def test_low_voltage_maps_current_state(self, current_state, expected):
+        kwargs = {"Thermostat24VMode": "AUTO"}
+        if current_state is not None:
+            kwargs["CurrentState"] = current_state
+        assert _climate(**kwargs).hvac_action == expected
+
+    @pytest.mark.parametrize(
+        "heating, expected",
+        [
+            pytest.param(1, "heating", id="power-on-is-heating"),
+            pytest.param(0, "idle", id="power-off-is-idle"),
+        ],
+    )
+    def test_baseboard_uses_heating_power(self, heating, expected):
+        assert _climate(Heating=heating).hvac_action == expected
+
+
 class TestAsList:
     def test_none_is_empty(self):
         assert as_list(None) == []

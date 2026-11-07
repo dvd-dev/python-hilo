@@ -102,9 +102,20 @@ class Climate(HiloDevice):
         """
         Gets the current HVAC action of the device.
 
+        For 24 V thermostats the action comes from currentState ("HEATING",
+        "COOLING", "OFF").  For baseboard thermostats it is derived from the
+        reported heating power.
+
         Returns:
-            str: 'heating' if heating is active, 'idle' otherwise.
+            str: one of 'heating', 'cooling', or 'idle'.
         """
+        if self.is_low_voltage:
+            state = self.current_state
+            if state == "HEATING":
+                return "heating"
+            if state == "COOLING":
+                return "cooling"
+            return "idle"
         attr = self.get_value("heating", 0)
         return "heating" if attr > 0 else "idle"
 
@@ -170,11 +181,7 @@ class Climate(HiloDevice):
 
     @property
     def current_state(self) -> str | None:
-        """Raw running state reported by a 24 V thermostat.
-
-        Exposed for consumers, but deliberately not mapped to hvac_action yet:
-        its vocabulary has not been observed in enough operating conditions.
-        """
+        """Raw running state reported by a 24 V thermostat ("HEATING", "COOLING", "OFF")."""
         return self._optional_str("current_state")
 
     @property
