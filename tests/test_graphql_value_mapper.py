@@ -25,7 +25,7 @@ def test_smart_meter_maps_zigbee_channel() -> None:
     assert channel == [24]
 
 
-def _hub(connection_status: str | None, device_type: str = "Hub") -> dict[str, object]:
+def _hub(connection_status: str, device_type: str = "Hub") -> dict[str, object]:
     return {
         "hiloId": "hub-1",
         "deviceType": device_type,
@@ -56,15 +56,11 @@ def _disconnected_values(device: dict[str, object]) -> list[bool]:
             id="tstat-disconnected",
         ),
         pytest.param(
-            "onAnyDeviceUpdated-tstat.json", None, True, id="tstat-null-status"
-        ),
-        pytest.param(
             "onAnyDeviceUpdated-cee.json", "CONNECTED", False, id="cee-connected"
         ),
         pytest.param(
             "onAnyDeviceUpdated-cee.json", "DISCONNECTED", True, id="cee-disconnected"
         ),
-        pytest.param("onAnyDeviceUpdated-cee.json", None, True, id="cee-null-status"),
         pytest.param(
             "onAnyDeviceUpdated-meter.json", "CONNECTED", False, id="meter-connected"
         ),
@@ -74,27 +70,16 @@ def _disconnected_values(device: dict[str, object]) -> list[bool]:
             True,
             id="meter-disconnected",
         ),
-        pytest.param(
-            "onAnyDeviceUpdated-meter.json", None, True, id="meter-null-status"
-        ),
     ],
 )
 def test_device_disconnected_follows_connection_status(
-    filename: str, connection_status: str | None, expected: bool
+    filename: str, connection_status: str, expected: bool
 ) -> None:
-    """Only CONNECTED maps to Disconnected=False; DISCONNECTED or null maps to True."""
+    """Hilo reports connectionStatus as a string; DISCONNECTED maps to Disconnected=True."""
     device = _device(filename)
     device["connectionStatus"] = connection_status
 
     assert _disconnected_values(device) == [expected]
-
-
-def test_device_disconnected_when_connection_status_absent() -> None:
-    """Payloads omitting connectionStatus default to Disconnected=True."""
-    device = _device("onAnyDeviceUpdated-tstat.json")
-    del device["connectionStatus"]
-
-    assert _disconnected_values(device) == [True]
 
 
 @pytest.mark.parametrize(
@@ -102,104 +87,15 @@ def test_device_disconnected_when_connection_status_absent() -> None:
     [
         pytest.param("Hub", "CONNECTED", False, id="hub-connected"),
         pytest.param("Hub", "DISCONNECTED", True, id="hub-disconnected"),
-        pytest.param("Hub", None, True, id="hub-null-status"),
         pytest.param("Gateway", "CONNECTED", False, id="gateway-connected"),
         pytest.param("Gateway", "DISCONNECTED", True, id="gateway-disconnected"),
-        pytest.param("Gateway", None, True, id="gateway-null-status"),
     ],
 )
 def test_hub_disconnected_follows_connection_status(
-    device_type: str, connection_status: str | None, expected: bool
+    device_type: str, connection_status: str, expected: bool
 ) -> None:
     """The gateway's Disconnected attribute is derived for both Hub and Gateway types."""
     assert _disconnected_values(_hub(connection_status, device_type)) == [expected]
-
-
-@pytest.mark.parametrize(
-    "device_entry",
-    [
-        pytest.param(
-            {
-                "__typename": "BasicDevice",
-                "deviceType": "IndoorWeatherStation",
-                "hiloId": "urn:hilo:netatmo:station:0",
-                "connectionStatus": None,
-            },
-            id="basic-device-stub",
-        ),
-        pytest.param(
-            {
-                "deviceType": "IndoorWeatherStation",
-                "hiloId": "urn:hilo:netatmo:station:0",
-                "connectionStatus": None,
-            },
-            id="unrecognized-device-type",
-        ),
-        pytest.param(
-            {"deviceType": "Tstat", "connectionStatus": "DISCONNECTED"},
-            id="missing-hilo-id",
-        ),
-    ],
-)
-def test_query_values_skips_unmigrated_or_incomplete_devices(
-    device_entry: dict[str, object],
-) -> None:
-    """getLocation skips BasicDevice stubs, unknown deviceType values, and missing hiloId."""
-    assert GraphqlValueMapper().map_query_values([device_entry]) == []
-
-
-@pytest.mark.parametrize(
-    ("connection_status", "expected"),
-    [
-        pytest.param("CONNECTED", False, id="connected"),
-        pytest.param("DISCONNECTED", True, id="disconnected"),
-        pytest.param(None, True, id="null-status"),
-    ],
-)
-def test_location_subscription_maps_connection_status(
-    connection_status: str | None, expected: bool
-) -> None:
-    """Location updates only carry hiloId and connectionStatus without full device fields."""
-    payload: dict[str, object] = {
-        "devices": [
-            {
-                "__typename": "BasicThermostat",
-                "hiloId": "urn:hilo:philo:1a2b3c4d5e6f0001:0",
-                "connectionStatus": connection_status,
-            }
-        ]
-    }
-
-    attributes = GraphqlValueMapper().map_location_subscription_values(payload)
-
-    by_name = {a["attribute"]: a["value"] for a in attributes}
-    assert by_name == {"Unpaired": False, "Disconnected": expected}
-
-
-@pytest.mark.parametrize(
-    "device_entry",
-    [
-        pytest.param(
-            {
-                "__typename": "BasicDevice",
-                "hiloId": "urn:hilo:netatmo:station:0",
-                "connectionStatus": None,
-            },
-            id="basic-device-stub",
-        ),
-        pytest.param(
-            {"__typename": "BasicThermostat", "connectionStatus": "DISCONNECTED"},
-            id="missing-hilo-id",
-        ),
-    ],
-)
-def test_location_subscription_skips_ignored_entries(
-    device_entry: dict[str, object],
-) -> None:
-    """Unmigrated BasicDevice stubs and entries missing hiloId produce no readings."""
-    payload: dict[str, object] = {"devices": [device_entry]}
-
-    assert GraphqlValueMapper().map_location_subscription_values(payload) == []
 
 
 @pytest.mark.parametrize(

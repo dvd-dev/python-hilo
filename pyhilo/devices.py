@@ -73,7 +73,7 @@ class Devices:
             else:
                 LOG.warning(
                     "Unable to find device %s for reading %s",
-                    device_identifier or reading.device_id,
+                    device_identifier,
                     reading,
                 )
         return updated_devices
