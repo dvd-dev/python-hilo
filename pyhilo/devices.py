@@ -59,10 +59,11 @@ class Devices:
             if device_identifier == 0:
                 device_identifier = reading.hilo_id
             device = self.find_device(device_identifier)
-            # If device_id was 0 and hilo_id lookup failed, this is likely
-            # a gateway reading that arrives before GatewayValuesReceived
-            # assigns the real ID. Fall back to the gateway device.
-            if device is None and reading.device_id == 0:
+            # If device_id was 0 and hilo_id is empty, this is a SignalR
+            # gateway reading arriving before GatewayValuesReceived assigns
+            # the real ID. Never route an unmatched non-empty hilo_id to the
+            # gateway, as it belongs to a different device.
+            if device is None and reading.device_id == 0 and not reading.hilo_id:
                 device = next((d for d in self.devices if d.type == "Gateway"), None)
             if device:
                 device.update_readings(reading)
@@ -71,7 +72,9 @@ class Devices:
                     updated_devices.append(device)
             else:
                 LOG.warning(
-                    f"Unable to find device {reading.device_id} for reading {reading}"
+                    "Unable to find device %s for reading %s",
+                    device_identifier or reading.device_id,
+                    reading,
                 )
         return updated_devices
 
@@ -79,6 +82,8 @@ class Devices:
         """Makes sure the devices received have an identifier, this means some need to be hardcoded
         like the unknown power meter.
         """
+        if not device_identifier:
+            return None
         if isinstance(device_identifier, int):
             return next((d for d in self.devices if d.id == device_identifier), None)
         return next((d for d in self.devices if d.hilo_id == device_identifier), None)

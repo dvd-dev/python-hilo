@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from datetime import datetime, timezone
 from typing import Any, Dict
 
@@ -11,36 +12,58 @@ class GraphqlValueMapper:
 
     OnState = "on"
 
+    @staticmethod
+    def is_gateway_payload(device: Mapping[str, object]) -> bool:
+        if device.get("__typename") == "Gateway":
+            return True
+        device_type = device.get("deviceType")
+        return isinstance(device_type, str) and device_type.lower() in (
+            "gateway",
+            "hub",
+        )
+
     def map_query_values(self, values: list[Dict[str, Any]]) -> list[Dict[str, Any]]:
         readings: list[Dict[str, Any]] = []
         for device in values:
-            if device.get("deviceType") is not None:
-                reading = self._map_devices_values(device)
-                readings.extend(reading)
+            readings.extend(self._map_devices_values(device))
         return readings
 
     def map_device_subscription_values(
         self, device: Dict[str, Any]
     ) -> list[Dict[str, Any]]:
-        readings: list[Dict[str, Any]] = []
-        if device.get("deviceType") is not None:
-            reading = self._map_devices_values(device)
-            readings.extend(reading)
-        return readings
+        return self._map_devices_values(device)
 
     def map_location_subscription_values(
         self, values: Dict[str, Any]
     ) -> list[Dict[str, Any]]:
         readings: list[Dict[str, Any]] = []
-        for device in values.get("devices", []):
-            if device.get("deviceType") is not None:
-                reading = self._map_devices_values(device)
-                readings.extend(reading)
+        for device in values.get("devices") or []:
+            if device.get("__typename") == "BasicDevice" or not device.get("hiloId"):
+                continue
+            readings.extend(self._map_basic_device(device))
+            if self.is_gateway_payload(device):
+                readings.append(
+                    self.build_attribute(
+                        device["hiloId"],
+                        "onlineStatus",
+                        device.get("connectionStatus"),
+                    )
+                )
         return readings
 
     def _map_devices_values(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
+        # Digital-Twin returns BasicDevice stubs with connectionStatus=null for
+        # unmigrated SignalR-managed devices (e.g. weather stations, smoke detectors).
+        if device.get("__typename") == "BasicDevice" or not device.get("hiloId"):
+            return []
         attributes: list[Dict[str, Any]] = self._map_basic_device(device)
-        match device["deviceType"].lower():
+        if self.is_gateway_payload(device):
+            attributes.extend(self._build_gateway(device))
+            return attributes
+        device_type = device.get("deviceType")
+        if not isinstance(device_type, str):
+            return []
+        match device_type.lower():
             case "tstat":
                 attributes.extend(self._build_thermostat(device))
             case "cee":  # Water Heater
@@ -55,8 +78,6 @@ class GraphqlValueMapper:
                 attributes.extend(self._build_charging_point(device))
             case "meter":  # Smart Meter
                 attributes.extend(self._build_smart_meter(device))
-            case "hub":  # Gateway
-                attributes.extend(self._build_gateway(device))
             case "colorbulb":
                 attributes.extend(self._build_light(device))
             case "whitebulb":
@@ -66,7 +87,7 @@ class GraphqlValueMapper:
             case "switch":
                 attributes.extend(self._build_switch(device))
             case _:
-                pass
+                return []
         return attributes
 
     def _map_to_device_reading(
@@ -82,19 +103,17 @@ class GraphqlValueMapper:
                     device["hiloId"], "ZigbeeChannel", device["zigBeeChannel"]
                 )
             )
-        attributes.append(
-            self.build_attribute(
-                device["hiloId"],
-                "Disconnected",
-                device["connectionStatus"] == "DISCONNECTED",
-            ),
-        )
         if device.get("power") is not None:
             attributes.append(self._map_power(device))
         return attributes
 
     def _build_gateway(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:
         attributes = []
+        attributes.append(
+            self.build_attribute(
+                device["hiloId"], "onlineStatus", device.get("connectionStatus")
+            )
+        )
         attributes.append(
             self.build_attribute(
                 device["hiloId"], "LastStatusTime", device["lastConnectionTime"]
@@ -105,13 +124,6 @@ class GraphqlValueMapper:
                 device["hiloId"], "Version", device["controllerSoftwareVersion"]
             )
         )
-        attributes.append(
-            self.build_attribute(
-                device["hiloId"],
-                "Disconnected",
-                device["connectionStatus"] == "DISCONNECTED",
-            )
-        )  # Offline
         attributes.append(
             self.build_attribute(
                 device["hiloId"],
@@ -455,7 +467,7 @@ class GraphqlValueMapper:
             self.build_attribute(
                 device["hiloId"],
                 "Disconnected",
-                device["connectionStatus"] == "DISCONNECTED",
+                device.get("connectionStatus") != "CONNECTED",
             ),
         ]
 

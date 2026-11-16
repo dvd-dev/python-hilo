@@ -45,6 +45,7 @@ class GraphQlHelper:
                     lastUpdate
                     lastUpdateVersion
                     devices {
+                        __typename
                         deviceType
                         hiloId
                         physicalAddress
@@ -285,7 +286,11 @@ class GraphQlHelper:
         operationId
         status
         device {
+            __typename
             ... on Gateway {
+                deviceType
+                hiloId
+                physicalAddress
                 connectionStatus
                 controllerSoftwareVersion
                 lastConnectionTime
@@ -516,33 +521,21 @@ class GraphQlHelper:
     }
 }"""
 
-    SUBSCRIPTION_LOCATION_UPDATED: str = """subscription onAnyLocationUpdated($locationHiloId: String!){
+    SUBSCRIPTION_LOCATION_UPDATED: str = """subscription onAnyLocationUpdated($locationHiloId: String!) {
     onAnyLocationUpdated(locationHiloId: $locationHiloId) {
-        locationHiloId
-        deviceType
         transmissionTime
         operationId
         location {
-            ...on Container {
+            devices {
+                __typename
                 hiloId
-                devices {
-                    deviceType
-                    hiloId
-                    physicalAddress
-                    connectionStatus
-                        ... on BasicChargeController {
-                            connectionStatus
-                        }
-                        ... on LowVoltageThermostat {
-                            connectionStatus
-                        }
-                }
+                connectionStatus
             }
         }
     }
 }"""
 
-    async def call_get_location_query(self, location_hilo_id: str) -> None:
+    async def call_get_location_query(self, location_hilo_id: str) -> list[str]:
         """This functions calls the digital-twin and requests location id"""
         access_token = await self._get_access_token()
         url = f"https://{PLATFORM_HOST}/api/digital-twin/v3/graphql"
@@ -568,7 +561,7 @@ class GraphQlHelper:
                 response_json = response.json()
             except Exception as e:
                 LOG.error("Error parsing response: %s", e)
-                return
+                return []
 
             if "errors" in response_json:
                 for error in response_json["errors"]:
@@ -582,25 +575,29 @@ class GraphQlHelper:
                             response_json = response.json()
                         except Exception as e:
                             LOG.error("Error parsing response on retry: %s", e)
-                            return
+                            return []
                         break
 
             if "errors" in response_json:
                 LOG.error("GraphQL errors: %s", response_json["errors"])
-                return
+                return []
 
             if "data" in response_json:
                 devices = (
                     response_json["data"].get("getLocation", {}).get("devices", [])
                 )
                 gateways = [
-                    d for d in devices if d.get("deviceType") in ("Gateway", "Hub")
+                    d
+                    for d in devices
+                    if isinstance(d, dict) and self.mapper.is_gateway_payload(d)
                 ]
                 LOG.debug(
                     "Gateway devices in getLocation response: %s",
                     json.dumps(gateways, indent=2),
                 )
-                self._handle_query_result(response_json["data"])
+                return self._handle_query_result(response_json["data"])
+
+            return []
 
     async def subscribe_to_device_updated(
         self,
@@ -650,9 +647,9 @@ class GraphQlHelper:
     def _handle_sse_message(
         self,
         data: Dict[str, Any],
-        handler: Callable[[Dict[str, Any]], str],
+        handler: Callable[[dict[str, object]], list[str]],
         callback: Optional[Callable[[str], None]],
-    ) -> tuple:
+    ) -> tuple[bool, bool]:
         """Dispatch a parsed SSE message. Returns (retry_apq, had_success)."""
         if "errors" in data:
             if any(
@@ -661,20 +658,21 @@ class GraphQlHelper:
                 return True, False
             LOG.error("GraphQL Subscription Errors: %s", data["errors"])
             return False, False
-        if "data" in data:
+        if "data" in data and isinstance(data["data"], dict):
             LOG.debug("Received subscription result %s", data["data"])
-            handler_result = handler(data["data"])
+            hilo_ids = handler(data["data"])
             if callback:
-                callback(handler_result)
+                for hilo_id in hilo_ids:
+                    callback(hilo_id)
             return False, True
         return False, False
 
     async def _drain_sse_events(
         self,
         event_source: Any,
-        handler: Callable[[Dict[str, Any]], str],
+        handler: Callable[[dict[str, object]], list[str]],
         callback: Optional[Callable[[str], None]],
-    ) -> tuple:
+    ) -> tuple[bool, bool]:
         """Read events until the stream closes. Returns (retry_apq, had_success)."""
         had_success = False
         sse_iter = event_source.aiter_sse()
@@ -707,9 +705,9 @@ class GraphQlHelper:
         url: str,
         headers: Dict[str, str],
         payload: Dict[str, Any],
-        handler: Callable[[Dict[str, Any]], str],
+        handler: Callable[[dict[str, object]], list[str]],
         callback: Optional[Callable[[str], None]],
-    ) -> tuple:
+    ) -> tuple[bool, bool]:
         """Open one SSE connection and drain it. Returns (retry_apq, had_success)."""
         async with httpx.AsyncClient(
             http2=True, timeout=None, verify=self._ssl_context
@@ -723,7 +721,7 @@ class GraphQlHelper:
         self,
         query: str,
         variables: Dict[str, Any],
-        handler: Callable[[Dict[str, Any]], str],
+        handler: Callable[[dict[str, object]], list[str]],
         callback: Optional[Callable[[str], None]] = None,
         location_hilo_id: Optional[str] = None,
     ) -> None:
@@ -752,6 +750,7 @@ class GraphQlHelper:
                     "SSE connection closed by server. Reconnecting in 5 seconds..."
                 )
                 await asyncio.sleep(5)
+                await self._resync_after_reconnect(location_hilo_id, callback)
 
             except asyncio.TimeoutError:
                 # Keepalive timeout: the connection was recently live, so start
@@ -765,15 +764,7 @@ class GraphQlHelper:
                 backoff_delay = min(backoff_delay * 2, self._BACKOFF_MAX)
                 if "query" in payload:
                     del payload["query"]
-                if location_hilo_id:
-                    try:
-                        await self.call_get_location_query(location_hilo_id)
-                        LOG.debug("call_get_location_query success after reconnect")
-                    except Exception as e2:
-                        LOG.error(
-                            "exception while RE-connecting, retrying: %s",
-                            e2,
-                        )
+                await self._resync_after_reconnect(location_hilo_id, callback)
 
             except Exception as e:
                 LOG.debug(
@@ -785,35 +776,50 @@ class GraphQlHelper:
                 backoff_delay = min(backoff_delay * 2, self._BACKOFF_MAX)
                 if "query" in payload:
                     del payload["query"]
-                if location_hilo_id:
-                    try:
-                        await self.call_get_location_query(location_hilo_id)
-                        LOG.debug("call_get_location_query success after reconnect")
-                    except Exception as e2:
-                        LOG.error(
-                            "exception while RE-connecting, retrying: %s",
-                            e2,
-                        )
+                await self._resync_after_reconnect(location_hilo_id, callback)
+
+    async def _resync_after_reconnect(
+        self,
+        location_hilo_id: Optional[str],
+        callback: Optional[Callable[[str], None]],
+    ) -> None:
+        if not location_hilo_id:
+            return
+        try:
+            hilo_ids = await self.call_get_location_query(location_hilo_id)
+            LOG.debug("call_get_location_query success after reconnect")
+        except Exception as err:
+            LOG.error("exception while RE-connecting, retrying: %s", err)
+            return
+        if callback:
+            for hilo_id in hilo_ids:
+                callback(hilo_id)
 
     async def _get_access_token(self) -> str:
         """Get the access token."""
         return await self._api.async_get_access_token()
 
-    def _handle_query_result(self, result: Dict[str, Any]) -> None:
+    def _handle_query_result(self, result: Dict[str, Any]) -> list[str]:
         """Handle the result of the GraphQL query for location and devices."""
         devices_values: List[Dict[str, Any]] = result["getLocation"]["devices"]
 
         for raw_device in devices_values:
-            if raw_device.get("deviceType") in ("Gateway", "Hub"):
-                if self._devices.find_device(1) is None:
+            if self.mapper.is_gateway_payload(raw_device):
+                existing_gw = self._devices.find_device(1) or next(
+                    (d for d in self._devices.devices if d.type == "Gateway"), None
+                )
+                if existing_gw is None:
                     gw = self._build_gateway_dict(raw_device)
                     LOG.debug("Creating gateway device from GraphQL: %s", gw)
-                    gw_dev = self._devices.generate_device(gw)
-                    if gw_dev not in self._devices.devices:
-                        self._devices.devices.append(gw_dev)
+                    self._devices.devices.append(self._devices.generate_device(gw))
+                elif not existing_gw.hilo_id and isinstance(
+                    hilo_id := raw_device.get("hiloId"), str
+                ):
+                    existing_gw.hilo_id = hilo_id
 
         attributes = self.mapper.map_query_values(devices_values)
-        self._devices.parse_values_received(attributes)
+        updated_devices = self._devices.parse_values_received(attributes)
+        return [device.hilo_id for device in updated_devices if device.hilo_id]
 
     def _build_gateway_dict(self, raw_device: Dict[str, Any]) -> Dict[str, Any]:
         """Build a dictionary representing the gateway device from raw GraphQL data."""
@@ -829,6 +835,7 @@ class GraphQlHelper:
             "type": "Gateway",
             "category": "Gateway",
             "id": 1,
+            "hilo_id": hilo_id,
             "identifier": mac,
             "sdi": mac,
             "provider": 1,
@@ -847,20 +854,34 @@ class GraphQlHelper:
             "disconnected": {"value": connection_status != "CONNECTED"},
         }
 
-    def _handle_device_subscription_result(self, result: Dict[str, Any]) -> str:
+    def _handle_device_subscription_result(
+        self, result: dict[str, object]
+    ) -> list[str]:
         """Handle the result of the GraphQL subscription for device updates."""
-        device_value: Dict[str, Any] = result["onAnyDeviceUpdated"]["device"]
+        on_device = result.get("onAnyDeviceUpdated")
+        if not isinstance(on_device, dict):
+            return []
+        device_value = on_device.get("device")
+        if not isinstance(device_value, dict):
+            return []
         attributes = self.mapper.map_device_subscription_values(device_value)
-        updated_device = self._devices.parse_values_received(attributes)
+        updated_devices = self._devices.parse_values_received(attributes)
         # callback to update the device in the UI
-        LOG.debug("Device updated: %s", updated_device)
-        return str(device_value.get("hiloId"))
+        LOG.debug("Device updated: %s", updated_devices)
+        return [device.hilo_id for device in updated_devices if device.hilo_id]
 
-    def _handle_location_subscription_result(self, result: Dict[str, Any]) -> str:
+    def _handle_location_subscription_result(
+        self, result: dict[str, object]
+    ) -> list[str]:
         """Handle the result of the GraphQL subscription for location updates."""
-        location_value: Dict[str, Any] = result["onAnyLocationUpdated"]["location"]
+        on_location = result.get("onAnyLocationUpdated")
+        if not isinstance(on_location, dict):
+            return []
+        location_value = on_location.get("location")
+        if not isinstance(location_value, dict):
+            return []
         attributes = self.mapper.map_location_subscription_values(location_value)
-        updated_device = self._devices.parse_values_received(attributes)
+        updated_devices = self._devices.parse_values_received(attributes)
         # callback to update the device in the UI
-        LOG.debug("Device updated: %s", updated_device)
-        return str(location_value.get("hiloId"))
+        LOG.debug("Device updated: %s", updated_devices)
+        return [device.hilo_id for device in updated_devices if device.hilo_id]
