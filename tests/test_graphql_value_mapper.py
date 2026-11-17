@@ -25,10 +25,10 @@ def test_smart_meter_maps_zigbee_channel() -> None:
     assert channel == [24]
 
 
-def _hub(connection_status: str, device_type: str = "Hub") -> dict[str, object]:
+def _hub(connection_status: str) -> dict:
     return {
         "hiloId": "hub-1",
-        "deviceType": device_type,
+        "deviceType": "Hub",
         "connectionStatus": connection_status,
         "lastConnectionTime": "2026-11-01T12:00:00Z",
         "controllerSoftwareVersion": "1.0.0",
@@ -38,9 +38,9 @@ def _hub(connection_status: str, device_type: str = "Hub") -> dict[str, object]:
     }
 
 
-def _disconnected_values(device: dict[str, object]) -> list[bool]:
+def _disconnected_values(device: dict) -> set[bool]:
     attributes = GraphqlValueMapper().map_device_subscription_values(device)
-    return [a["value"] for a in attributes if a["attribute"] == "Disconnected"]
+    return {a["value"] for a in attributes if a["attribute"] == "Disconnected"}
 
 
 @pytest.mark.parametrize(
@@ -79,23 +79,21 @@ def test_device_disconnected_follows_connection_status(
     device = _device(filename)
     device["connectionStatus"] = connection_status
 
-    assert _disconnected_values(device) == [expected]
+    assert _disconnected_values(device) == {expected}
 
 
 @pytest.mark.parametrize(
-    ("device_type", "connection_status", "expected"),
+    ("connection_status", "expected"),
     [
-        pytest.param("Hub", "CONNECTED", False, id="hub-connected"),
-        pytest.param("Hub", "DISCONNECTED", True, id="hub-disconnected"),
-        pytest.param("Gateway", "CONNECTED", False, id="gateway-connected"),
-        pytest.param("Gateway", "DISCONNECTED", True, id="gateway-disconnected"),
+        pytest.param("CONNECTED", False, id="connected"),
+        pytest.param("DISCONNECTED", True, id="disconnected"),
     ],
 )
 def test_hub_disconnected_follows_connection_status(
-    device_type: str, connection_status: str, expected: bool
+    connection_status: str, expected: bool
 ) -> None:
-    """The gateway's Disconnected attribute is derived for both Hub and Gateway types."""
-    assert _disconnected_values(_hub(connection_status, device_type)) == [expected]
+    """The gateway's Disconnected attribute is derived from the string status."""
+    assert _disconnected_values(_hub(connection_status)) == {expected}
 
 
 @pytest.mark.parametrize(

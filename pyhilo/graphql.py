@@ -1,5 +1,4 @@
 import asyncio
-from collections.abc import Mapping
 import hashlib
 import json
 import ssl
@@ -597,7 +596,9 @@ class GraphQlHelper:
                 devices = (
                     response_json["data"].get("getLocation", {}).get("devices", [])
                 )
-                gateways = [d for d in devices if self._is_gateway(d)]
+                gateways = [
+                    d for d in devices if d.get("deviceType") in ("Gateway", "Hub")
+                ]
                 LOG.debug(
                     "Gateway devices in getLocation response: %s",
                     json.dumps(gateways, indent=2),
@@ -805,21 +806,18 @@ class GraphQlHelper:
         """Get the access token."""
         return await self._api.async_get_access_token()
 
-    @staticmethod
-    def _is_gateway(raw_device: Mapping[str, object]) -> bool:
-        """Return whether a raw GraphQL device payload represents a gateway."""
-        return str(raw_device.get("deviceType") or "").lower() in ("gateway", "hub")
-
     def _handle_query_result(self, result: Dict[str, Any]) -> list[str]:
         """Handle the result of the GraphQL query for location and devices."""
         devices_values: List[Dict[str, Any]] = result["getLocation"]["devices"]
 
         for raw_device in devices_values:
-            if self._is_gateway(raw_device):
-                if not any(d.type == "Gateway" for d in self._devices.devices):
+            if raw_device.get("deviceType") in ("Gateway", "Hub"):
+                if self._devices.find_device(1) is None:
                     gw = self._build_gateway_dict(raw_device)
                     LOG.debug("Creating gateway device from GraphQL: %s", gw)
-                    self._devices.devices.append(self._devices.generate_device(gw))
+                    gw_dev = self._devices.generate_device(gw)
+                    if gw_dev not in self._devices.devices:
+                        self._devices.devices.append(gw_dev)
 
         attributes = self.mapper.map_query_values(devices_values)
         updated_devices = self._devices.parse_values_received(attributes)

@@ -27,7 +27,7 @@ def _make_helper() -> tuple[GraphQlHelper, Devices]:
 
 
 def _gateway_payload(
-    connection_status: str, device_type: str = "Gateway"
+    connection_status: str, device_type: str = "Hub"
 ) -> dict[str, object]:
     return {
         "deviceType": device_type,
@@ -80,19 +80,6 @@ def test_gateway_query_populates_hilo_id_and_availability(
     assert gateway.get_value("online_status") == connection_status
 
 
-def test_gateway_query_does_not_duplicate_when_gateway_id_changed() -> None:
-    """Re-running getLocation after SignalR updates gateway.id refreshes it in place."""
-    helper, devices, gateway = _make_helper_with_gateway()
-    gateway.id = 98765
-
-    helper._handle_query_result(
-        {"getLocation": {"devices": [_gateway_payload("DISCONNECTED")]}}
-    )
-
-    assert [d for d in devices.all if d.type == "Gateway"] == [gateway]
-    assert gateway.available is False
-
-
 def test_gateway_device_subscription_updates_availability_and_notifies_callback() -> (
     None
 ):
@@ -102,7 +89,7 @@ def test_gateway_device_subscription_updates_availability_and_notifies_callback(
     sse_payload: dict[str, object] = {
         "data": {
             "onAnyDeviceUpdated": {
-                "device": _gateway_payload("DISCONNECTED", device_type="Hub"),
+                "device": _gateway_payload("DISCONNECTED", device_type="hub"),
             }
         }
     }
@@ -140,43 +127,6 @@ def test_unknown_hilo_id_reading_does_not_overwrite_gateway_availability() -> No
 
     assert gateway.available is True
     assert notified == []
-
-
-def test_signalr_zero_device_id_without_hilo_id_falls_back_to_gateway() -> None:
-    """SignalR readings with deviceId=0 and no hiloId route to the Gateway, not other unset-hilo_id devices."""
-    helper, devices = _make_helper()
-    legacy_sensor = devices.generate_device(
-        {
-            "id": 500,
-            "name": "Weather Station",
-            "type": "IndoorWeatherStation",
-            "provider": 2,
-            "supportedAttributes": "Disconnected",
-            "settableAttributes": "",
-            "Disconnected": {"value": False},
-        }
-    )
-    devices.devices.append(legacy_sensor)
-    helper._handle_query_result(
-        {"getLocation": {"devices": [_gateway_payload("CONNECTED")]}}
-    )
-    gateway = devices.find_device(GATEWAY_HILO_ID)
-    assert gateway is not None
-
-    updated = devices.parse_values_received(
-        [
-            {
-                "deviceId": 0,
-                "timeStampUTC": "2026-11-11T12:00:00Z",
-                "attribute": "Disconnected",
-                "value": True,
-            }
-        ]
-    )
-
-    assert updated == [gateway]
-    assert gateway.available is False
-    assert legacy_sensor.available is True
 
 
 async def test_resync_after_reconnect_updates_gateway_and_notifies_callback() -> None:

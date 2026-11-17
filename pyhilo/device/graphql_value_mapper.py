@@ -55,7 +55,7 @@ class GraphqlValueMapper:
                 attributes.extend(self._build_charging_point(device))
             case "meter":  # Smart Meter
                 attributes.extend(self._build_smart_meter(device))
-            case "hub" | "gateway":  # Gateway
+            case "hub":  # Gateway
                 attributes.extend(self._build_gateway(device))
             case "colorbulb":
                 attributes.extend(self._build_light(device))
@@ -82,6 +82,13 @@ class GraphqlValueMapper:
                     device["hiloId"], "ZigbeeChannel", device["zigBeeChannel"]
                 )
             )
+        attributes.append(
+            self.build_attribute(
+                device["hiloId"],
+                "Disconnected",
+                device["connectionStatus"] == "DISCONNECTED",
+            ),
+        )
         if device.get("power") is not None:
             attributes.append(self._map_power(device))
         return attributes

@@ -58,14 +58,7 @@ class Devices:
             device_identifier: Union[int, str] = reading.device_id
             if device_identifier == 0:
                 device_identifier = reading.hilo_id
-            device = self.find_device(device_identifier)
-            # If device_id was 0 and hilo_id is empty, this is a SignalR
-            # gateway reading arriving before GatewayValuesReceived assigns
-            # the real ID. Never route an unmatched non-empty hilo_id to the
-            # gateway, as it belongs to a different device.
-            if device is None and reading.device_id == 0 and not reading.hilo_id:
-                device = next((d for d in self.devices if d.type == "Gateway"), None)
-            if device:
+            if device := self.find_device(device_identifier):
                 device.update_readings(reading)
                 LOG.debug("%s Received %s", device, reading)
                 if device not in updated_devices:
