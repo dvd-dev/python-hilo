@@ -3,11 +3,20 @@
 from datetime import datetime, timedelta, timezone
 import logging
 import re
-from typing import Any, cast
+from typing import Any, TypedDict, cast
 
 from pyhilo.util import camel_to_snake, from_utc_timestamp
 
 LOG = logging.getLogger(__package__)
+
+
+class OptOutDevice(TypedDict):
+    """A device leaving Hilo's control, e.g. when its setpoint is changed during an event."""
+
+    id: int
+    eventDateUtc: str
+    triggerTypeId: int
+    triggerApplicationId: int | None
 
 
 class Event:
@@ -38,7 +47,11 @@ class Event:
         self.period: str = (cast(str, event.get("period", "")) or "").lower()
         self.event_id: int = cast(int, event["id"])
         self.total_devices: int = len(devices)
-        self.opt_out_devices: int = len([x for x in devices if x["optOut"]])
+        self._opt_out_device_ids: set[int] = {x["id"] for x in devices if x["optOut"]}
+        self.opt_out_devices: int = 0
+        self._record_opt_outs(
+            cast(list[OptOutDevice], event.get("optOutDevices") or [])
+        )
         self.pre_heat_devices: int = len([x for x in devices if x["preheat"]])
         self.progress: str = cast(str, event.get("progress", "unknown"))
         self.mode: str = cast(str, params.get("mode", "Unknown"))
@@ -67,6 +80,48 @@ class Event:
             "last_update",
             "reward",
         ]
+
+    def update(self, data: dict[str, Any]) -> None:
+        """Update the event in place from a partial Hilo message.
+
+        Hilo sends partial updates: a field it isn't changing is either
+        missing or None (an opt-out notice carries only the opted-out
+        devices, with progress, parameters, etc. set to None). Only the
+        fields that carry a value are applied; everything else keeps its
+        current value. Consumption progress arrives in separate messages
+        handled by update_wh().
+        """
+        if (phases := data.get("phases")) is not None:
+            self._convert_phases(phases)
+        if (progress := data.get("progress")) is not None:
+            self.progress = progress
+        if (participating := data.get("isParticipating")) is not None:
+            self.participating = participating
+        if (configurable := data.get("isConfigurable")) is not None:
+            self.configurable = configurable
+        if (period := data.get("period")) is not None:
+            self.period = period.lower()
+        if (params := data.get("parameters")) is not None:
+            devices: list[dict[str, Any]] = params.get("devices", [])
+            self.total_devices = len(devices)
+            self._opt_out_device_ids.update(x["id"] for x in devices if x["optOut"])
+            self.pre_heat_devices = len([x for x in devices if x["preheat"]])
+            self.mode = params.get("mode", self.mode)
+        self._record_opt_outs(data.get("optOutDevices") or [])
+        if (reward := data.get("reward")) is not None:
+            self.reward = reward
+        consumption: dict[str, Any] = data.get("consumption") or {}
+        # Hilo reports a baseline of 0 until it has computed one; skip it so
+        # a known baseline is never wiped.
+        if allowed_wH := consumption.get("baselineWh"):
+            self.update_allowed_wh(allowed_wH)
+        self.last_update = datetime.now(timezone.utc).astimezone()
+
+    def _record_opt_outs(self, opt_outs: list[OptOutDevice]) -> None:
+        # Hilo emits an entry each time a device is taken over, so the same
+        # device can appear many times; count each device once.
+        self._opt_out_device_ids.update(x["id"] for x in opt_outs)
+        self.opt_out_devices = len(self._opt_out_device_ids)
 
     def update_wh(self, used_wH: float) -> None:
         """This function is used to update the used_kWh attribute during a Hilo Challenge Event"""
