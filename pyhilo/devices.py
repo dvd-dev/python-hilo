@@ -58,20 +58,16 @@ class Devices:
             device_identifier: Union[int, str] = reading.device_id
             if device_identifier == 0:
                 device_identifier = reading.hilo_id
-            device = self.find_device(device_identifier)
-            # If device_id was 0 and hilo_id lookup failed, this is likely
-            # a gateway reading that arrives before GatewayValuesReceived
-            # assigns the real ID. Fall back to the gateway device.
-            if device is None and reading.device_id == 0:
-                device = next((d for d in self.devices if d.type == "Gateway"), None)
-            if device:
+            if device := self.find_device(device_identifier):
                 device.update_readings(reading)
                 LOG.debug("%s Received %s", device, reading)
                 if device not in updated_devices:
                     updated_devices.append(device)
             else:
                 LOG.warning(
-                    f"Unable to find device {reading.device_id} for reading {reading}"
+                    "Unable to find device %s for reading %s",
+                    device_identifier,
+                    reading,
                 )
         return updated_devices
 
@@ -79,6 +75,8 @@ class Devices:
         """Makes sure the devices received have an identifier, this means some need to be hardcoded
         like the unknown power meter.
         """
+        if not device_identifier:
+            return None
         if isinstance(device_identifier, int):
             return next((d for d in self.devices if d.id == device_identifier), None)
         return next((d for d in self.devices if d.hilo_id == device_identifier), None)
