@@ -97,6 +97,11 @@ class GraphqlValueMapper:
         attributes = []
         attributes.append(
             self.build_attribute(
+                device["hiloId"], "onlineStatus", device["connectionStatus"]
+            )
+        )
+        attributes.append(
+            self.build_attribute(
                 device["hiloId"], "LastStatusTime", device["lastConnectionTime"]
             )
         )
@@ -105,13 +110,6 @@ class GraphqlValueMapper:
                 device["hiloId"], "Version", device["controllerSoftwareVersion"]
             )
         )
-        attributes.append(
-            self.build_attribute(
-                device["hiloId"],
-                "Disconnected",
-                device["connectionStatus"] == "DISCONNECTED",
-            )
-        )  # Offline
         attributes.append(
             self.build_attribute(
                 device["hiloId"],
