@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, MagicMock
 import pytest
 
 from pyhilo import API, AbstractAuth
-from pyhilo.const import API_HOSTNAME, SUBSCRIPTION_KEY
+from pyhilo.const import API_HOSTNAME
 
 URN = "urn:hilo:crm:abc-123"
 
@@ -133,38 +133,3 @@ async def test_deprecated_oauth_session_still_works(
     assert await api.async_get_access_token() == TOKEN
     oauth_session.async_ensure_token_valid.assert_awaited_once()
     assert api.urn == URN
-
-
-@pytest.mark.parametrize(
-    "secret",
-    [
-        pytest.param(TOKEN, id="bearer_token"),
-        pytest.param(SUBSCRIPTION_KEY, id="subscription_key"),
-    ],
-)
-async def test_trace_logs_redact_request_credentials(
-    mock_session: MagicMock, caplog: pytest.LogCaptureFixture, secret: str
-) -> None:
-    auth = AsyncMock(spec=AbstractAuth)
-    auth.async_get_access_token.return_value = TOKEN
-    api = API(session=mock_session, auth=auth, log_traces=True)
-
-    with caplog.at_level(logging.DEBUG):
-        await api._async_request("get", "/endpoint")
-
-    assert secret not in caplog.text
-
-
-async def test_trace_logs_redact_signalr_negotiate_token(
-    mock_session: MagicMock, caplog: pytest.LogCaptureFixture
-) -> None:
-    response = mock_session.request.return_value.__aenter__.return_value
-    response.json.return_value = {"url": "https://hub", "accessToken": "hub-token"}
-    auth = AsyncMock(spec=AbstractAuth)
-    auth.async_get_access_token.return_value = TOKEN
-    api = API(session=mock_session, auth=auth, log_traces=True)
-
-    with caplog.at_level(logging.DEBUG):
-        await api._async_request("post", "/DeviceHub/negotiate")
-
-    assert "hub-token" not in caplog.text

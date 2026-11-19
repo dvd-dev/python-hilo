@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import base64
-from collections.abc import Mapping
 from datetime import datetime, timedelta
 import json
 import random
@@ -48,20 +47,6 @@ from pyhilo.device import DeviceAttribute, HiloDevice, get_device_attributes
 from pyhilo.exceptions import InvalidCredentialsError, RequestError
 from pyhilo.signalr import SignalRHub, SignalRManager
 from pyhilo.util.state import AndroidDeviceDict, StateDict, get_state, set_state
-
-_TRACE_REDACTED_KEYS = frozenset(
-    {"authorization", "ocp-apim-subscription-key", "accesstoken"}
-)
-
-
-def _redact_trace(values: object) -> object:
-    """Mask credentials so users can share trace logs when reporting issues."""
-    if not isinstance(values, Mapping):
-        return values
-    return {
-        key: "***" if str(key).lower() in _TRACE_REDACTED_KEYS else value
-        for key, value in values.items()
-    }
 
 
 class API:
@@ -303,7 +288,7 @@ class API:
         data: dict[str, Any] = {}
         url = parse.urljoin(f"https://{host}", endpoint)
         if self.log_traces:
-            LOG.debug("[TRACE] Headers: %s", _redact_trace(kwargs["headers"]))
+            LOG.debug("[TRACE] Headers: %s", kwargs["headers"])
             LOG.debug("[TRACE] Async request: %s %s", method, url)
 
         async with self.session.request(method, url, **kwargs) as resp:
@@ -317,9 +302,7 @@ class API:
             else:
                 data = {"message": await resp.text()}
             if self.log_traces:
-                LOG.debug(
-                    "[TRACE] Data received from /%s: %s", endpoint, _redact_trace(data)
-                )
+                LOG.debug("[TRACE] Data received from /%s: %s", endpoint, data)
             resp.raise_for_status()
         return data
 
