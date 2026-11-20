@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import asyncio
 from collections import defaultdict
+from collections.abc import Sequence
+import contextlib
 from dataclasses import dataclass, field
 from datetime import datetime
 from enum import IntEnum
@@ -11,6 +13,7 @@ import ssl
 from typing import Any, Callable, Optional, Tuple
 
 from pysignalr.client import SignalRClient
+from pysignalr.messages import Message
 
 from pyhilo.const import LOG
 
@@ -75,6 +78,9 @@ class SignalRHub:
       ``disconnect()`` — cancel the task awaiting ``run()`` to stop cleanly
     """
 
+    # Azure SignalR sends PingMessage every ~15s; 60s catches silent dead links.
+    _SERVER_TIMEOUT: float = 60.0
+
     def __init__(
         self,
         negotiate_callback: Callable[[], Any],
@@ -86,6 +92,7 @@ class SignalRHub:
         self._negotiate = negotiate_callback
         self._client: Optional[SignalRClient] = None
         self._task: Optional[asyncio.Task] = None
+        self._connected: bool = False
         self._connect_callbacks: list[Callable[..., Any]] = []
         self._disconnect_callbacks: list[Callable[..., Any]] = []
         self._event_callbacks: list[Callable[..., Any]] = []
@@ -96,8 +103,8 @@ class SignalRHub:
 
     @property
     def connected(self) -> bool:
-        """Return True if a client is currently running."""
-        return self._client is not None
+        """Return True if the SignalR connection is currently open."""
+        return self._connected
 
     def add_connect_callback(self, callback: Callable[..., Any]) -> Callable[..., None]:
         """Register a callback to fire after a successful connection."""
@@ -131,8 +138,9 @@ class SignalRHub:
     async def run(self) -> None:
         """Negotiate, create the SignalR client, and block until it disconnects.
 
-        Raises on hard errors (auth failure, negotiation failure, etc.).
-        Returns normally on a clean server-side disconnect.
+        Raises on hard errors (auth failure, negotiation failure, server timeout,
+        or close before open). Returns normally on a clean server-side
+        disconnect after the connection has opened.
         """
         azure_url, access_token = await self._negotiate()
         LOG.info("SignalRHub: negotiate succeeded, connecting to %s", azure_url)
@@ -142,12 +150,22 @@ class SignalRHub:
             None, ssl.create_default_context
         )
 
-        self._client = SignalRClient(
+        client = SignalRClient(
             url=azure_url,
             headers={"Authorization": f"Bearer {access_token}"},
             retry_count=0,
             ssl=ssl_context,
         )
+        self._client = client
+
+        activity_event = asyncio.Event()
+        orig_callback = client._transport._callback
+
+        async def _tracked_on_message(message: Message) -> None:
+            activity_event.set()
+            await orig_callback(message)
+
+        client._transport._callback = _tracked_on_message
 
         # Install catch-all handler — must be set AFTER __init__ and BEFORE run() (Lesson ❹)
         hub_self = self
@@ -171,19 +189,78 @@ class SignalRHub:
                 self_dict[target] = [_handler]
                 return [_handler]
 
-        self._client._message_handlers = _CatchAllDict(list)
+        client._message_handlers = _CatchAllDict(list)
+
+        was_connected = False
+        server_closed = False
+        server_timed_out = False
+        watchdog_task: asyncio.Task[None] | None = None
+        client_task: asyncio.Task[None]
+
+        def _on_timeout() -> None:
+            nonlocal server_timed_out
+            server_timed_out = True
+
+        async def _on_open() -> None:
+            nonlocal was_connected, watchdog_task
+            self._connected = True
+            was_connected = True
+            watchdog_task = asyncio.create_task(
+                self._watch_server_timeout(activity_event, client_task, _on_timeout)
+            )
+            LOG.info("SignalRHub: connected")
+            await self._fire_callbacks(self._connect_callbacks, "connect")
+
+        async def _on_close() -> None:
+            nonlocal server_closed
+            self._connected = False
+            # pysignalr's WebsocketTransport loops forever in websockets.connect() with
+            # the already-negotiated URL/token; cancel client_task so run() exits
+            # and callers can re-negotiate a fresh Azure SignalR token.
+            server_closed = True
+            if not client_task.done():
+                client_task.cancel()
 
         # Wire connect/disconnect/error hooks
-        self._client.on_open(self._on_open)
-        self._client.on_close(self._on_close)
-        self._client.on_error(self._on_error)
+        client.on_open(_on_open)
+        client.on_close(_on_close)
+        client.on_error(self._on_error)
 
         self._task = asyncio.current_task()
+        client_task = asyncio.create_task(client.run())
         try:
-            await self._client.run()
+            await client_task
+        except asyncio.CancelledError:
+            current_task = asyncio.current_task()
+            outer_cancelled = current_task is not None and current_task.cancelling() > 0
+            if not outer_cancelled:
+                if server_closed:
+                    if was_connected:
+                        return
+                    raise ConnectionError(
+                        "SignalR connection closed before open"
+                    ) from None
+                if server_timed_out:
+                    raise TimeoutError(
+                        f"SignalR server timeout ({self._SERVER_TIMEOUT}s without messages)"
+                    ) from None
+            raise
         finally:
+            self._connected = False
+            if watchdog_task is not None:
+                if not watchdog_task.done():
+                    watchdog_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await watchdog_task
+            if not client_task.done():
+                client_task.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await client_task
             self._client = None
             self._task = None
+            if was_connected:
+                LOG.info("SignalRHub: disconnected")
+                await self._fire_callbacks(self._disconnect_callbacks, "disconnect")
 
     async def invoke(self, method: str, args: list[Any]) -> None:
         """Invoke a hub method on the server.
@@ -191,7 +268,7 @@ class SignalRHub:
         :param method: Hub method name
         :param args: Positional arguments for the method
         """
-        if self._client is None:
+        if not self._connected or self._client is None:
             LOG.warning("SignalRHub: invoke(%s) called while disconnected", method)
             return
         LOG.debug("SignalRHub: invoke method=%s args=%s", method, args)
@@ -220,25 +297,41 @@ class SignalRHub:
     # Internal pysignalr hooks
     # ------------------------------------------------------------------
 
-    async def _on_open(self) -> None:
-        LOG.info("SignalRHub: connected")
-        for cb in self._connect_callbacks:
+    async def _fire_callbacks(
+        self, callbacks: Sequence[Callable[..., object]], label: str
+    ) -> None:
+        for cb in list(callbacks):
             try:
                 result = cb()
                 if asyncio.iscoroutine(result):
                     await result
             except Exception as exc:
-                LOG.error("SignalRHub: connect callback error: %s", exc)
+                LOG.error("SignalRHub: %s callback error: %s", label, exc)
 
-    async def _on_close(self) -> None:
-        LOG.info("SignalRHub: disconnected")
-        for cb in self._disconnect_callbacks:
+    async def _watch_server_timeout(
+        self,
+        activity_event: asyncio.Event,
+        client_task: asyncio.Task[None],
+        on_timeout: Callable[[], None],
+    ) -> None:
+        while not client_task.done():
+            activity_event.clear()
             try:
-                result = cb()
-                if asyncio.iscoroutine(result):
-                    await result
-            except Exception as exc:
-                LOG.error("SignalRHub: disconnect callback error: %s", exc)
+                await asyncio.wait_for(
+                    activity_event.wait(), timeout=self._SERVER_TIMEOUT
+                )
+            except TimeoutError:
+                if not self._connected:
+                    return
+                LOG.warning(
+                    "SignalRHub: server timeout (%ss without inbound messages)",
+                    self._SERVER_TIMEOUT,
+                )
+                self._connected = False
+                on_timeout()
+                if not client_task.done():
+                    client_task.cancel()
+                return
 
     async def _on_error(self, message: str) -> None:
         LOG.error("SignalRHub: error: %s", message)
