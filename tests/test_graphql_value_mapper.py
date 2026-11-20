@@ -124,3 +124,68 @@ def test_thermostat_humidity_absent_field() -> None:
     attributes = GraphqlValueMapper().map_device_subscription_values(device)
 
     assert not [a for a in attributes if a["attribute"] == "Humidity"]
+
+
+@pytest.mark.parametrize(
+    ("connection_status", "expected"),
+    [
+        pytest.param("CONNECTED", False, id="connected"),
+        pytest.param("DISCONNECTED", True, id="disconnected"),
+    ],
+)
+def test_location_subscription_maps_connection_status(
+    connection_status: str, expected: bool
+) -> None:
+    """Location updates only carry __typename, hiloId, and connectionStatus."""
+    payload: dict[str, object] = {
+        "devices": [
+            {
+                "__typename": "BasicThermostat",
+                "hiloId": "urn:hilo:philo:1a2b3c4d5e6f0001:0",
+                "connectionStatus": connection_status,
+            }
+        ]
+    }
+
+    attributes = GraphqlValueMapper().map_location_subscription_values(payload)
+
+    assert {a["attribute"]: a["value"] for a in attributes} == {
+        "Unpaired": False,
+        "Disconnected": expected,
+    }
+
+
+def test_location_subscription_skips_basic_device() -> None:
+    """Unmigrated SignalR BasicDevice stubs produce no location update readings."""
+    payload: dict[str, object] = {
+        "devices": [
+            {
+                "__typename": "BasicDevice",
+                "hiloId": "urn:hilo:netatmo:station:0",
+                "connectionStatus": None,
+            }
+        ]
+    }
+
+    assert GraphqlValueMapper().map_location_subscription_values(payload) == []
+
+
+def test_location_subscription_maps_gateway_online_status() -> None:
+    """Gateway entries in location updates also emit onlineStatus."""
+    payload: dict[str, object] = {
+        "devices": [
+            {
+                "__typename": "Gateway",
+                "hiloId": "hub-1",
+                "connectionStatus": "DISCONNECTED",
+            }
+        ]
+    }
+
+    attributes = GraphqlValueMapper().map_location_subscription_values(payload)
+
+    assert {a["attribute"]: a["value"] for a in attributes} == {
+        "Unpaired": False,
+        "Disconnected": True,
+        "onlineStatus": "DISCONNECTED",
+    }
