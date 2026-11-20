@@ -32,10 +32,17 @@ class GraphqlValueMapper:
         self, values: Dict[str, Any]
     ) -> list[Dict[str, Any]]:
         readings: list[Dict[str, Any]] = []
-        for device in values.get("devices", []):
-            if device.get("deviceType") is not None:
-                reading = self._map_devices_values(device)
-                readings.extend(reading)
+        for device in values["devices"]:
+            # Unmigrated SignalR devices appear as BasicDevice stubs with null status.
+            if device.get("__typename") == "BasicDevice":
+                continue
+            readings.extend(self._map_basic_device(device))
+            if device.get("__typename") == "Gateway":
+                readings.append(
+                    self.build_attribute(
+                        device["hiloId"], "onlineStatus", device["connectionStatus"]
+                    )
+                )
         return readings
 
     def _map_devices_values(self, device: Dict[str, Any]) -> list[Dict[str, Any]]:

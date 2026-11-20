@@ -519,27 +519,15 @@ class GraphQlHelper:
     }
 }"""
 
-    SUBSCRIPTION_LOCATION_UPDATED: str = """subscription onAnyLocationUpdated($locationHiloId: String!){
+    SUBSCRIPTION_LOCATION_UPDATED: str = """subscription onAnyLocationUpdated($locationHiloId: String!) {
     onAnyLocationUpdated(locationHiloId: $locationHiloId) {
-        locationHiloId
-        deviceType
         transmissionTime
         operationId
         location {
-            ...on Container {
+            devices {
+                __typename
                 hiloId
-                devices {
-                    deviceType
-                    hiloId
-                    physicalAddress
-                    connectionStatus
-                        ... on BasicChargeController {
-                            connectionStatus
-                        }
-                        ... on LowVoltageThermostat {
-                            connectionStatus
-                        }
-                }
+                connectionStatus
             }
         }
     }
@@ -655,7 +643,7 @@ class GraphQlHelper:
     def _handle_sse_message(
         self,
         data: Dict[str, Any],
-        handler: Callable[[Dict[str, Any]], str],
+        handler: Callable[[Dict[str, Any]], list[str]],
         callback: Optional[Callable[[str], None]],
     ) -> tuple:
         """Dispatch a parsed SSE message. Returns (retry_apq, had_success)."""
@@ -668,16 +656,17 @@ class GraphQlHelper:
             return False, False
         if "data" in data:
             LOG.debug("Received subscription result %s", data["data"])
-            handler_result = handler(data["data"])
-            if callback and handler_result:
-                callback(handler_result)
+            hilo_ids = handler(data["data"])
+            if callback:
+                for hilo_id in hilo_ids:
+                    callback(hilo_id)
             return False, True
         return False, False
 
     async def _drain_sse_events(
         self,
         event_source: Any,
-        handler: Callable[[Dict[str, Any]], str],
+        handler: Callable[[Dict[str, Any]], list[str]],
         callback: Optional[Callable[[str], None]],
     ) -> tuple:
         """Read events until the stream closes. Returns (retry_apq, had_success)."""
@@ -712,7 +701,7 @@ class GraphQlHelper:
         url: str,
         headers: Dict[str, str],
         payload: Dict[str, Any],
-        handler: Callable[[Dict[str, Any]], str],
+        handler: Callable[[Dict[str, Any]], list[str]],
         callback: Optional[Callable[[str], None]],
     ) -> tuple:
         """Open one SSE connection and drain it. Returns (retry_apq, had_success)."""
@@ -728,7 +717,7 @@ class GraphQlHelper:
         self,
         query: str,
         variables: Dict[str, Any],
-        handler: Callable[[Dict[str, Any]], str],
+        handler: Callable[[Dict[str, Any]], list[str]],
         callback: Optional[Callable[[str], None]] = None,
         location_hilo_id: Optional[str] = None,
     ) -> None:
@@ -856,20 +845,20 @@ class GraphQlHelper:
             "disconnected": {"value": connection_status != "CONNECTED"},
         }
 
-    def _handle_device_subscription_result(self, result: Dict[str, Any]) -> str:
+    def _handle_device_subscription_result(self, result: Dict[str, Any]) -> list[str]:
         """Handle the result of the GraphQL subscription for device updates."""
         device_value: Dict[str, Any] = result["onAnyDeviceUpdated"]["device"]
         attributes = self.mapper.map_device_subscription_values(device_value)
-        updated_device = self._devices.parse_values_received(attributes)
+        updated_devices = self._devices.parse_values_received(attributes)
         # callback to update the device in the UI
-        LOG.debug("Device updated: %s", updated_device)
-        return updated_device[0].hilo_id if updated_device else ""
+        LOG.debug("Device updated: %s", updated_devices)
+        return [device.hilo_id for device in updated_devices if device.hilo_id]
 
-    def _handle_location_subscription_result(self, result: Dict[str, Any]) -> str:
+    def _handle_location_subscription_result(self, result: Dict[str, Any]) -> list[str]:
         """Handle the result of the GraphQL subscription for location updates."""
         location_value: Dict[str, Any] = result["onAnyLocationUpdated"]["location"]
         attributes = self.mapper.map_location_subscription_values(location_value)
-        updated_device = self._devices.parse_values_received(attributes)
+        updated_devices = self._devices.parse_values_received(attributes)
         # callback to update the device in the UI
-        LOG.debug("Device updated: %s", updated_device)
-        return str(location_value.get("hiloId"))
+        LOG.debug("Device updated: %s", updated_devices)
+        return [device.hilo_id for device in updated_devices if device.hilo_id]

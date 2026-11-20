@@ -12,6 +12,8 @@ from pyhilo.devices import Devices
 from pyhilo.graphql import GraphQlHelper
 
 GATEWAY_HILO_ID = "urn:hilo:ihub:AA11BB22CC33:0"
+TSTAT_HILO_ID = "urn:hilo:philo:1a2b3c4d5e6f0001:0"
+SWITCH_HILO_ID = "urn:hilo:philo:9a8b7c6d5e4f0002:0"
 
 
 def _make_helper() -> tuple[GraphQlHelper, Devices]:
@@ -148,3 +150,91 @@ async def test_resync_after_reconnect_updates_gateway_and_notifies_callback() ->
 
     assert gateway.available is False
     assert notified == [GATEWAY_HILO_ID]
+
+
+def test_location_subscription_updates_devices_and_notifies_each_hilo_id() -> None:
+    """onAnyLocationUpdated updates device availability and invokes callback per hilo_id."""
+    helper, devices, gateway = _make_helper_with_gateway()
+    tstat = devices.generate_device(
+        {
+            "id": 100,
+            "hilo_id": TSTAT_HILO_ID,
+            "name": "Living Room",
+            "type": "Thermostat",
+            "provider": 1,
+            "supportedAttributes": "Disconnected, CurrentTemperature",
+            "settableAttributes": "",
+            "Disconnected": {"value": False},
+        }
+    )
+    switch = devices.generate_device(
+        {
+            "id": 101,
+            "hilo_id": SWITCH_HILO_ID,
+            "name": "Porch Light",
+            "type": "LightSwitch",
+            "provider": 1,
+            "supportedAttributes": "Disconnected, OnOff",
+            "settableAttributes": "OnOff",
+            "Disconnected": {"value": True},
+        }
+    )
+    weather_station = devices.generate_device(
+        {
+            "id": 102,
+            "hilo_id": "urn:hilo:netatmo:station:0",
+            "name": "Weather Station",
+            "type": "IndoorWeatherStation",
+            "provider": 2,
+            "supportedAttributes": "Disconnected",
+            "settableAttributes": "",
+            "Disconnected": {"value": True},
+        }
+    )
+    devices.devices.extend([tstat, switch, weather_station])
+
+    notified: list[str] = []
+    sse_payload: dict[str, object] = {
+        "data": {
+            "onAnyLocationUpdated": {
+                "transmissionTime": "2026-11-11T12:05:00Z",
+                "operationId": "00000000-0000-0000-0000-000000000010",
+                "location": {
+                    "devices": [
+                        {
+                            "__typename": "Gateway",
+                            "hiloId": GATEWAY_HILO_ID,
+                            "connectionStatus": "DISCONNECTED",
+                        },
+                        {
+                            "__typename": "BasicThermostat",
+                            "hiloId": TSTAT_HILO_ID,
+                            "connectionStatus": "DISCONNECTED",
+                        },
+                        {
+                            "__typename": "BasicSwitch",
+                            "hiloId": SWITCH_HILO_ID,
+                            "connectionStatus": "CONNECTED",
+                        },
+                        {
+                            "__typename": "BasicDevice",
+                            "hiloId": "urn:hilo:netatmo:station:0",
+                            "connectionStatus": None,
+                        },
+                    ]
+                },
+            }
+        }
+    }
+
+    retry, had_success = helper._handle_sse_message(
+        sse_payload, helper._handle_location_subscription_result, notified.append
+    )
+
+    assert (retry, had_success) == (False, True)
+    assert gateway.available is False
+    assert gateway.get_value("online_status") == "DISCONNECTED"
+    assert tstat.available is False
+    assert switch.available is True
+    assert weather_station.available is False
+    assert notified == [GATEWAY_HILO_ID, TSTAT_HILO_ID, SWITCH_HILO_ID]
